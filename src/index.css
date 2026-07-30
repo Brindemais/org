@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+
+body {
+  @apply bg-ink-950 text-white antialiased;
+  font-feature-settings: 'ss01';
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { @apply bg-ink-700 rounded-full; }
+::-webkit-scrollbar-track { @apply bg-transparent; }
+
+.font-display { font-family: 'Fraunces', ui-serif, Georgia, serif; }
+
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-top { padding-top: env(safe-area-inset-top); }
+
+.mobile-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  position: relative;
+}
+
+@layer components {
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-gold-gradient text-ink-950 font-semibold px-5 py-3 shadow-gold transition active:scale-[0.98] hover:brightness-105 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-ink-700 text-white font-medium px-5 py-3 transition hover:bg-ink-800 active:scale-[0.98];
+  }
+  .btn-dark {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-ink-900 text-white font-medium px-5 py-3 border border-ink-700 transition hover:bg-ink-800 active:scale-[0.98];
+  }
+  .card {
+    @apply bg-ink-900 border border-ink-800 rounded-xl2 p-4;
+  }
+  .input {
+    @apply w-full rounded-xl bg-ink-900 border border-ink-700 px-4 py-3 text-white placeholder:text-white/30 outline-none focus:border-gold-400 transition;
+  }
+  .label {
+    @apply text-xs font-medium text-white/50 mb-1.5 block;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
+  }
+}
