@@ -1,23 +1,29 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { Wine, Gift, Users2, ShieldCheck, Instagram, Facebook, ChevronRight } from 'lucide-react'
+import { Wine, Gift, Users2, UserPlus, ShieldCheck, Wallet, PackageCheck, Instagram, Facebook, ChevronRight } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import type { Partner } from '../../lib/types'
+import type { Partner, Promotion } from '../../lib/types'
 import { PublicHeader } from './PublicHeader'
-import { Logo } from '../../components/layout/Logo'
+import { Logo, LogoMark } from '../../components/layout/Logo'
 
 const WHATSAPP_PARTNER_LINK = 'https://wa.me/5521999999999?text=Quero%20ser%20parceiro%20Brinde%20Mais'
 
+const STEPS = [
+  { icon: UserPlus, title: 'Cadastro', desc: 'Crie sua conta em poucos passos' },
+  { icon: Gift, title: 'Assinatura', desc: 'Ative sua assinatura em poucos passos' },
+  { icon: ShieldCheck, title: 'Pagamento Pix', desc: 'Confirmação imediata e segura' },
+  { icon: PackageCheck, title: 'Retirada', desc: 'Retire seu brinde e aproveite' },
+]
+
 export default function Landing() {
   const [partners, setPartners] = useState<Partner[]>([])
+  const [promo, setPromo] = useState<Promotion | null>(null)
 
   useEffect(() => {
-    supabase
-      .from('partners')
-      .select('*')
-      .in('status', ['approved', 'active'])
-      .limit(4)
+    supabase.from('partners').select('*').in('status', ['approved', 'active']).limit(4)
       .then(({ data }) => setPartners((data as Partner[]) ?? []))
+    supabase.from('promotions').select('*').eq('status', 'approved').limit(1).maybeSingle()
+      .then(({ data }) => setPromo(data as Promotion | null))
   }, [])
 
   return (
@@ -27,34 +33,27 @@ export default function Landing() {
       {/* HERO */}
       <section id="inicio" className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_-10%,rgba(212,148,30,0.18),transparent_55%)]" />
-        <div className="max-w-6xl mx-auto px-5 pt-14 pb-20 grid lg:grid-cols-2 gap-12 items-center relative">
+        <div className="max-w-6xl mx-auto px-5 pt-14 pb-10 grid lg:grid-cols-2 gap-12 items-center relative">
           <div>
             <span className="pill bg-gold-400/15 text-gold-300 mb-5">Clube de benefícios</span>
             <h1 className="font-display text-4xl sm:text-5xl font-semibold leading-[1.1] mb-5">
-              Mais amigos, mais benefícios,<br className="hidden sm:block" /> mais motivos para <span className="text-gold-400">brindar.</span>
+              Mais amigos, mais benefícios,<br className="hidden sm:block" /> mais motivos para <span className="text-gold-400">brindar!</span>
             </h1>
             <p className="text-white/60 text-lg mb-8 max-w-md">
-              Descontos exclusivos, prêmios especiais e o Brinde do Mês para você aproveitar em uma comunidade nacional de consumo inteligente.
+              Descontos exclusivos, prêmios especiais e o Brinde do Mês para você aproveitar.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link to="/cadastro" className="btn-gold">
                 Quero assinar agora <ChevronRight size={17} />
               </Link>
-              <span className="text-xs text-white/40">Assinatura mensal via Pix · Cancele quando quiser</span>
             </div>
-            <div className="grid grid-cols-3 gap-4 mt-12 max-w-md">
-              {[{ icon: Gift, label: 'Descontos exclusivos em parceiros' }, { icon: Wine, label: 'Brinde do mês todo mês' }, { icon: Users2, label: 'Convide amigos e ganhe mais' }].map(({ icon: Icon, label }) => (
-                <div key={label} className="flex flex-col gap-2">
-                  <Icon size={20} className="text-gold-400" />
-                  <p className="text-xs text-white/50 leading-snug">{label}</p>
-                </div>
-              ))}
-            </div>
+            <p className="text-xs text-white/40 mt-3">Assinatura mensal via Pix · Cancele quando quiser</p>
           </div>
           <div className="relative">
             <div className="card !bg-ink-900/80 !border-ink-700 backdrop-blur p-8 relative">
-              <div className="w-full aspect-square max-w-xs mx-auto rounded-full bg-gold-gradient/10 border border-gold-400/20 flex items-center justify-center">
-                <Wine size={96} className="text-gold-400" strokeWidth={1.2} />
+              <div className="w-full aspect-square max-w-xs mx-auto rounded-full bg-gold-gradient/10 border border-gold-400/20 flex flex-col items-center justify-center gap-3">
+                <Wine size={72} className="text-gold-400" strokeWidth={1.2} />
+                <LogoMark size={40} />
               </div>
               <div className="absolute -bottom-6 -right-2 sm:right-6 card !bg-ink-950 !border-gold-400/30 px-5 py-4 shadow-gold">
                 <p className="text-[11px] text-white/40 mb-1">Saldo disponível</p>
@@ -64,44 +63,111 @@ export default function Landing() {
             </div>
           </div>
         </div>
-      </section>
 
-      {/* COMO FUNCIONA */}
-      <section id="como-funciona" className="max-w-6xl mx-auto px-5 py-16 border-t border-ink-800/60">
-        <h2 className="font-display text-2xl sm:text-3xl font-semibold mb-10">Como funciona</h2>
-        <div className="grid sm:grid-cols-4 gap-6">
+        {/* 3 destaques */}
+        <div className="max-w-6xl mx-auto px-5 pb-16 grid sm:grid-cols-3 gap-6 relative">
           {[
-            { n: '01', title: 'Cadastro', desc: 'Crie sua conta em poucos passos.' },
-            { n: '02', title: 'Assinatura', desc: 'Ative sua assinatura via Pix.' },
-            { n: '03', title: 'Pagamento Pix', desc: 'Confirmação imediata e segura.' },
-            { n: '04', title: 'Retirada', desc: 'Retire seu brinde e aproveite.' },
-          ].map((s) => (
-            <div key={s.n} className="card">
-              <p className="text-gold-400 font-display text-2xl font-semibold mb-2">{s.n}</p>
-              <p className="font-semibold mb-1">{s.title}</p>
-              <p className="text-sm text-white/50">{s.desc}</p>
+            { icon: Gift, title: 'Descontos exclusivos', desc: 'em parceiros selecionados' },
+            { icon: Wine, title: 'Brinde do mês', desc: 'todo mês para você' },
+            { icon: Users2, title: 'Convide amigos', desc: 'e ganhe mais benefícios' },
+          ].map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gold-400/10 flex items-center justify-center shrink-0">
+                <Icon size={19} className="text-gold-400" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">{title}</p>
+                <p className="text-xs text-white/50">{desc}</p>
+              </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* BRINDE DO MÊS */}
-      <section id="brinde" className="max-w-6xl mx-auto px-5 py-16 border-t border-ink-800/60 grid lg:grid-cols-2 gap-8">
-        <div className="card flex flex-col gap-4">
-          <span className="pill bg-gold-400/15 text-gold-300 w-fit">Exclusivo para assinantes</span>
-          <h3 className="font-display text-2xl font-semibold">Brinde do mês</h3>
-          <p className="text-white/60">Taça de Cerveja Premium Brinde Mais — retire no parceiro de sua escolha e ganhe um novo brinde a cada renovação.</p>
-          <Link to="/cadastro" className="btn-gold w-fit">Ver detalhes</Link>
+      {/* COMO FUNCIONA + BRINDE DO MÊS */}
+      <section id="como-funciona" className="max-w-6xl mx-auto px-5 py-16 border-t border-ink-800/60 grid lg:grid-cols-[1.4fr,1fr] gap-6">
+        <div className="card">
+          <h2 className="font-display text-xl font-semibold mb-6">Como funciona</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+            {STEPS.map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="flex flex-col items-center text-center gap-2">
+                <div className="w-12 h-12 rounded-full border border-gold-400/30 bg-gold-400/10 flex items-center justify-center">
+                  <Icon size={20} className="text-gold-400" />
+                </div>
+                <p className="text-sm font-semibold">{title}</p>
+                <p className="text-xs text-white/45 leading-snug">{desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <div id="beneficios" className="card">
-          <h3 className="font-display text-2xl font-semibold mb-4">Benefícios do clube</h3>
-          <ul className="space-y-3 text-sm text-white/70">
+
+        <div id="brinde" className="card flex flex-col">
+          <span className="pill bg-gold-400/15 text-gold-300 w-fit mb-3">Exclusivo para assinantes</span>
+          <h3 className="font-display text-lg font-semibold mb-1">Brinde do mês</h3>
+          <p className="text-sm text-white/50 mb-4 flex-1">Taça de Cerveja Premium Brinde Mais</p>
+          <div className="w-full aspect-video rounded-lg bg-gold-gradient/10 border border-gold-400/20 flex items-center justify-center mb-4">
+            <Wine size={44} className="text-gold-400" strokeWidth={1.3} />
+          </div>
+          <Link to="/cadastro" className="btn-gold w-full !py-2.5 text-sm">Ver detalhes</Link>
+          <div className="flex justify-center gap-1.5 mt-4">
+            {[0, 1, 2, 3].map((i) => (
+              <span key={i} className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-gold-400' : 'bg-white/15'}`} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* PARCEIROS / DESCONTOS / SEJA PARCEIRO */}
+      <section id="parceiros" className="max-w-6xl mx-auto px-5 py-16 border-t border-ink-800/60 grid lg:grid-cols-3 gap-6">
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold">Parceiros próximos</h2>
+            <Link to="/cadastro" className="text-xs text-gold-400 font-medium flex items-center gap-1">Ver todos <ChevronRight size={13} /></Link>
+          </div>
+          <p className="text-xs text-white/40 mb-4">Aproveite benefícios perto de você</p>
+          <div className="grid grid-cols-4 gap-3">
+            {(partners.length ? partners : Array.from({ length: 4 })).map((p, i) => (
+              <div key={p ? (p as Partner).id : i} className="text-center">
+                <div className="w-11 h-11 rounded-full bg-ink-800 mx-auto mb-1.5 flex items-center justify-center font-display text-xs font-semibold text-gold-400">
+                  {p ? (p as Partner).trade_name.slice(0, 2).toUpperCase() : '—'}
+                </div>
+                <p className="text-[11px] font-medium leading-tight truncate">{p ? (p as Partner).trade_name : 'Em breve'}</p>
+                <p className="text-[10px] text-gold-400/80">Até 15% OFF</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div id="beneficios" className="card !bg-gold-gradient !border-transparent text-ink-950 flex flex-col">
+          <p className="text-xs font-bold uppercase tracking-wide opacity-70 mb-1">Descontos exclusivos</p>
+          <h3 className="font-display text-lg font-semibold mb-2">
+            {promo ? promo.title : '10% OFF em cervejas selecionadas'}
+          </h3>
+          <p className="text-sm opacity-80 mb-4 flex-1">Ofertas especiais para assinantes Brinde Mais.</p>
+          <Link to="/cadastro" className="btn-dark !bg-ink-950 !text-white w-fit">Aproveitar</Link>
+        </div>
+
+        <div className="card flex flex-col">
+          <p className="text-xs font-bold uppercase tracking-wide text-gold-400 mb-1">Quero ser parceiro</p>
+          <h3 className="font-display text-lg font-semibold mb-2">Junte-se ao Brinde Mais</h3>
+          <p className="text-sm text-white/60 mb-4 flex-1">Aumente suas vendas e fidelize clientes.</p>
+          <a href={WHATSAPP_PARTNER_LINK} target="_blank" rel="noreferrer" className="btn-gold w-fit">Falar com um consultor</a>
+        </div>
+      </section>
+
+      {/* BENEFÍCIOS DO CLUBE */}
+      <section className="max-w-6xl mx-auto px-5 py-16 border-t border-ink-800/60">
+        <div className="card">
+          <div className="flex items-center gap-2 mb-4">
+            <Wallet size={18} className="text-gold-400" />
+            <h3 className="font-display text-lg font-semibold">Benefícios do clube</h3>
+          </div>
+          <ul className="grid sm:grid-cols-2 gap-3 text-sm text-white/70">
             {[
               'Um brinde mensal em parceiro à sua escolha',
               'Descontos exclusivos em estabelecimentos parceiros',
               'Cashback e bonificação por indicação em até 7 níveis',
               'Loja virtual exclusiva com preços especiais',
-              'Comunidade nacional de consumo e benefícios',
             ].map((b) => (
               <li key={b} className="flex gap-2.5">
                 <ShieldCheck size={16} className="text-gold-400 shrink-0 mt-0.5" />
@@ -109,41 +175,6 @@ export default function Landing() {
               </li>
             ))}
           </ul>
-        </div>
-      </section>
-
-      {/* PARCEIROS */}
-      <section id="parceiros" className="max-w-6xl mx-auto px-5 py-16 border-t border-ink-800/60">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="font-display text-2xl sm:text-3xl font-semibold">Parceiros próximos</h2>
-          <Link to="/cadastro" className="text-sm text-gold-400 font-medium flex items-center gap-1">Ver todos <ChevronRight size={15} /></Link>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {(partners.length ? partners : Array.from({ length: 4 })).map((p, i) => (
-            <div key={p ? (p as Partner).id : i} className="card text-center">
-              <div className="w-14 h-14 rounded-full bg-ink-800 mx-auto mb-3 flex items-center justify-center font-display font-semibold text-gold-400">
-                {p ? (p as Partner).trade_name.slice(0, 2).toUpperCase() : '—'}
-              </div>
-              <p className="font-medium text-sm">{p ? (p as Partner).trade_name : 'Em breve'}</p>
-              <p className="text-xs text-white/40">{p ? (p as Partner).neighborhood ?? (p as Partner).city : 'Rio de Janeiro'}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA PARCEIRO + FOOTER */}
-      <section className="max-w-6xl mx-auto px-5 py-16 border-t border-ink-800/60 grid lg:grid-cols-2 gap-6">
-        <div className="card !bg-gold-gradient !border-transparent text-ink-950">
-          <p className="text-xs font-bold uppercase tracking-wide opacity-70 mb-1">Descontos exclusivos</p>
-          <h3 className="font-display text-xl font-semibold mb-2">10% OFF em cervejas selecionadas</h3>
-          <p className="text-sm opacity-80 mb-4">Ofertas especiais renovadas todo mês, exclusivas para assinantes Brinde Mais.</p>
-          <Link to="/cadastro" className="btn-dark !bg-ink-950 !text-white w-fit">Aproveitar</Link>
-        </div>
-        <div className="card">
-          <p className="text-xs font-bold uppercase tracking-wide text-gold-400 mb-1">Quero ser parceiro</p>
-          <h3 className="font-display text-xl font-semibold mb-2">Junte-se ao Brinde Mais</h3>
-          <p className="text-sm text-white/60 mb-4">Aumente suas vendas, fidelize clientes e destaque sua marca para milhares de assinantes.</p>
-          <a href={WHATSAPP_PARTNER_LINK} target="_blank" rel="noreferrer" className="btn-gold w-fit">Falar com um consultor</a>
         </div>
       </section>
 
