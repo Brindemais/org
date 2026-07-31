@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Package, History } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatDateTime } from '../../lib/format'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 interface StockRow { id: string; quantity: number; product: { id: string; name: string } }
 
@@ -79,7 +81,7 @@ export default function PartnerStock() {
                 </td>
               </tr>
             ))}
-            {!stock.length && <tr><td colSpan={4} className="py-8 text-center text-white/40">Nenhum brinde recebido da matriz ainda.</td></tr>}
+            {!stock.length && <tr><td colSpan={4}><EmptyState dark icon={Package} title="Nenhum brinde recebido da matriz ainda" className="py-8" /></td></tr>}
           </tbody>
         </table>
       </div>
@@ -103,7 +105,7 @@ export default function PartnerStock() {
                   <td className="py-2">{m.new_balance}</td>
                 </tr>
               ))}
-              {!movements.length && <tr><td colSpan={5} className="py-6 text-center text-white/40">Sem movimentações.</td></tr>}
+              {!movements.length && <tr><td colSpan={5}><EmptyState dark icon={History} title="Sem movimentações" className="py-6" /></td></tr>}
             </tbody>
           </table>
         </div>

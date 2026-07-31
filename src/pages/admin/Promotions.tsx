@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Percent } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Promotion, PromotionStatus } from '../../lib/types'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { formatDate } from '../../lib/format'
 
 export default function AdminPromotions() {
@@ -46,7 +48,7 @@ export default function AdminPromotions() {
             </div>
           </div>
         ))}
-        {!promotions.length && <p className="text-sm text-white/40 text-center py-8">Nenhuma promoção cadastrada.</p>}
+        {!promotions.length && <EmptyState dark icon={Percent} title="Nenhuma promoção cadastrada" />}
       </div>
     </div>
   )

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { History } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatDateTime } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 export default function PartnerHistory() {
   const { partner } = useAuth()
@@ -36,7 +38,7 @@ export default function PartnerHistory() {
                 <td className="py-3 text-white/50">{p.confirmed_at ? formatDateTime(p.confirmed_at) : '-'}</td>
               </tr>
             ))}
-            {!pickups.length && <tr><td colSpan={4} className="py-8 text-center text-white/40">Nenhum registro ainda.</td></tr>}
+            {!pickups.length && <tr><td colSpan={4}><EmptyState dark icon={History} title="Nenhum registro ainda" className="py-8" /></td></tr>}
           </tbody>
         </table>
       </div>

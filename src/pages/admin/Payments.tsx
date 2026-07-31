@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Download } from 'lucide-react'
+import { Download, Receipt } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatBRL, formatDateTime } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { downloadCSV } from '../../lib/csv'
 
 export default function AdminPayments() {
@@ -80,7 +81,7 @@ export default function AdminPayments() {
                 </td>
               </tr>
             ))}
-            {!payments.length && <tr><td colSpan={6} className="py-8 text-center text-white/40">Nenhum pagamento encontrado.</td></tr>}
+            {!payments.length && <tr><td colSpan={6}><EmptyState dark icon={Receipt} title="Nenhum pagamento encontrado" className="py-8" /></td></tr>}
           </tbody>
         </table>
       </div>

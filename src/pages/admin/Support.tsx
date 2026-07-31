@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { Headset, MessageSquare } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { formatDateTime } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 export default function AdminSupport() {
   const { profile } = useAuth()
@@ -54,7 +56,7 @@ export default function AdminSupport() {
               <p className="text-xs text-white/40">{t.user?.full_name}</p>
             </button>
           ))}
-          {!tickets.length && <p className="text-sm text-white/40 text-center py-8">Nenhum chamado.</p>}
+          {!tickets.length && <EmptyState dark icon={Headset} title="Nenhum chamado" className="py-8" />}
         </div>
       </div>
 
@@ -76,7 +78,7 @@ export default function AdminSupport() {
                   <p className="text-xs text-white/30 mt-1">{formatDateTime(m.created_at)}</p>
                 </div>
               ))}
-              {!messages.length && <p className="text-sm text-white/40">Sem respostas ainda.</p>}
+              {!messages.length && <EmptyState dark icon={MessageSquare} title="Sem respostas ainda" className="py-6" />}
             </div>
             <div className="flex gap-2">
               <input className="input flex-1" placeholder="Responder..." value={reply} onChange={(e) => setReply(e.target.value)} />
@@ -84,7 +86,9 @@ export default function AdminSupport() {
             </div>
           </div>
         ) : (
-          <div className="card h-full flex items-center justify-center text-white/40 text-sm">Selecione um chamado para responder.</div>
+          <div className="card h-full flex items-center justify-center">
+            <EmptyState dark icon={MessageSquare} title="Selecione um chamado" description="Escolha um chamado na lista para ver a conversa e responder." />
+          </div>
         )}
       </div>
     </div>

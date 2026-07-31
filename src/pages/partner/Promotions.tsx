@@ -1,8 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Percent } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import type { Promotion } from '../../lib/types'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { formatDate } from '../../lib/format'
 
 export default function PartnerPromotions() {
@@ -77,7 +79,7 @@ export default function PartnerPromotions() {
             <StatusBadge status={p.status} />
           </div>
         ))}
-        {!promotions.length && <p className="text-sm text-white/40 text-center py-8">Nenhuma promoção cadastrada.</p>}
+        {!promotions.length && <EmptyState dark icon={Percent} title="Nenhuma promoção cadastrada" description="Envie a primeira promoção no formulário acima." />}
       </div>
     </div>
   )

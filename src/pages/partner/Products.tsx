@@ -1,10 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Gift } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import type { ProductRow } from '../../lib/types'
 import { formatBRL } from '../../lib/format'
 import { ImageUpload } from '../../components/ui/ImageUpload'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 export default function PartnerProducts() {
   const { partner } = useAuth()
@@ -85,7 +87,11 @@ export default function PartnerProducts() {
             </div>
           </div>
         ))}
-        {!products.length && <p className="text-sm text-white/40 col-span-full text-center py-8">Nenhum brinde cadastrado ainda.</p>}
+        {!products.length && (
+          <div className="col-span-full">
+            <EmptyState dark icon={Gift} title="Nenhum brinde cadastrado ainda" description="Cadastre o primeiro brinde no formulário acima." />
+          </div>
+        )}
       </div>
     </div>
   )

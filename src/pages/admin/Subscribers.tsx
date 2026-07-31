@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Download } from 'lucide-react'
+import { Download, Users } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatBRL, formatDate, maskCPF } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { LoadingState } from '../../components/ui/LoadingState'
 import { downloadCSV } from '../../lib/csv'
 
 interface Row { id: string; full_name: string; cpf: string | null; email: string | null; created_at: string; sub_status: string | null; balance: number; active: boolean }
@@ -89,7 +91,8 @@ export default function AdminSubscribers() {
                 </td>
               </tr>
             ))}
-            {!loading && !filtered.length && <tr><td colSpan={8} className="py-8 text-center text-white/40">Nenhum assinante encontrado.</td></tr>}
+            {loading && <tr><td colSpan={8}><LoadingState dark label="Carregando assinantes..." className="py-8" /></td></tr>}
+            {!loading && !filtered.length && <tr><td colSpan={8}><EmptyState dark icon={Users} title="Nenhum assinante encontrado" className="py-8" /></td></tr>}
           </tbody>
         </table>
       </div>

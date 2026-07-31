@@ -1,9 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Send } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatDateTime } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { ImageUpload } from '../../components/ui/ImageUpload'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 export default function PartnerProfile() {
   const { partner } = useAuth()
@@ -91,7 +93,7 @@ export default function PartnerProfile() {
               <StatusBadge status={r.status} />
             </div>
           ))}
-          {!requests.length && <p className="text-sm text-white/40 text-center py-6">Nenhuma solicitação enviada.</p>}
+          {!requests.length && <EmptyState dark icon={Send} title="Nenhuma solicitação enviada" className="py-6" />}
         </div>
       </div>
     </div>

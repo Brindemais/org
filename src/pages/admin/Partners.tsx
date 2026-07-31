@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Download } from 'lucide-react'
+import { Download, Store } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, PartnerStatus } from '../../lib/types'
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { downloadCSV } from '../../lib/csv'
 
 const STATUS_FLOW: PartnerStatus[] = ['interested', 'pending_docs', 'analyzing', 'approved', 'active', 'suspended', 'rejected', 'closed']
@@ -143,7 +144,7 @@ export default function AdminPartners() {
             {linking === p.id && linkMsg && <p className="text-xs text-white/50 mt-2">{linkMsg}</p>}
           </div>
         ))}
-        {!partners.length && <p className="text-sm text-white/40 text-center py-8">Nenhum parceiro cadastrado ainda.</p>}
+        {!partners.length && <EmptyState dark icon={Store} title="Nenhum parceiro cadastrado ainda" />}
       </div>
     </div>
   )

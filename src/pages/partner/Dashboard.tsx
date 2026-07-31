@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Box, Package, Percent, ShoppingBag } from 'lucide-react'
+import { Box, Package, Percent, PackageCheck, ShoppingBag, History } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { StatCard } from '../../components/ui/StatCard'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { formatDateTime } from '../../lib/format'
 
 interface PickupRow { pickup_id: string; status: string; code: string; subscriber_name: string; created_at: string }
@@ -72,7 +73,7 @@ export default function PartnerDashboard() {
                 <StatusBadge status={p.status} />
               </div>
             ))}
-            {!pending.length && <p className="text-sm text-white/40 py-4 text-center">Nenhuma retirada pendente.</p>}
+            {!pending.length && <EmptyState dark icon={PackageCheck} title="Nenhuma retirada pendente" className="py-6" />}
           </div>
         </div>
 
@@ -90,7 +91,7 @@ export default function PartnerDashboard() {
                 </span>
               </div>
             ))}
-            {!stock.length && <p className="text-sm text-white/40 py-4 text-center">Nenhum brinde em estoque.</p>}
+            {!stock.length && <EmptyState dark icon={Package} title="Nenhum brinde em estoque" className="py-6" />}
           </div>
         </div>
       </div>
@@ -114,7 +115,7 @@ export default function PartnerDashboard() {
                 </tr>
               ))}
               {!movements.length && (
-                <tr><td colSpan={4} className="py-6 text-center text-white/40">Nenhuma movimentação registrada.</td></tr>
+                <tr><td colSpan={4}><EmptyState dark icon={History} title="Nenhuma movimentação registrada" className="py-6" /></td></tr>
               )}
             </tbody>
           </table>

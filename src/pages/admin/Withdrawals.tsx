@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Landmark } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatBRL, formatDateTime } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
 import type { WithdrawalStatus } from '../../lib/types'
 
 export default function AdminWithdrawals() {
@@ -56,7 +58,7 @@ export default function AdminWithdrawals() {
                 </td>
               </tr>
             ))}
-            {!rows.length && <tr><td colSpan={6} className="py-8 text-center text-white/40">Nenhuma solicitação de saque.</td></tr>}
+            {!rows.length && <tr><td colSpan={6}><EmptyState dark icon={Landmark} title="Nenhuma solicitação de saque" className="py-8" /></td></tr>}
           </tbody>
         </table>
       </div>

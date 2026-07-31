@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { PackageCheck, Box } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, ProductRow } from '../../lib/types'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 export default function AdminStock() {
   const [products, setProducts] = useState<ProductRow[]>([])
@@ -95,7 +97,7 @@ export default function AdminStock() {
               </div>
             </div>
           ))}
-          {!pendingProducts.length && <p className="text-sm text-white/40 text-center py-4">Nenhum item pendente de aprovação.</p>}
+          {!pendingProducts.length && <EmptyState dark icon={PackageCheck} title="Nenhum item pendente de aprovação" className="py-4" />}
         </div>
       </div>
 
@@ -107,7 +109,7 @@ export default function AdminStock() {
             {products.map((p) => (
               <tr key={p.id} className="border-t border-ink-800"><td className="py-2">{p.name}</td><td className="py-2 font-semibold">{matrixStock[p.id] ?? 0}</td></tr>
             ))}
-            {!products.length && <tr><td colSpan={2} className="py-6 text-center text-white/40">Nenhum produto de matriz cadastrado.</td></tr>}
+            {!products.length && <tr><td colSpan={2}><EmptyState dark icon={Box} title="Nenhum produto de matriz cadastrado" className="py-6" /></td></tr>}
           </tbody>
         </table>
       </div>

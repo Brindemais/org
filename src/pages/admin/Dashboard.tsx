@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
-import { Users, Wallet, Store, Landmark } from 'lucide-react'
+import { Users, Wallet, Store, Landmark, Receipt, Headset } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { StatCard } from '../../components/ui/StatCard'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { formatBRL, formatDateTime } from '../../lib/format'
 
 export default function AdminDashboard() {
@@ -136,7 +137,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
             ))}
-            {!recentPayments.length && <p className="text-sm text-white/40 text-center py-6">Nenhum pagamento registrado.</p>}
+            {!recentPayments.length && <EmptyState dark icon={Receipt} title="Nenhum pagamento registrado" className="py-6" />}
           </div>
         </div>
 
@@ -152,7 +153,7 @@ export default function AdminDashboard() {
                 <StatusBadge status={t.status} />
               </div>
             ))}
-            {!tickets.length && <p className="text-sm text-white/40 text-center py-6">Nenhum chamado aberto.</p>}
+            {!tickets.length && <EmptyState dark icon={Headset} title="Nenhum chamado aberto" className="py-6" />}
           </div>
         </div>
       </div>

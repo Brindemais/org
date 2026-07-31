@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { PackageCheck, History } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatDateTime } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 interface PickupRow {
   pickup_id: string; partner_id: string; status: string; code: string; product_id: string | null
@@ -151,7 +153,9 @@ export default function PartnerPickups() {
             {errors[p.pickup_id] && <p className="text-xs text-red-400 mt-2">{errors[p.pickup_id]}</p>}
           </div>
         ))}
-        {!ready.length && <p className="card text-sm text-white/40 text-center py-8">Nenhuma retirada pendente no momento.</p>}
+        {!ready.length && (
+          <div className="card"><EmptyState dark icon={PackageCheck} title="Nenhuma retirada pendente" description="Novas reservas de assinantes aparecem aqui." /></div>
+        )}
       </div>
 
       <div>
@@ -172,7 +176,7 @@ export default function PartnerPickups() {
                   <td className="py-3 text-white/50">{formatDateTime(p.created_at)}</td>
                 </tr>
               ))}
-              {!others.length && <tr><td colSpan={4} className="py-6 text-center text-white/40">Sem histórico ainda.</td></tr>}
+              {!others.length && <tr><td colSpan={4}><EmptyState dark icon={History} title="Sem histórico ainda" className="py-6" /></td></tr>}
             </tbody>
           </table>
         </div>
