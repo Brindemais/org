@@ -149,7 +149,8 @@ export default function Signup() {
             </div>
             <label className="flex items-start gap-2.5 text-xs text-black/60">
               <input type="checkbox" className="mt-0.5" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
-              Li e aceito os <span className="text-gold-600">Termos e Condições</span> e a Política de Privacidade.
+              Li e aceito os <Link to="/termos" target="_blank" className="text-gold-600 underline">Termos e Condições</Link> e a{' '}
+              <Link to="/privacidade" target="_blank" className="text-gold-600 underline">Política de Privacidade</Link>.
             </label>
             {error && <p className="text-sm text-red-500">{error}</p>}
             <button type="submit" disabled={loading} className="btn-gold w-full">{loading ? 'Enviando...' : 'Continuar'}</button>

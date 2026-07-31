@@ -193,7 +193,8 @@ export default function Landing() {
               <li>Sobre o Brinde Mais</li>
               <li>Como funciona</li>
               <li>Perguntas frequentes</li>
-              <li>Termos e condições</li>
+              <li><Link to="/termos" className="hover:text-gold-400">Termos e condições</Link></li>
+              <li><Link to="/privacidade" className="hover:text-gold-400">Política de privacidade</Link></li>
             </ul>
           </div>
           <div>

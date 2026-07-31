@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { LogOut, ShieldCheck, Trash2, UserPlus } from 'lucide-react'
+import { Download, LogOut, ShieldCheck, Trash2, UserPlus } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import type { AuthorizedPerson } from '../../lib/types'
@@ -15,6 +16,9 @@ export default function SubscriberProfile() {
   const [authorized, setAuthorized] = useState<AuthorizedPerson[]>([])
   const [newAuth, setNewAuth] = useState({ full_name: '', cpf: '', phone: '', relationship: '' })
   const [confirmCancel, setConfirmCancel] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteRequested, setDeleteRequested] = useState(false)
 
   useEffect(() => {
     if (profile) {
@@ -50,6 +54,32 @@ export default function SubscriberProfile() {
   async function removeAuthorized(id: string) {
     await supabase.from('authorized_persons').update({ active: false }).eq('id', id)
     setAuthorized((prev) => prev.filter((a) => a.id !== id))
+  }
+
+  async function downloadMyData() {
+    if (!profile) return
+    setDownloading(true)
+    const { data } = await supabase.rpc('get_my_data')
+    setDownloading(false)
+    if (!data) return
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `brinde-mais-meus-dados-${profile.id.slice(0, 8)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  async function requestAccountDeletion() {
+    if (!profile) return
+    await supabase.from('support_tickets').insert({
+      user_id: profile.id,
+      category: 'LGPD',
+      subject: 'Solicitação de exclusão de conta e dados pessoais (LGPD). Por favor, processe a exclusão respeitando as obrigações legais de retenção de dados financeiros.',
+    })
+    setConfirmDelete(false)
+    setDeleteRequested(true)
   }
 
   async function cancelSubscription() {
@@ -130,9 +160,36 @@ export default function SubscriberProfile() {
         </form>
       </div>
 
-      <div className="card flex items-center gap-3">
-        <ShieldCheck size={18} className="text-gold-400 shrink-0" />
-        <p className="text-xs text-white/50">Termos de Uso e Política de Privacidade regem o uso da plataforma Brinde Mais. Seus dados são protegidos conforme a LGPD.</p>
+      <div className="card space-y-3">
+        <p className="font-semibold text-sm flex items-center gap-2"><ShieldCheck size={15} className="text-gold-400" /> Privacidade e dados (LGPD)</p>
+        <p className="text-xs text-white/50">
+          Seus dados são protegidos conforme a Lei Geral de Proteção de Dados. Leia os{' '}
+          <Link to="/termos" target="_blank" className="text-gold-400 underline">Termos de Uso</Link> e a{' '}
+          <Link to="/privacidade" target="_blank" className="text-gold-400 underline">Política de Privacidade</Link>.
+        </p>
+        <button onClick={downloadMyData} disabled={downloading} className="btn-dark w-full !py-2.5 text-sm gap-2">
+          <Download size={14} /> {downloading ? 'Gerando arquivo...' : 'Baixar meus dados'}
+        </button>
+        {!confirmDelete && !deleteRequested && (
+          <button onClick={() => setConfirmDelete(true)} className="text-xs text-red-400 font-medium">Solicitar exclusão da minha conta</button>
+        )}
+        {confirmDelete && (
+          <div className="space-y-2 pt-1">
+            <p className="text-xs text-white/50">
+              Vamos abrir uma solicitação para a equipe Brinde Mais processar a exclusão da sua conta e dados pessoais,
+              respeitando obrigações legais de retenção de histórico financeiro. Deseja continuar?
+            </p>
+            <div className="flex gap-2">
+              <button onClick={requestAccountDeletion} className="btn-dark flex-1 !py-2 text-xs !border-red-500/40 text-red-400">Confirmar solicitação</button>
+              <button onClick={() => setConfirmDelete(false)} className="btn-ghost flex-1 !py-2 text-xs">Voltar</button>
+            </div>
+          </div>
+        )}
+        {deleteRequested && (
+          <p className="text-xs bg-gold-400/10 text-gold-300 rounded-lg px-3 py-2">
+            Solicitação enviada! Nossa equipe entrará em contato pelo canal de Suporte.
+          </p>
+        )}
       </div>
 
       {subscription?.status === 'active' && (

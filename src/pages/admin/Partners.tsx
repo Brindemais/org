@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Download } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, PartnerStatus } from '../../lib/types'
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { StatusBadge } from '../../components/ui/StatusBadge'
-import { formatDateTime } from '../../lib/format'
+import { downloadCSV } from '../../lib/csv'
 
 const STATUS_FLOW: PartnerStatus[] = ['interested', 'pending_docs', 'analyzing', 'approved', 'active', 'suspended', 'rejected', 'closed']
 
@@ -49,6 +50,17 @@ export default function AdminPartners() {
     setLinkEmail('')
   }
 
+  function exportCSV() {
+    downloadCSV(
+      `parceiros-brinde-mais-${new Date().toISOString().slice(0, 10)}.csv`,
+      partners.map((p) => ({
+        nome_fantasia: p.trade_name, razao_social: p.company_name, categoria: p.category,
+        status: p.status, whatsapp: p.whatsapp ?? '', bairro: p.neighborhood ?? '', cidade: p.city ?? '',
+        cadastrado_em: p.created_at,
+      })),
+    )
+  }
+
   async function reviewRequest(req: any, approve: boolean) {
     if (approve) {
       await supabase.from('partners').update(req.changes).eq('id', req.partner_id)
@@ -59,9 +71,12 @@ export default function AdminPartners() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-semibold">Parceiros</h1>
-        <p className="text-white/50 text-sm">Credenciamento e gestão dos parceiros comerciais.</p>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-semibold">Parceiros</h1>
+          <p className="text-white/50 text-sm">Credenciamento e gestão dos parceiros comerciais.</p>
+        </div>
+        <button onClick={exportCSV} className="btn-dark !px-3 !py-2 text-xs gap-1.5 shrink-0"><Download size={14} /> Exportar CSV</button>
       </div>
 
       {requests.length > 0 && (

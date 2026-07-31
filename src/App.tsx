@@ -8,6 +8,10 @@ import Landing from './pages/public/Landing'
 import Login from './pages/public/Login'
 import Signup from './pages/public/Signup'
 import NotFound from './pages/public/NotFound'
+import ForgotPassword from './pages/public/ForgotPassword'
+import ResetPassword from './pages/public/ResetPassword'
+import Terms from './pages/public/Terms'
+import Privacy from './pages/public/Privacy'
 
 import SubscriberHome from './pages/subscriber/Home'
 import SubscriberBenefits from './pages/subscriber/Benefits'
@@ -16,6 +20,7 @@ import SubscriberWallet from './pages/subscriber/Wallet'
 import SubscriberWithdraw from './pages/subscriber/Withdraw'
 import SubscriberReferrals from './pages/subscriber/Referrals'
 import SubscriberStore from './pages/subscriber/Store'
+import SubscriberStoreOrders from './pages/subscriber/StoreOrders'
 import SubscriberPartners from './pages/subscriber/Partners'
 import SubscriberNotifications from './pages/subscriber/Notifications'
 import SubscriberSupport from './pages/subscriber/Support'
@@ -45,6 +50,10 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/entrar" element={<Login />} />
       <Route path="/cadastro" element={<Signup />} />
+      <Route path="/esqueci-senha" element={<ForgotPassword />} />
+      <Route path="/redefinir-senha" element={<ResetPassword />} />
+      <Route path="/termos" element={<Terms />} />
+      <Route path="/privacidade" element={<Privacy />} />
 
       <Route
         path="/app"
@@ -62,6 +71,7 @@ export default function App() {
         <Route path="carteira/saque" element={<SubscriberWithdraw />} />
         <Route path="indique" element={<SubscriberReferrals />} />
         <Route path="loja" element={<SubscriberStore />} />
+        <Route path="loja/pedidos" element={<SubscriberStoreOrders />} />
         <Route path="parceiros" element={<SubscriberPartners />} />
         <Route path="notificacoes" element={<SubscriberNotifications />} />
         <Route path="suporte" element={<SubscriberSupport />} />

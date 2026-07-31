@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Download } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatBRL, formatDateTime } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { downloadCSV } from '../../lib/csv'
 
 export default function AdminPayments() {
   const [payments, setPayments] = useState<any[]>([])
@@ -24,6 +26,17 @@ export default function AdminPayments() {
     load()
   }
 
+  function exportCSV() {
+    downloadCSV(
+      `pagamentos-brinde-mais-${new Date().toISOString().slice(0, 10)}.csv`,
+      payments.map((p) => ({
+        assinante: p.subscriber?.full_name ?? '', referencia: p.external_reference,
+        tipo: p.type === 'subscription' ? 'assinatura' : 'loja', valor: Number(p.amount).toFixed(2),
+        status: p.status, criado_em: p.created_at, confirmado_em: p.confirmed_at ?? '',
+      })),
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -34,6 +47,7 @@ export default function AdminPayments() {
         <div className="flex gap-2">
           <button onClick={() => setFilter('pending')} className={`pill ${filter === 'pending' ? 'bg-gold-400/15 text-gold-300' : 'bg-ink-900 text-white/50'}`}>Pendentes</button>
           <button onClick={() => setFilter('all')} className={`pill ${filter === 'all' ? 'bg-gold-400/15 text-gold-300' : 'bg-ink-900 text-white/50'}`}>Todos</button>
+          <button onClick={exportCSV} className="btn-dark !px-3 !py-2 text-xs gap-1.5 shrink-0"><Download size={14} /> Exportar CSV</button>
         </div>
       </div>
 
