@@ -107,8 +107,10 @@ export default function SubscriberBenefits() {
         <div className="space-y-3">
           {sortedPartners.map(({ partner: p, distanceKm }) => (
             <div key={p.id} className="card flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-ink-800 flex items-center justify-center font-display text-gold-400 font-semibold shrink-0 overflow-hidden">
-                {p.logo_url ? <img src={p.logo_url} alt="" className="w-full h-full object-cover" /> : p.trade_name.slice(0, 2).toUpperCase()}
+              <div className="w-12 h-12 rounded-full bg-gold-gradient p-[1.5px] shrink-0">
+                <div className="w-full h-full rounded-full bg-ink-800 flex items-center justify-center font-display text-gold-400 font-semibold overflow-hidden">
+                  {p.logo_url ? <img src={p.logo_url} alt="" className="w-full h-full object-cover" /> : p.trade_name.slice(0, 2).toUpperCase()}
+                </div>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm truncate">{p.trade_name}</p>

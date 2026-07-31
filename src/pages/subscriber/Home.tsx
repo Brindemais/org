@@ -92,8 +92,10 @@ export default function SubscriberHome() {
         <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4">
           {(partners.length ? partners : []).map((p) => (
             <div key={p.id} className="shrink-0 w-24 text-center">
-              <div className="w-16 h-16 rounded-full bg-ink-800 mx-auto mb-2 flex items-center justify-center font-display text-gold-400 font-semibold border border-ink-700">
-                {p.trade_name.slice(0, 2).toUpperCase()}
+              <div className="w-16 h-16 rounded-full bg-gold-gradient p-[1.5px] mx-auto mb-2">
+                <div className="w-full h-full rounded-full bg-ink-800 flex items-center justify-center font-display text-gold-400 font-semibold overflow-hidden">
+                  {p.logo_url ? <img src={p.logo_url} alt="" className="w-full h-full object-cover" /> : p.trade_name.slice(0, 2).toUpperCase()}
+                </div>
               </div>
               <p className="text-xs font-medium truncate">{p.trade_name}</p>
             </div>

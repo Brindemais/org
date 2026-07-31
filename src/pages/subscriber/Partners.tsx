@@ -73,8 +73,10 @@ export default function SubscriberPartners() {
         {filtered.map(({ partner: p, distanceKm }) => (
           <div key={p.id} className="card">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-full bg-ink-800 flex items-center justify-center font-display text-gold-400 font-semibold shrink-0 overflow-hidden">
-                {p.logo_url ? <img src={p.logo_url} alt="" className="w-full h-full object-cover" /> : p.trade_name.slice(0, 2).toUpperCase()}
+              <div className="w-12 h-12 rounded-full bg-gold-gradient p-[1.5px] shrink-0">
+                <div className="w-full h-full rounded-full bg-ink-800 flex items-center justify-center font-display text-gold-400 font-semibold overflow-hidden">
+                  {p.logo_url ? <img src={p.logo_url} alt="" className="w-full h-full object-cover" /> : p.trade_name.slice(0, 2).toUpperCase()}
+                </div>
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-sm truncate">{p.trade_name}</p>

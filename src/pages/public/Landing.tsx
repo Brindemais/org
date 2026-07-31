@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { Wine, Gift, Users2, UserPlus, ShieldCheck, Wallet, PackageCheck, Instagram, Facebook, ChevronRight } from 'lucide-react'
+import { Wine, Gift, Users2, UserPlus, ShieldCheck, Wallet, PackageCheck, Instagram, Facebook, ChevronRight, Eye } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, Promotion } from '../../lib/types'
 import { PublicHeader } from './PublicHeader'
-import { Logo } from '../../components/layout/Logo'
+import { Logo, LogoMark } from '../../components/layout/Logo'
 import { BeerGlassArt, BeerBottleArt } from '../../components/layout/Illustrations'
 
 const WHATSAPP_PARTNER_LINK = 'https://wa.me/5521999999999?text=Quero%20ser%20parceiro%20Brinde%20Mais'
@@ -55,10 +55,16 @@ export default function Landing() {
               <div className="flex items-center justify-center">
                 <BeerGlassArt width={190} />
               </div>
-              <div className="absolute -bottom-6 -right-2 sm:right-6 card-light !bg-ink-950 px-5 py-4 shadow-gold">
-                <p className="text-[11px] text-white/40 mb-1">Saldo disponível</p>
-                <p className="text-xl font-bold text-gold-300">R$ 245,60</p>
-                <Link to="/entrar" className="text-xs text-gold-400 font-medium">Ver carteira →</Link>
+              <div className="absolute -bottom-6 -right-2 sm:right-6 card-light !bg-ink-950 px-5 py-4 shadow-gold min-w-[168px]">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-[11px] text-white/40">Saldo disponível</p>
+                  <Eye size={12} className="text-white/30" />
+                </div>
+                <p className="text-xl font-bold text-gold-300 mb-1.5">R$ 245,60</p>
+                <div className="flex items-center justify-between">
+                  <Link to="/entrar" className="text-xs text-gold-400 font-medium">Ver carteira →</Link>
+                  <LogoMark size={20} />
+                </div>
               </div>
             </div>
           </div>
@@ -128,8 +134,16 @@ export default function Landing() {
           <div className="grid grid-cols-4 gap-3">
             {(partners.length ? partners : Array.from({ length: 4 })).map((p, i) => (
               <div key={p ? (p as Partner).id : i} className="text-center">
-                <div className="w-11 h-11 rounded-full bg-ink-950 border border-gold-400/40 mx-auto mb-1.5 flex items-center justify-center font-display text-xs font-semibold text-gold-400">
-                  {p ? (p as Partner).trade_name.slice(0, 2).toUpperCase() : '—'}
+                <div className="w-12 h-12 rounded-full bg-gold-gradient p-[1.5px] mx-auto mb-1.5 shadow-sm">
+                  <div className="w-full h-full rounded-full bg-ink-950 flex items-center justify-center font-display text-xs font-semibold text-gold-300 overflow-hidden">
+                    {p && (p as Partner).logo_url ? (
+                      <img src={(p as Partner).logo_url!} alt="" className="w-full h-full object-cover" />
+                    ) : p ? (
+                      (p as Partner).trade_name.slice(0, 2).toUpperCase()
+                    ) : (
+                      '—'
+                    )}
+                  </div>
                 </div>
                 <p className="text-[11px] font-medium leading-tight truncate text-ink-950">{p ? (p as Partner).trade_name : 'Em breve'}</p>
                 <p className="text-[10px] text-gold-600">Até 15% OFF</p>

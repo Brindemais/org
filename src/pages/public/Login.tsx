@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { Logo } from '../../components/layout/Logo'
+import { LogoBadge } from '../../components/layout/Logo'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -29,7 +29,7 @@ export default function Login() {
   return (
     <div className="min-h-dvh flex items-center justify-center bg-white px-5 py-10">
       <div className="w-full max-w-sm">
-        <Link to="/" className="flex justify-center mb-8"><Logo dark /></Link>
+        <Link to="/" className="flex justify-center mb-6"><LogoBadge size={130} /></Link>
         <div className="card-light">
           <h1 className="font-display text-xl font-semibold mb-1 text-ink-950">Bem-vindo de volta</h1>
           <p className="text-sm text-black/50 mb-6">Entre na sua conta Brinde Mais.</p>

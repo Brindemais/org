@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Check, Copy, Gift, ShieldCheck, User, Wallet } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import { Logo } from '../../components/layout/Logo'
+import { LogoBadge } from '../../components/layout/Logo'
 import { isValidCPF, maskCPF, maskPhone } from '../../lib/format'
 
 type Step = 1 | 2 | 3
@@ -94,7 +94,7 @@ export default function Signup() {
   return (
     <div className="min-h-dvh bg-white px-5 py-8">
       <div className="max-w-md mx-auto">
-        <Link to="/" className="flex justify-center mb-6"><Logo dark /></Link>
+        <Link to="/" className="flex justify-center mb-5"><LogoBadge size={110} /></Link>
 
         <div className="flex items-center justify-between mb-8">
           {STEPS.map((s, i) => (
