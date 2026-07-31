@@ -163,14 +163,15 @@ export default function Landing() {
           </div>
 
           <div className="relative mt-4 lg:mt-0">
-            <div className="card-light !bg-[#faf8f3] p-8 relative overflow-visible">
-              <div className="flex items-center justify-center">
-                <BeerGlassArt width={190} />
-              </div>
-              <div className="absolute -bottom-6 -right-2 sm:right-6">
-                <WalletCard balance={245.6} variant="compact" onViewWallet={goToSignup} />
-              </div>
-            </div>
+            <img
+              src="/images/hero-glass-wallet.webp"
+              alt="Taça de cerveja Brinde Mais sobre base dourada, ao lado de um cartão com o saldo disponível"
+              width={1100}
+              height={733}
+              loading="eager"
+              decoding="async"
+              className="w-full rounded-xl2 shadow-lg"
+            />
           </div>
         </ResponsiveContainer>
       </section>
@@ -372,7 +373,8 @@ export default function Landing() {
           </div>
           <div className="flex justify-center">
             <ImagePlaceholder
-              alt="Composição de presente Brinde Mais — caixa preta com laço dourado"
+              src="/images/gift-box.webp"
+              alt="Composição de presente Brinde Mais — caneca dourada e caixa preta com laço dourado"
               icon={Gift}
               aspect="aspect-square"
               className="w-full max-w-xs"
@@ -452,7 +454,8 @@ export default function Landing() {
             </a>
           </div>
           <ImagePlaceholder
-            alt="Estabelecimento parceiro entregando um brinde a um assinante Brinde Mais"
+            src="/images/tumbler-app.webp"
+            alt="Copo térmico Brinde Mais ao lado do app com o resumo de benefícios do assinante"
             icon={Users2}
             aspect="aspect-[4/3]"
             className="w-full"
