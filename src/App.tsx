@@ -10,6 +10,7 @@ import { LoadingState } from './components/ui/LoadingState'
 import Landing from './pages/public/Landing'
 import Login from './pages/public/Login'
 import Signup from './pages/public/Signup'
+import PartnerSignup from './pages/public/PartnerSignup'
 import NotFound from './pages/public/NotFound'
 import ForgotPassword from './pages/public/ForgotPassword'
 import ResetPassword from './pages/public/ResetPassword'
@@ -64,6 +65,7 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/entrar" element={<Login />} />
         <Route path="/cadastro" element={<Signup />} />
+        <Route path="/seja-parceiro" element={<PartnerSignup />} />
         <Route path="/esqueci-senha" element={<ForgotPassword />} />
         <Route path="/redefinir-senha" element={<ResetPassword />} />
         <Route path="/termos" element={<Terms />} />
