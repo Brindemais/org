@@ -1,12 +1,15 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import { Home, Gift, Wallet, Users, User } from 'lucide-react'
+import { Outlet } from 'react-router-dom'
+import { Home, Gift, Wallet, MapPin, User } from 'lucide-react'
 import { TopBar } from './TopBar'
+import { BottomNavigation, type BottomNavItem } from '../ui/BottomNavigation'
 
-const NAV = [
+// Capped at 5 items per the navigation spec. "Indique" and other actions live
+// inside Início (CTA) and Perfil instead of taking a 6th tab slot.
+const NAV: BottomNavItem[] = [
   { to: '/app', label: 'Início', icon: Home, end: true },
   { to: '/app/beneficios', label: 'Benefícios', icon: Gift },
+  { to: '/app/parceiros', label: 'Parceiros', icon: MapPin },
   { to: '/app/carteira', label: 'Carteira', icon: Wallet },
-  { to: '/app/indique', label: 'Indique', icon: Users },
   { to: '/app/perfil', label: 'Perfil', icon: User },
 ]
 
@@ -18,25 +21,7 @@ export function SubscriberShell() {
         <main className="flex-1 pb-24 px-4 pt-3">
           <Outlet />
         </main>
-        <nav className="fixed bottom-0 inset-x-0 z-30">
-          <div className="mobile-shell safe-bottom bg-ink-900/95 backdrop-blur border-t border-ink-800 flex">
-            {NAV.map(({ to, label, icon: Icon, end }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                className={({ isActive }) =>
-                  `flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${
-                    isActive ? 'text-gold-400' : 'text-white/40'
-                  }`
-                }
-              >
-                <Icon size={20} strokeWidth={2.2} />
-                {label}
-              </NavLink>
-            ))}
-          </div>
-        </nav>
+        <BottomNavigation items={NAV} />
       </div>
     </div>
   )
