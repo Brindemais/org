@@ -457,9 +457,9 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
-            <a href={WHATSAPP_PARTNER_LINK} target="_blank" rel="noreferrer" className="btn-gold">
+            <Link to="/cadastro" className="btn-gold">
               Quero ser parceiro
-            </a>
+            </Link>
           </div>
           <ImagePlaceholder
             src="/images/tumbler-app.webp"
