@@ -20,7 +20,7 @@ export default function Privacy() {
 
         <div className="space-y-6 text-sm text-black/70 leading-relaxed">
           <section>
-            <p>Esta Política de Privacidade descreve como o Brinde Mais coleta, usa, armazena e protege seus dados pessoais, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 — LGPD).</p>
+            <p>Esta Política de Privacidade descreve como o Brinde Mais coleta, usa, armazena e protege seus dados pessoais, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, LGPD).</p>
           </section>
 
           <section>
@@ -29,7 +29,7 @@ export default function Privacy() {
               <li>Dados cadastrais: nome completo, CPF, data de nascimento, e-mail, telefone e endereço.</li>
               <li>Dados de pagamento: chave Pix e histórico de transações (não armazenamos dados de cartão).</li>
               <li>Dados de uso: histórico de retiradas, pedidos na loja, indicações realizadas e interações de suporte.</li>
-              <li>Dados de localização: apenas quando você autoriza o acesso à geolocalização do navegador, usados para calcular a distância até parceiros próximos — não armazenamos essa localização em nossos servidores.</li>
+              <li>Dados de localização: apenas quando você autoriza o acesso à geolocalização do navegador, usados para calcular a distância até parceiros próximos. Não armazenamos essa localização em nossos servidores.</li>
             </ul>
           </section>
 

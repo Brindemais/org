@@ -216,7 +216,7 @@ export default function Landing() {
         <ResponsiveContainer className="grid lg:grid-cols-[1fr,1.3fr] gap-10 items-center">
           <GiftCard
             name="Taça de Cerveja Premium Brinde Mais"
-            description="Copo temático personalizado com a marca Brinde Mais — o primeiro brinde da sua assinatura."
+            description="Copo temático personalizado com a marca Brinde Mais, o primeiro brinde da sua assinatura."
             deadlineLabel="até o fim do ciclo mensal"
             stockNote="O ponto de retirada escolhido precisa possuir estoque disponível."
             image={
@@ -225,7 +225,7 @@ export default function Landing() {
                 alt="Taça de Cerveja Premium Brinde Mais"
                 loading="lazy"
                 decoding="async"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             }
             onView={goToSignup}
@@ -236,7 +236,7 @@ export default function Landing() {
               Um clube completo de benefícios, economia e recompensas
             </h3>
             <p className="text-black/55 leading-relaxed mb-4">
-              O primeiro brinde é uma taça temática personalizada — mas a assinatura Brinde Mais vai muito além: descontos
+              O primeiro brinde é uma taça temática personalizada, mas a assinatura Brinde Mais vai muito além: descontos
               exclusivos, cashback, bonificações por indicação e por consumo na rede, loja virtual exclusiva, carteira
               interna e acesso a uma comunidade nacional de consumo inteligente.
             </p>
@@ -320,7 +320,7 @@ export default function Landing() {
       {/* ============ 4.7 DESCONTOS E PROMOÇÕES ============ */}
       <section id="promocoes" className="border-t border-black/10 py-16">
         <ResponsiveContainer>
-          <SectionTitle eyebrow="Ofertas para assinantes" title="Descontos e promoções" description="Preços e condições especiais em parceiros selecionados — válidos apenas para assinantes ativos." />
+          <SectionTitle eyebrow="Ofertas para assinantes" title="Descontos e promoções" description="Preços e condições especiais em parceiros selecionados, válidos apenas para assinantes ativos." />
           {promos.length === 0 ? (
             <EmptyState icon={Percent} title="Sem promoções ativas no momento" description="Novas promoções são publicadas com frequência pelos parceiros do clube." />
           ) : (
@@ -382,7 +382,7 @@ export default function Landing() {
           <div className="flex justify-center">
             <ImagePlaceholder
               src="/images/gift-box.webp"
-              alt="Composição de presente Brinde Mais — caneca dourada e caixa preta com laço dourado"
+              alt="Composição de presente Brinde Mais: caneca dourada e caixa preta com laço dourado"
               icon={Gift}
               aspect="aspect-square"
               className="w-full max-w-xs"
@@ -399,7 +399,7 @@ export default function Landing() {
             <p className="text-xs font-bold uppercase tracking-wide text-gold-600 mb-2">Sua carteira interna</p>
             <h3 className="font-display text-2xl font-semibold text-ink-950 mb-4">Acompanhe cada crédito, com transparência</h3>
             <p className="text-black/55 leading-relaxed mb-4">
-              O extrato mostra a origem de cada crédito — cashback, bonificação por indicação ou por consumo na rede —
+              O extrato mostra a origem de cada crédito (cashback, bonificação por indicação ou por consumo na rede)
               para que você acompanhe exatamente de onde vem o seu saldo.
             </p>
             <p className="text-sm text-black/50 bg-surface-subtle border border-border rounded-xl px-4 py-3">

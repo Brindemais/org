@@ -43,7 +43,10 @@ export default function SubscriberStoreOrders() {
             </div>
             <div className="space-y-1 mb-2">
               {o.items.map((it) => (
-                <p key={it.id} className="text-sm text-white/70">{it.quantity}x {it.product?.name ?? 'Produto'} — {formatBRL(it.unit_price * it.quantity)}</p>
+                <div key={it.id} className="flex items-center justify-between gap-3">
+                  <p className="text-sm text-white/70">{it.quantity}x {it.product?.name ?? 'Produto'}</p>
+                  <p className="text-sm text-white/70 shrink-0">{formatBRL(it.unit_price * it.quantity)}</p>
+                </div>
               ))}
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-ink-800">

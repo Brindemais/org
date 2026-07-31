@@ -84,7 +84,7 @@ export default function SubscriberPartners() {
               </div>
               {distanceKm != null && <span className="pill bg-gold-400/15 text-gold-300 shrink-0">{formatDistance(distanceKm)}</span>}
             </div>
-            <p className="text-xs text-white/50 flex items-center gap-1.5 mb-1"><MapPin size={12} /> {p.address}, {p.neighborhood} — {p.city}/{p.state}</p>
+            <p className="text-xs text-white/50 flex items-center gap-1.5 mb-1"><MapPin size={12} /> {p.address}, {p.neighborhood}, {p.city}/{p.state}</p>
             {p.opening_hours && <p className="text-xs text-white/40 mb-1">{p.opening_hours}</p>}
             {p.whatsapp && <p className="text-xs text-white/40 flex items-center gap-1.5"><Phone size={12} /> {p.whatsapp}</p>}
           </div>

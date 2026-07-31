@@ -31,7 +31,7 @@ export default function ResetPassword() {
     const { error: updateError } = await supabase.auth.updateUser({ password })
     setLoading(false)
     if (updateError) {
-      setError('Não foi possível redefinir sua senha. O link pode ter expirado — solicite um novo.')
+      setError('Não foi possível redefinir sua senha. O link pode ter expirado, solicite um novo.')
       return
     }
     setDone(true)
