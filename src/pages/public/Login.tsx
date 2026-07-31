@@ -27,29 +27,29 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-ink-950 px-5 py-10">
+    <div className="min-h-dvh flex items-center justify-center bg-white px-5 py-10">
       <div className="w-full max-w-sm">
-        <Link to="/" className="flex justify-center mb-8"><Logo /></Link>
-        <div className="card">
-          <h1 className="font-display text-xl font-semibold mb-1">Bem-vindo de volta</h1>
-          <p className="text-sm text-white/50 mb-6">Entre na sua conta Brinde Mais.</p>
+        <Link to="/" className="flex justify-center mb-8"><Logo dark /></Link>
+        <div className="card-light">
+          <h1 className="font-display text-xl font-semibold mb-1 text-ink-950">Bem-vindo de volta</h1>
+          <p className="text-sm text-black/50 mb-6">Entre na sua conta Brinde Mais.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="label">E-mail</label>
-              <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" />
+              <label className="label-light">E-mail</label>
+              <input className="input-light" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" />
             </div>
             <div>
-              <label className="label">Senha</label>
-              <input className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+              <label className="label-light">Senha</label>
+              <input className="input-light" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
             </div>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
             <button type="submit" disabled={loading} className="btn-gold w-full">
               {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
         </div>
-        <p className="text-center text-sm text-white/40 mt-6">
-          Ainda não tem conta? <Link to="/cadastro" className="text-gold-400 font-medium">Quero assinar</Link>
+        <p className="text-center text-sm text-black/40 mt-6">
+          Ainda não tem conta? <Link to="/cadastro" className="text-gold-600 font-medium">Quero assinar</Link>
         </p>
       </div>
     </div>

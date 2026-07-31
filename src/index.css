@@ -49,4 +49,21 @@ body {
   .pill {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
   }
+
+  /* Light-theme variants used on public marketing pages (white background) */
+  .card-light {
+    @apply bg-white border border-black/10 rounded-xl2 p-4 shadow-card;
+  }
+  .btn-outline-light {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-black/15 text-ink-950 font-medium px-5 py-3 transition hover:bg-black/5 active:scale-[0.98];
+  }
+  .btn-dark-light {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-ink-950 text-white font-medium px-5 py-3 transition hover:bg-ink-900 active:scale-[0.98];
+  }
+  .input-light {
+    @apply w-full rounded-xl bg-white border border-black/15 px-4 py-3 text-ink-950 placeholder:text-black/30 outline-none focus:border-gold-400 transition;
+  }
+  .label-light {
+    @apply text-xs font-medium text-black/50 mb-1.5 block;
+  }
 }

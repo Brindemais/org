@@ -92,9 +92,9 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-dvh bg-ink-950 px-5 py-8">
+    <div className="min-h-dvh bg-white px-5 py-8">
       <div className="max-w-md mx-auto">
-        <Link to="/" className="flex justify-center mb-6"><Logo /></Link>
+        <Link to="/" className="flex justify-center mb-6"><Logo dark /></Link>
 
         <div className="flex items-center justify-between mb-8">
           {STEPS.map((s, i) => (
@@ -102,75 +102,75 @@ export default function Signup() {
               <div className="flex flex-col items-center gap-1.5">
                 <div
                   className={`w-9 h-9 rounded-full flex items-center justify-center border ${
-                    step >= s.n ? 'bg-gold-gradient border-transparent text-ink-950' : 'border-ink-700 text-white/30'
+                    step >= s.n ? 'bg-gold-gradient border-transparent text-ink-950' : 'border-black/15 text-black/30'
                   }`}
                 >
                   {step > s.n ? <Check size={16} /> : <s.icon size={15} />}
                 </div>
-                <span className={`text-[10px] font-medium ${step >= s.n ? 'text-gold-300' : 'text-white/30'}`}>{s.label}</span>
+                <span className={`text-[10px] font-medium ${step >= s.n ? 'text-gold-600' : 'text-black/30'}`}>{s.label}</span>
               </div>
-              {i < STEPS.length - 1 && <div className={`h-px flex-1 mx-1 ${step > s.n ? 'bg-gold-400' : 'bg-ink-700'}`} />}
+              {i < STEPS.length - 1 && <div className={`h-px flex-1 mx-1 ${step > s.n ? 'bg-gold-400' : 'bg-black/10'}`} />}
             </div>
           ))}
         </div>
 
         {step === 1 && (
-          <form onSubmit={handleStep1} className="card space-y-4">
-            <h1 className="font-display text-xl font-semibold">Crie sua conta</h1>
-            <p className="text-sm text-white/50 -mt-2">Preencha seus dados para começar</p>
+          <form onSubmit={handleStep1} className="card-light space-y-4">
+            <h1 className="font-display text-xl font-semibold text-ink-950">Crie sua conta</h1>
+            <p className="text-sm text-black/50 -mt-2">Preencha seus dados para começar</p>
             {referralCode && (
-              <p className="text-xs bg-gold-400/10 text-gold-300 rounded-lg px-3 py-2">Convidado por código {referralCode.toUpperCase()}</p>
+              <p className="text-xs bg-gold-400/10 text-gold-700 rounded-lg px-3 py-2">Convidado por código {referralCode.toUpperCase()}</p>
             )}
             <div>
-              <label className="label">Nome completo</label>
-              <input className="input" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+              <label className="label-light">Nome completo</label>
+              <input className="input-light" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="label">CPF</label>
-                <input className="input" required value={cpf} onChange={(e) => setCpf(maskCPF(e.target.value))} placeholder="000.000.000-00" />
+                <label className="label-light">CPF</label>
+                <input className="input-light" required value={cpf} onChange={(e) => setCpf(maskCPF(e.target.value))} placeholder="000.000.000-00" />
               </div>
               <div>
-                <label className="label">Data de nascimento</label>
-                <input className="input" type="date" required value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+                <label className="label-light">Data de nascimento</label>
+                <input className="input-light" type="date" required value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
               </div>
             </div>
             <div>
-              <label className="label">Celular</label>
-              <input className="input" required value={phone} onChange={(e) => setPhone(maskPhone(e.target.value))} placeholder="(11) 99999-9999" />
+              <label className="label-light">Celular</label>
+              <input className="input-light" required value={phone} onChange={(e) => setPhone(maskPhone(e.target.value))} placeholder="(11) 99999-9999" />
             </div>
             <div>
-              <label className="label">E-mail</label>
-              <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <label className="label-light">E-mail</label>
+              <input className="input-light" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div>
-              <label className="label">Senha</label>
-              <input className="input" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+              <label className="label-light">Senha</label>
+              <input className="input-light" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
-            <label className="flex items-start gap-2.5 text-xs text-white/60">
+            <label className="flex items-start gap-2.5 text-xs text-black/60">
               <input type="checkbox" className="mt-0.5" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
-              Li e aceito os <span className="text-gold-400">Termos e Condições</span> e a Política de Privacidade.
+              Li e aceito os <span className="text-gold-600">Termos e Condições</span> e a Política de Privacidade.
             </label>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
             <button type="submit" disabled={loading} className="btn-gold w-full">{loading ? 'Enviando...' : 'Continuar'}</button>
-            <p className="text-center text-sm text-white/40">Já tem uma conta? <Link to="/entrar" className="text-gold-400">Entrar</Link></p>
+            <p className="text-center text-sm text-black/40">Já tem uma conta? <Link to="/entrar" className="text-gold-600">Entrar</Link></p>
           </form>
         )}
 
         {step === 2 && (
-          <div className="card space-y-5">
-            <h1 className="font-display text-xl font-semibold">Ative sua assinatura</h1>
+          <div className="card-light space-y-5">
+            <h1 className="font-display text-xl font-semibold text-ink-950">Ative sua assinatura</h1>
             <div className="rounded-xl bg-gold-gradient text-ink-950 p-5">
               <p className="text-xs font-bold uppercase opacity-70">Assinatura mensal</p>
               <p className="text-3xl font-bold">R$ 79,00<span className="text-sm font-medium">/mês</span></p>
               <p className="text-xs opacity-70 mt-1">Ativação imediata via Pix · Cancele quando quiser</p>
             </div>
-            <ul className="space-y-2.5 text-sm text-white/70">
+            <ul className="space-y-2.5 text-sm text-black/65">
               {['Brinde mensal em parceiro de sua escolha', 'Descontos exclusivos em toda a rede', 'Cashback e bonificação por indicação', 'Acesso à loja virtual exclusiva'].map((b) => (
-                <li key={b} className="flex gap-2"><Check size={16} className="text-gold-400 shrink-0 mt-0.5" />{b}</li>
+                <li key={b} className="flex gap-2"><Check size={16} className="text-gold-500 shrink-0 mt-0.5" />{b}</li>
               ))}
             </ul>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
             <button onClick={handleActivateSubscription} disabled={loading} className="btn-gold w-full">
               {loading ? 'Gerando Pix...' : 'Ativar assinatura via Pix'}
             </button>
@@ -178,17 +178,17 @@ export default function Signup() {
         )}
 
         {step === 3 && (
-          <div className="card space-y-5 text-center">
-            <h1 className="font-display text-xl font-semibold">Pagamento via Pix</h1>
-            <div className="w-44 h-44 mx-auto rounded-xl bg-white p-3 flex items-center justify-center">
+          <div className="card-light space-y-5 text-center">
+            <h1 className="font-display text-xl font-semibold text-ink-950">Pagamento via Pix</h1>
+            <div className="w-44 h-44 mx-auto rounded-xl bg-white border border-black/10 p-3 flex items-center justify-center">
               <div className="w-full h-full bg-[repeating-linear-gradient(45deg,#111_0,#111_4px,#fff_4px,#fff_8px)] opacity-80 rounded" />
             </div>
-            <p className="text-sm text-white/50">Escaneie o QR Code ou copie o código Pix abaixo para pagar R$ 79,00.</p>
-            <button onClick={copyPix} className="btn-dark w-full !py-2.5 text-sm gap-2">
+            <p className="text-sm text-black/50">Escaneie o QR Code ou copie o código Pix abaixo para pagar R$ 79,00.</p>
+            <button onClick={copyPix} className="btn-dark-light w-full !py-2.5 text-sm gap-2">
               <Copy size={14} /> {copied ? 'Código copiado!' : 'Copiar código Pix'}
             </button>
-            <div className="rounded-lg bg-ink-950 border border-ink-800 p-3 text-[10px] text-white/30 break-all">{pixCode}</div>
-            <p className="text-xs text-white/40">
+            <div className="rounded-lg bg-black/5 border border-black/10 p-3 text-[10px] text-black/40 break-all">{pixCode}</div>
+            <p className="text-xs text-black/40">
               Após o pagamento, a confirmação é feita automaticamente pela plataforma de pagamentos e sua assinatura será ativada.
               Nesta versão piloto, a confirmação é validada manualmente pela equipe Brinde Mais em poucos minutos.
             </p>
