@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatBRL, formatDateTime } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { LoadingState } from '../../components/ui/LoadingState'
 
 interface OrderItem { id: string; quantity: number; unit_price: number; product: { name: string } | null }
 interface Order { id: string; status: string; total: number; created_at: string; items: OrderItem[] }
@@ -35,7 +37,8 @@ export default function SubscriberStoreOrders() {
       </div>
 
       <div className="space-y-3">
-        {orders.map((o) => (
+        {loading && <LoadingState dark label="Carregando pedidos..." />}
+        {!loading && orders.map((o) => (
           <div key={o.id} className="card">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs text-white/40 font-mono">#{o.id.slice(0, 8)}</p>
@@ -55,7 +58,9 @@ export default function SubscriberStoreOrders() {
             </div>
           </div>
         ))}
-        {!loading && !orders.length && <p className="text-sm text-white/40 text-center py-12">Você ainda não fez nenhum pedido na loja.</p>}
+        {!loading && !orders.length && (
+          <EmptyState dark icon={Receipt} title="Nenhum pedido ainda" description="Seus pedidos feitos na loja aparecem aqui." />
+        )}
       </div>
     </div>
   )

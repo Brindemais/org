@@ -5,19 +5,23 @@ import type { Partner } from '../../lib/types'
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { useGeolocation } from '../../hooks/useGeolocation'
 import { haversineKm, formatDistance } from '../../lib/geo'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { LoadingState } from '../../components/ui/LoadingState'
 
 export default function SubscriberPartners() {
   const [partners, setPartners] = useState<Partner[]>([])
   const [category, setCategory] = useState('')
   const [neighborhood, setNeighborhood] = useState('')
   const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
   const geo = useGeolocation()
 
   useEffect(() => {
+    setLoading(true)
     let query = supabase.from('partners').select('*').in('status', ['approved', 'active'])
     if (category) query = query.eq('category', category)
     if (neighborhood) query = query.eq('neighborhood', neighborhood)
-    query.then(({ data }) => setPartners((data as Partner[]) ?? []))
+    query.then(({ data }) => { setPartners((data as Partner[]) ?? []); setLoading(false) })
   }, [category, neighborhood])
 
   const neighborhoods = useMemo(() => Array.from(new Set(partners.map((p) => p.neighborhood).filter(Boolean))) as string[], [partners])
@@ -70,7 +74,8 @@ export default function SubscriberPartners() {
       )}
 
       <div className="space-y-3">
-        {filtered.map(({ partner: p, distanceKm }) => (
+        {loading && <LoadingState dark label="Carregando parceiros..." />}
+        {!loading && filtered.map(({ partner: p, distanceKm }) => (
           <div key={p.id} className="card">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-12 h-12 rounded-full bg-gold-gradient p-[1.5px] shrink-0">
@@ -89,7 +94,9 @@ export default function SubscriberPartners() {
             {p.whatsapp && <p className="text-xs text-white/40 flex items-center gap-1.5"><Phone size={12} /> {p.whatsapp}</p>}
           </div>
         ))}
-        {!filtered.length && <p className="text-sm text-white/40 text-center py-12">Nenhum parceiro encontrado.</p>}
+        {!loading && !filtered.length && (
+          <EmptyState dark icon={MapPin} title="Nenhum parceiro encontrado" description="Tente ajustar a busca, categoria ou bairro." />
+        )}
       </div>
     </div>
   )

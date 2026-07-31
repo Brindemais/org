@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import type { ProductRow } from '../../lib/types'
 import { formatBRL } from '../../lib/format'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { LoadingState } from '../../components/ui/LoadingState'
 
 export default function SubscriberStore() {
   const { user } = useAuth()
@@ -13,9 +15,10 @@ export default function SubscriberStore() {
   const [cartOpen, setCartOpen] = useState(false)
   const [checkingOut, setCheckingOut] = useState(false)
   const [done, setDone] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.from('products').select('*').eq('store_visible', true).eq('active', true).eq('approved', true).then(({ data }) => setProducts((data as ProductRow[]) ?? []))
+    supabase.from('products').select('*').eq('store_visible', true).eq('active', true).eq('approved', true).then(({ data }) => { setProducts((data as ProductRow[]) ?? []); setLoading(false) })
   }, [])
 
   function addToCart(id: string) {
@@ -71,7 +74,8 @@ export default function SubscriberStore() {
       {done && <p className="text-sm bg-gold-400/10 text-gold-300 rounded-lg px-3 py-2">Pedido enviado! Acompanhe o status em "Meus pedidos".</p>}
 
       <div className="grid grid-cols-2 gap-3 pb-20">
-        {products.map((p) => (
+        {loading && <div className="col-span-2"><LoadingState dark label="Carregando produtos..." /></div>}
+        {!loading && products.map((p) => (
           <div key={p.id} className="card !p-3">
             <div className="aspect-square rounded-lg bg-ink-800 mb-2 flex items-center justify-center text-white/20 text-xs overflow-hidden">
               {p.image_url ? <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" /> : 'Sem imagem'}
@@ -86,7 +90,11 @@ export default function SubscriberStore() {
             </button>
           </div>
         ))}
-        {!products.length && <p className="col-span-2 text-sm text-white/40 text-center py-12">Nenhum produto disponível na loja no momento.</p>}
+        {!loading && !products.length && (
+          <div className="col-span-2">
+            <EmptyState dark icon={ShoppingBag} title="Loja em preparação" description="Os primeiros produtos exclusivos chegam em breve." />
+          </div>
+        )}
       </div>
 
       {cartCount > 0 && !cartOpen && (

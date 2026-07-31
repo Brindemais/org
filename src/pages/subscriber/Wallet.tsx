@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
-import { ArrowDownLeft, ArrowUpRight, Eye, EyeOff } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Eye, EyeOff, History } from 'lucide-react'
 import { useState } from 'react'
 import { useWallet } from '../../hooks/useWallet'
 import { formatBRL, formatDateTime } from '../../lib/format'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { LoadingState } from '../../components/ui/LoadingState'
 
 const TYPE_LABELS: Record<string, string> = {
   bonus_subscription: 'Bonificação de assinatura',
@@ -44,7 +46,7 @@ export default function SubscriberWallet() {
 
       <div>
         <p className="font-semibold mb-3">Extrato</p>
-        {loading && <p className="text-sm text-white/40">Carregando...</p>}
+        {loading && <LoadingState dark label="Carregando extrato..." />}
         <div className="space-y-2">
           {transactions.map((t) => (
             <div key={t.id} className="card !py-3 flex items-center gap-3">
@@ -60,7 +62,9 @@ export default function SubscriberWallet() {
               </p>
             </div>
           ))}
-          {!loading && !transactions.length && <p className="text-sm text-white/40 text-center py-8">Nenhuma movimentação ainda.</p>}
+          {!loading && !transactions.length && (
+            <EmptyState dark icon={History} title="Nenhuma movimentação ainda" description="Seus créditos, saques e cashback aparecem aqui." />
+          )}
         </div>
       </div>
     </div>

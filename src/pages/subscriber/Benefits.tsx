@@ -7,6 +7,8 @@ import { useSubscription } from '../../hooks/useSubscription'
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { useGeolocation } from '../../hooks/useGeolocation'
 import { haversineKm, formatDistance } from '../../lib/geo'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { LoadingState } from '../../components/ui/LoadingState'
 
 export default function SubscriberBenefits() {
   const { subscription, pickup, reload } = useSubscription()
@@ -15,13 +17,15 @@ export default function SubscriberBenefits() {
   const [category, setCategory] = useState<string>('')
   const [choosing, setChoosing] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
   const geo = useGeolocation()
 
   useEffect(() => {
+    setLoading(true)
     let query = supabase.from('partners').select('*').in('status', ['approved', 'active'])
     if (category) query = query.eq('category', category)
-    query.then(({ data }) => setPartners((data as Partner[]) ?? []))
+    query.then(({ data }) => { setPartners((data as Partner[]) ?? []); setLoading(false) })
     supabase.from('promotions').select('*').eq('status', 'approved').gte('valid_until', new Date().toISOString().slice(0, 10)).then(({ data }) => setPromotions((data as Promotion[]) ?? []))
   }, [category])
 
@@ -105,7 +109,8 @@ export default function SubscriberBenefits() {
         </div>
 
         <div className="space-y-3">
-          {sortedPartners.map(({ partner: p, distanceKm }) => (
+          {loading && <LoadingState dark label="Carregando parceiros..." />}
+          {!loading && sortedPartners.map(({ partner: p, distanceKm }) => (
             <div key={p.id} className="card flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-gold-gradient p-[1.5px] shrink-0">
                 <div className="w-full h-full rounded-full bg-ink-800 flex items-center justify-center font-display text-gold-400 font-semibold overflow-hidden">
@@ -127,7 +132,9 @@ export default function SubscriberBenefits() {
               </button>
             </div>
           ))}
-          {!sortedPartners.length && <p className="text-sm text-white/40 text-center py-8">Nenhum parceiro encontrado nesta categoria.</p>}
+          {!loading && !sortedPartners.length && (
+            <EmptyState dark icon={Store} title="Nenhum parceiro encontrado" description="Tente outra categoria ou volte mais tarde." />
+          )}
         </div>
       </section>
     </div>

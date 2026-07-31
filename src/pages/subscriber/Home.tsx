@@ -8,6 +8,8 @@ import { supabase } from '../../lib/supabase'
 import type { Partner, Promotion } from '../../lib/types'
 import { formatBRL } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { LoadingState } from '../../components/ui/LoadingState'
 
 export default function SubscriberHome() {
   const { profile } = useAuth()
@@ -40,6 +42,8 @@ export default function SubscriberHome() {
           Ver carteira <ChevronRight size={13} />
         </Link>
       </div>
+
+      {subLoading && <LoadingState dark label="Carregando sua assinatura..." size="sm" />}
 
       {!subLoading && (!subscription || subscription.status !== 'active') && (
         <div className="card border-gold-400/30">
@@ -101,7 +105,13 @@ export default function SubscriberHome() {
             </div>
           ))}
           {!partners.length && (
-            <p className="text-sm text-white/40 flex items-center gap-1.5"><MapPin size={14} /> Nenhum parceiro cadastrado ainda por aqui.</p>
+            <EmptyState
+              dark
+              icon={MapPin}
+              title="Nenhum parceiro por aqui ainda"
+              description="Novos parceiros são adicionados com frequência à rede."
+              className="w-full py-6"
+            />
           )}
         </div>
       </div>

@@ -27,6 +27,15 @@ body {
   position: relative;
 }
 
+/* Above the mobile app breakpoint, the phone-width cap gives way to the
+   desktop sidebar layout in SubscriberShell. */
+@media (min-width: 1024px) {
+  .mobile-shell {
+    max-width: 768px;
+    min-height: 0;
+  }
+}
+
 @layer components {
   .btn-gold {
     @apply inline-flex items-center justify-center gap-2 rounded-xl bg-gold-gradient text-ink-950 font-semibold px-5 py-3 shadow-gold transition active:scale-[0.98] hover:brightness-105 disabled:opacity-50 disabled:pointer-events-none;

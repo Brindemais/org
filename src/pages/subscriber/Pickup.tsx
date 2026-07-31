@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { RefreshCw, UserPlus } from 'lucide-react'
+import { RefreshCw, UserPlus, Gift } from 'lucide-react'
 import { useSubscription } from '../../hooks/useSubscription'
 import { supabase } from '../../lib/supabase'
 import type { Partner } from '../../lib/types'
 import { formatDate } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { LoadingState } from '../../components/ui/LoadingState'
 
 export default function SubscriberPickup() {
   const { pickup, loading, reload } = useSubscription()
@@ -24,14 +26,18 @@ export default function SubscriberPickup() {
     return () => clearInterval(t)
   }, [])
 
-  if (loading) return <p className="text-white/40 text-sm">Carregando...</p>
+  if (loading) return <LoadingState dark label="Carregando retirada..." className="py-16" />
 
   if (!pickup) {
     return (
-      <div className="text-center py-16">
-        <p className="text-white/60 mb-4">Você ainda não escolheu seu ponto de retirada deste mês.</p>
-        <Link to="/app/beneficios" className="btn-gold">Escolher ponto de retirada</Link>
-      </div>
+      <EmptyState
+        dark
+        icon={Gift}
+        title="Nenhuma retirada escolhida"
+        description="Você ainda não escolheu seu ponto de retirada deste mês."
+        className="py-16"
+        action={<Link to="/app/beneficios" className="btn-gold">Escolher ponto de retirada</Link>}
+      />
     )
   }
 

@@ -1,8 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Headset } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatDateTime } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 const CATEGORIES = [
   'Pagamento', 'Assinatura', 'Retirada', 'Parceiro', 'Estoque', 'Loja', 'Pedido', 'Indicação', 'Bonificação', 'Saque', 'Acesso', 'Outros',
@@ -64,7 +66,9 @@ export default function SubscriberSupport() {
               <p className="text-xs text-white/30 mt-1">{formatDateTime(t.created_at)}</p>
             </div>
           ))}
-          {!tickets.length && <p className="text-sm text-white/40 text-center py-8">Nenhuma solicitação aberta.</p>}
+          {!tickets.length && (
+            <EmptyState dark icon={Headset} title="Nenhuma solicitação aberta" description="Suas solicitações de suporte aparecem aqui." />
+          )}
         </div>
       </div>
     </div>
