@@ -10,7 +10,7 @@ import type { Partner, Promotion, ProductRow } from '../../lib/types'
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { PublicHeader } from './PublicHeader'
 import { Logo } from '../../components/layout/Logo'
-import { BeerGlassArt, BeerBottleArt } from '../../components/layout/Illustrations'
+import { BeerBottleArt } from '../../components/layout/Illustrations'
 import { ResponsiveContainer } from '../../components/ui/ResponsiveContainer'
 import { SectionTitle } from '../../components/ui/SectionTitle'
 import { BenefitCard } from '../../components/ui/BenefitCard'
@@ -219,7 +219,15 @@ export default function Landing() {
             description="Copo temático personalizado com a marca Brinde Mais — o primeiro brinde da sua assinatura."
             deadlineLabel="até o fim do ciclo mensal"
             stockNote="O ponto de retirada escolhido precisa possuir estoque disponível."
-            image={<BeerGlassArt width={90} />}
+            image={
+              <img
+                src="/images/gift-glass.webp"
+                alt="Taça de Cerveja Premium Brinde Mais"
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover"
+              />
+            }
             onView={goToSignup}
           />
           <div>
