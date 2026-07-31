@@ -4,7 +4,8 @@ import { Wine, Gift, Users2, UserPlus, ShieldCheck, Wallet, PackageCheck, Instag
 import { supabase } from '../../lib/supabase'
 import type { Partner, Promotion } from '../../lib/types'
 import { PublicHeader } from './PublicHeader'
-import { Logo, LogoMark } from '../../components/layout/Logo'
+import { Logo } from '../../components/layout/Logo'
+import { BeerGlassArt, BeerBottleArt } from '../../components/layout/Illustrations'
 
 const WHATSAPP_PARTNER_LINK = 'https://wa.me/5521999999999?text=Quero%20ser%20parceiro%20Brinde%20Mais'
 
@@ -50,10 +51,9 @@ export default function Landing() {
             <p className="text-xs text-black/40 mt-3">Assinatura mensal via Pix · Cancele quando quiser</p>
           </div>
           <div className="relative">
-            <div className="card-light !bg-[#faf8f3] p-8 relative">
-              <div className="w-full aspect-square max-w-xs mx-auto rounded-full bg-gold-gradient/10 border border-gold-400/25 flex flex-col items-center justify-center gap-3">
-                <Wine size={72} className="text-gold-500" strokeWidth={1.2} />
-                <LogoMark size={40} />
+            <div className="card-light !bg-[#faf8f3] p-8 relative overflow-visible">
+              <div className="flex items-center justify-center">
+                <BeerGlassArt width={190} />
               </div>
               <div className="absolute -bottom-6 -right-2 sm:right-6 card-light !bg-ink-950 px-5 py-4 shadow-gold">
                 <p className="text-[11px] text-white/40 mb-1">Saldo disponível</p>
@@ -105,8 +105,8 @@ export default function Landing() {
           <span className="pill bg-gold-400/15 text-gold-600 w-fit mb-3">Exclusivo para assinantes</span>
           <h3 className="font-display text-lg font-semibold mb-1 text-ink-950">Brinde do mês</h3>
           <p className="text-sm text-black/50 mb-4 flex-1">Taça de Cerveja Premium Brinde Mais</p>
-          <div className="w-full aspect-video rounded-lg bg-gold-gradient/10 border border-gold-400/20 flex items-center justify-center mb-4">
-            <Wine size={44} className="text-gold-500" strokeWidth={1.3} />
+          <div className="w-full aspect-video rounded-lg bg-gold-gradient/10 border border-gold-400/20 flex items-center justify-center mb-4 overflow-hidden">
+            <BeerGlassArt width={90} />
           </div>
           <Link to="/cadastro" className="btn-gold w-full !py-2.5 text-sm">Ver detalhes</Link>
           <div className="flex justify-center gap-1.5 mt-4">
@@ -128,7 +128,7 @@ export default function Landing() {
           <div className="grid grid-cols-4 gap-3">
             {(partners.length ? partners : Array.from({ length: 4 })).map((p, i) => (
               <div key={p ? (p as Partner).id : i} className="text-center">
-                <div className="w-11 h-11 rounded-full bg-ink-950 mx-auto mb-1.5 flex items-center justify-center font-display text-xs font-semibold text-gold-400">
+                <div className="w-11 h-11 rounded-full bg-ink-950 border border-gold-400/40 mx-auto mb-1.5 flex items-center justify-center font-display text-xs font-semibold text-gold-400">
                   {p ? (p as Partner).trade_name.slice(0, 2).toUpperCase() : '—'}
                 </div>
                 <p className="text-[11px] font-medium leading-tight truncate text-ink-950">{p ? (p as Partner).trade_name : 'Em breve'}</p>
@@ -138,13 +138,16 @@ export default function Landing() {
           </div>
         </div>
 
-        <div id="beneficios" className="card-light !bg-gold-gradient !border-transparent text-ink-950 flex flex-col">
-          <p className="text-xs font-bold uppercase tracking-wide opacity-70 mb-1">Descontos exclusivos</p>
-          <h3 className="font-display text-lg font-semibold mb-2">
+        <div id="beneficios" className="card-light !bg-ink-950 !border-transparent text-white relative overflow-hidden flex flex-col">
+          <p className="text-xs font-bold uppercase tracking-wide text-gold-400 mb-1">Descontos exclusivos</p>
+          <h3 className="font-display text-lg font-semibold mb-2 max-w-[60%]">
             {promo ? promo.title : '10% OFF em cervejas selecionadas'}
           </h3>
-          <p className="text-sm opacity-80 mb-4 flex-1">Ofertas especiais para assinantes Brinde Mais.</p>
-          <Link to="/cadastro" className="btn-dark-light w-fit">Aproveitar</Link>
+          <p className="text-sm text-white/60 mb-4 flex-1 max-w-[60%]">Ofertas especiais para assinantes Brinde Mais.</p>
+          <Link to="/cadastro" className="btn-gold w-fit">Aproveitar</Link>
+          <div className="absolute -right-2 bottom-0 opacity-90">
+            <BeerBottleArt width={70} />
+          </div>
         </div>
 
         <div className="card-light flex flex-col">
