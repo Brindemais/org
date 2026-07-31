@@ -23,7 +23,7 @@ export default function Landing() {
   useEffect(() => {
     supabase.from('partners').select('*').in('status', ['approved', 'active']).limit(4)
       .then(({ data }) => setPartners((data as Partner[]) ?? []))
-    supabase.from('promotions').select('*').eq('status', 'approved').limit(1).maybeSingle()
+    supabase.from('promotions').select('*').eq('status', 'approved').gte('valid_until', new Date().toISOString().slice(0, 10)).limit(1).maybeSingle()
       .then(({ data }) => setPromo(data as Promotion | null))
   }, [])
 

@@ -4,6 +4,7 @@ import type { Partner, ProductRow } from '../../lib/types'
 
 export default function AdminStock() {
   const [products, setProducts] = useState<ProductRow[]>([])
+  const [pendingProducts, setPendingProducts] = useState<(ProductRow & { partner?: { trade_name: string } | null })[]>([])
   const [matrixStock, setMatrixStock] = useState<Record<string, number>>({})
   const [partners, setPartners] = useState<Partner[]>([])
   const [newProduct, setNewProduct] = useState({ name: '', description: '' })
@@ -14,6 +15,14 @@ export default function AdminStock() {
   async function load() {
     const { data: prods } = await supabase.from('products').select('*').is('partner_id', null)
     setProducts((prods as ProductRow[]) ?? [])
+    const { data: pending } = await supabase
+      .from('products')
+      .select('*, partner:partner_id(trade_name)')
+      .not('partner_id', 'is', null)
+      .eq('approved', false)
+      .eq('active', true)
+      .order('created_at', { ascending: false })
+    setPendingProducts((pending as any) ?? [])
     const { data: stock } = await supabase.from('stock_matrix').select('*')
     const map: Record<string, number> = {}
     for (const s of stock ?? []) map[s.product_id] = s.quantity
@@ -23,6 +32,16 @@ export default function AdminStock() {
   }
 
   useEffect(() => { load() }, [])
+
+  async function approveProduct(id: string) {
+    await supabase.rpc('admin_set_product_approval', { p_product_id: id, p_approved: true })
+    load()
+  }
+
+  async function rejectProduct(id: string) {
+    await supabase.from('products').update({ active: false }).eq('id', id)
+    load()
+  }
 
   async function createProduct(e: FormEvent) {
     e.preventDefault()
@@ -56,6 +75,28 @@ export default function AdminStock() {
       <div>
         <h1 className="font-display text-2xl font-semibold">Estoque</h1>
         <p className="text-white/50 text-sm">Controle do estoque da matriz e remessas para parceiros.</p>
+      </div>
+
+      <div className="card">
+        <p className="font-semibold mb-3">Brindes e produtos de parceiros aguardando aprovação</p>
+        <div className="space-y-3">
+          {pendingProducts.map((p) => (
+            <div key={p.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-800 pt-3 first:border-t-0 first:pt-0">
+              <div className="flex items-center gap-3 min-w-0">
+                {p.image_url && <img src={p.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />}
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">{p.name}</p>
+                  <p className="text-xs text-white/40">{p.partner?.trade_name} · R$ {Number(p.subscriber_price).toFixed(2)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button onClick={() => approveProduct(p.id)} className="btn-gold !py-1.5 !px-3 text-xs">Aprovar</button>
+                <button onClick={() => rejectProduct(p.id)} className="btn-ghost !py-1.5 !px-3 text-xs">Rejeitar</button>
+              </div>
+            </div>
+          ))}
+          {!pendingProducts.length && <p className="text-sm text-white/40 text-center py-4">Nenhum item pendente de aprovação.</p>}
+        </div>
       </div>
 
       <div className="card overflow-x-auto">

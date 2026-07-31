@@ -3,12 +3,27 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatDateTime } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { ImageUpload } from '../../components/ui/ImageUpload'
 
 export default function PartnerProfile() {
   const { partner } = useAuth()
   const [form, setForm] = useState({ address: '', opening_hours: '' })
   const [requests, setRequests] = useState<any[]>([])
   const [sent, setSent] = useState(false)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [logoSaved, setLogoSaved] = useState(false)
+
+  useEffect(() => {
+    if (partner) setLogoUrl(partner.logo_url ?? null)
+  }, [partner])
+
+  async function saveLogo(url: string) {
+    if (!partner) return
+    setLogoUrl(url)
+    await supabase.from('partners').update({ logo_url: url }).eq('id', partner.id)
+    setLogoSaved(true)
+    setTimeout(() => setLogoSaved(false), 2000)
+  }
 
   useEffect(() => {
     if (partner) setForm({ address: partner.address ?? '', opening_hours: partner.opening_hours ?? '' })
@@ -46,6 +61,12 @@ export default function PartnerProfile() {
         <p className="font-semibold">{partner.trade_name}</p>
         <p className="text-sm text-white/50">{partner.company_name}</p>
         <StatusBadge status={partner.status} />
+      </div>
+
+      <div className="card space-y-2">
+        <p className="font-semibold text-sm">Logotipo</p>
+        <ImageUpload value={logoUrl} onChange={saveLogo} folder="partner-logos" label="" circular />
+        {logoSaved && <p className="text-xs text-emerald-400">Logotipo atualizado!</p>}
       </div>
 
       <form onSubmit={requestChange} className="card space-y-3">

@@ -49,6 +49,8 @@ export interface Partner {
   pix_key: string | null
   status: PartnerStatus
   rating: number
+  lat: number | null
+  lng: number | null
   created_at: string
   approved_at: string | null
 }
@@ -91,6 +93,7 @@ export interface ProductRow {
   is_gift: boolean
   store_visible: boolean
   active: boolean
+  approved: boolean
   created_at: string
 }
 

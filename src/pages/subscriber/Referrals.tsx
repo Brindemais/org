@@ -1,35 +1,32 @@
-import { useEffect, useState } from 'react'
-import { Copy, Share2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ChevronDown, ChevronRight as ChevronRightIcon, Copy, Share2, Users } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { formatBRL, formatDate, initials } from '../../lib/format'
+import { formatBRL } from '../../lib/format'
 
-interface DirectReferral { id: string; full_name: string; created_at: string; active: boolean }
+interface TreeNode {
+  id: string
+  display_name: string
+  level: number
+  has_active_subscription: boolean
+  referred_by: string | null
+}
 interface LevelEarning { level: number; total: number }
 
 export default function SubscriberReferrals() {
   const { profile } = useAuth()
-  const [direct, setDirect] = useState<DirectReferral[]>([])
+  const [tree, setTree] = useState<TreeNode[]>([])
   const [levels, setLevels] = useState<LevelEarning[]>([])
   const [copied, setCopied] = useState(false)
+  const [expanded, setExpanded] = useState<Set<number>>(new Set([1]))
 
   const link = profile ? `${window.location.origin}/cadastro?ref=${profile.referral_code}` : ''
 
   useEffect(() => {
     if (!profile) return
     supabase
-      .from('referrals')
-      .select('created_at, referred:referred_id(id, full_name, active)')
-      .eq('referrer_id', profile.id)
-      .then(({ data }) => {
-        const rows = (data ?? []).map((r: any) => ({
-          id: r.referred.id,
-          full_name: r.referred.full_name,
-          active: r.referred.active,
-          created_at: r.created_at,
-        }))
-        setDirect(rows)
-      })
+      .rpc('get_referral_tree', { p_root: profile.id })
+      .then(({ data }) => setTree((data as TreeNode[]) ?? []))
 
     supabase
       .from('bonuses')
@@ -41,6 +38,21 @@ export default function SubscriberReferrals() {
         setLevels(Object.entries(totals).map(([level, total]) => ({ level: Number(level), total })).sort((a, b) => a.level - b.level))
       })
   }, [profile])
+
+  const byLevel = useMemo(() => {
+    const map: Record<number, TreeNode[]> = {}
+    for (const n of tree) (map[n.level] ??= []).push(n)
+    return map
+  }, [tree])
+
+  function toggleLevel(lvl: number) {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(lvl)) next.delete(lvl)
+      else next.add(lvl)
+      return next
+    })
+  }
 
   function copyLink() {
     navigator.clipboard.writeText(link)
@@ -68,38 +80,46 @@ export default function SubscriberReferrals() {
       </div>
 
       <div>
-        <p className="font-semibold mb-3">Ganhos por nível</p>
-        <div className="grid grid-cols-2 gap-2">
+        <p className="font-semibold mb-3 flex items-center gap-1.5"><Users size={16} className="text-gold-400" /> Sua árvore de indicações (7 níveis)</p>
+        <div className="space-y-2">
           {Array.from({ length: 7 }, (_, i) => i + 1).map((lvl) => {
-            const found = levels.find((l) => l.level === lvl)
+            const people = byLevel[lvl] ?? []
+            const active = people.filter((p) => p.has_active_subscription).length
+            const inactive = people.length - active
+            const earned = levels.find((l) => l.level === lvl)?.total ?? 0
+            const isOpen = expanded.has(lvl)
             return (
               <div key={lvl} className="card !py-3">
-                <p className="text-xs text-white/40">Nível {lvl}</p>
-                <p className="font-semibold text-gold-400">{formatBRL(found?.total ?? 0)}</p>
+                <button className="w-full flex items-center justify-between gap-3" onClick={() => toggleLevel(lvl)}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    {isOpen ? <ChevronDown size={15} className="text-white/40 shrink-0" /> : <ChevronRightIcon size={15} className="text-white/40 shrink-0" />}
+                    <div className="text-left min-w-0">
+                      <p className="text-sm font-semibold">Nível {lvl}</p>
+                      <p className="text-xs text-white/40">{people.length} pessoa{people.length === 1 ? '' : 's'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="pill bg-emerald-500/15 text-emerald-400">{active} ativos</span>
+                    <span className="pill bg-white/10 text-white/40">{inactive} inativos</span>
+                    <span className="text-gold-400 font-semibold text-sm w-20 text-right">{formatBRL(earned)}</span>
+                  </div>
+                </button>
+                {isOpen && (
+                  <div className="mt-3 pt-3 border-t border-ink-800 space-y-2">
+                    {people.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between gap-3 pl-6">
+                        <p className="text-sm truncate">{p.display_name}</p>
+                        <span className={`pill shrink-0 ${p.has_active_subscription ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/10 text-white/40'}`}>
+                          {p.has_active_subscription ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </div>
+                    ))}
+                    {!people.length && <p className="text-xs text-white/40 pl-6">Ninguém neste nível ainda.</p>}
+                  </div>
+                )}
               </div>
             )
           })}
-        </div>
-      </div>
-
-      <div>
-        <p className="font-semibold mb-3">Pessoas indicadas diretamente ({direct.length})</p>
-        <div className="space-y-2">
-          {direct.map((d) => (
-            <div key={d.id} className="card !py-3 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-ink-800 flex items-center justify-center text-xs font-semibold text-gold-400 shrink-0">
-                {initials(d.full_name)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{d.full_name}</p>
-                <p className="text-xs text-white/40">Desde {formatDate(d.created_at)}</p>
-              </div>
-              <span className={`pill ${d.active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/10 text-white/40'}`}>
-                {d.active ? 'Ativo' : 'Inativo'}
-              </span>
-            </div>
-          ))}
-          {!direct.length && <p className="text-sm text-white/40 text-center py-8">Você ainda não indicou ninguém. Compartilhe seu link!</p>}
         </div>
       </div>
     </div>
