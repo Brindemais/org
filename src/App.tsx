@@ -39,6 +39,7 @@ const PartnerStock = lazy(() => import('./pages/partner/Stock'))
 const PartnerProducts = lazy(() => import('./pages/partner/Products'))
 const PartnerPromotions = lazy(() => import('./pages/partner/Promotions'))
 const PartnerHistory = lazy(() => import('./pages/partner/History'))
+const PartnerStoreOrders = lazy(() => import('./pages/partner/StoreOrders'))
 const PartnerProfile = lazy(() => import('./pages/partner/Profile'))
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
@@ -107,6 +108,7 @@ export default function App() {
           <Route path="estoque" element={<PartnerStock />} />
           <Route path="brindes" element={<PartnerProducts />} />
           <Route path="promocoes" element={<PartnerPromotions />} />
+          <Route path="pedidos-loja" element={<PartnerStoreOrders />} />
           <Route path="historico" element={<PartnerHistory />} />
           <Route path="perfil" element={<PartnerProfile />} />
         </Route>

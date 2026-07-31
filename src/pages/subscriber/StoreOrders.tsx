@@ -15,8 +15,9 @@ export default function SubscriberStoreOrders() {
   const { user } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [cancelling, setCancelling] = useState<string | null>(null)
 
-  useEffect(() => {
+  function load() {
     if (!user) return
     supabase
       .from('store_orders')
@@ -27,7 +28,16 @@ export default function SubscriberStoreOrders() {
         setOrders((data as any) ?? [])
         setLoading(false)
       })
-  }, [user])
+  }
+
+  useEffect(load, [user])
+
+  async function cancelOrder(id: string) {
+    setCancelling(id)
+    const { error } = await supabase.rpc('cancel_store_order', { p_order_id: id })
+    setCancelling(null)
+    if (!error) load()
+  }
 
   return (
     <div className="space-y-4">
@@ -56,6 +66,15 @@ export default function SubscriberStoreOrders() {
               <p className="text-xs text-white/40">{formatDateTime(o.created_at)}</p>
               <p className="font-semibold text-gold-400">{formatBRL(o.total)}</p>
             </div>
+            {(o.status === 'pending_payment' || o.status === 'paid') && (
+              <button
+                onClick={() => cancelOrder(o.id)}
+                disabled={cancelling === o.id}
+                className="text-xs text-red-400 mt-2"
+              >
+                {cancelling === o.id ? 'Cancelando...' : 'Cancelar pedido'}
+              </button>
+            )}
           </div>
         ))}
         {!loading && !orders.length && (
