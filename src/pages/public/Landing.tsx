@@ -225,7 +225,7 @@ export default function Landing() {
                 alt="Taça de Cerveja Premium Brinde Mais"
                 loading="lazy"
                 decoding="async"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover object-top"
               />
             }
             onView={goToSignup}
