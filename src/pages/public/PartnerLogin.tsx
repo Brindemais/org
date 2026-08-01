@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { LogoBadge } from '../../components/layout/Logo'
 
-export default function Login() {
+export default function PartnerLogin() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -15,15 +15,25 @@ export default function Login() {
     setError(null)
     setLoading(true)
     const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-    setLoading(false)
-    if (signInError) {
+    if (signInError || !data.user) {
+      setLoading(false)
       setError('E-mail ou senha inválidos.')
       return
     }
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle()
-    if (profile?.role === 'admin' || profile?.role === 'operator') navigate('/admin')
-    else if (profile?.role === 'partner') navigate('/parceiro')
-    else navigate('/app')
+    setLoading(false)
+    if (profile?.role === 'partner') {
+      navigate('/parceiro')
+      return
+    }
+    await supabase.auth.signOut()
+    if (profile?.role === 'subscriber') {
+      setError('Essa conta é de assinante. Use o login de assinante.')
+    } else if (profile?.role === 'admin' || profile?.role === 'operator') {
+      setError('Essa conta é administrativa. Use o acesso em /admin.')
+    } else {
+      setError('Esta conta não é de parceiro.')
+    }
   }
 
   return (
@@ -31,12 +41,12 @@ export default function Login() {
       <div className="w-full max-w-sm">
         <Link to="/" className="flex justify-center mb-6"><LogoBadge size={130} /></Link>
         <div className="card-light">
-          <h1 className="font-display text-xl font-semibold mb-1 text-ink-950">Bem-vindo de volta</h1>
-          <p className="text-sm text-black/50 mb-6">Entre na sua conta Brinde Mais.</p>
+          <h1 className="font-display text-xl font-semibold mb-1 text-ink-950">Painel do parceiro</h1>
+          <p className="text-sm text-black/50 mb-6">Entre com a conta do seu estabelecimento.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="label-light">E-mail</label>
-              <input className="input-light" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" />
+              <input className="input-light" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@estabelecimento.com" />
             </div>
             <div>
               <div className="flex items-center justify-between">
@@ -52,7 +62,10 @@ export default function Login() {
           </form>
         </div>
         <p className="text-center text-sm text-black/40 mt-6">
-          Ainda não tem conta? <Link to="/cadastro" className="text-gold-600 font-medium">Quero assinar</Link>
+          Ainda não é parceiro? <Link to="/seja-parceiro" className="text-gold-600 font-medium">Quero ser parceiro</Link>
+        </p>
+        <p className="text-center text-sm text-black/40 mt-2">
+          É assinante? <Link to="/entrar/assinante" className="text-gold-600 font-medium">Entrar como assinante</Link>
         </p>
       </div>
     </div>

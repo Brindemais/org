@@ -154,7 +154,7 @@ export default function Signup() {
             </label>
             {error && <p className="text-sm text-red-500">{error}</p>}
             <button type="submit" disabled={loading} className="btn-gold w-full">{loading ? 'Enviando...' : 'Continuar'}</button>
-            <p className="text-center text-sm text-black/40">Já tem uma conta? <Link to="/entrar" className="text-gold-600">Entrar</Link></p>
+            <p className="text-center text-sm text-black/40">Já tem uma conta? <Link to="/entrar/assinante" className="text-gold-600">Entrar</Link></p>
           </form>
         )}
 
