@@ -457,7 +457,7 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
-            <Link to="/cadastro" className="btn-gold">
+            <Link to="/seja-parceiro" className="btn-gold">
               Quero ser parceiro
             </Link>
           </div>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Minus, Plus, Receipt, ShoppingBag, ShoppingCart, X } from 'lucide-react'
+import { Minus, Plus, Receipt, Search, ShoppingBag, ShoppingCart, X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import type { ProductRow } from '../../lib/types'
@@ -16,6 +16,8 @@ export default function SubscriberStore() {
   const [checkingOut, setCheckingOut] = useState(false)
   const [done, setDone] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [category, setCategory] = useState('')
 
   useEffect(() => {
     supabase.from('products').select('*').eq('store_visible', true).eq('active', true).eq('approved', true).then(({ data }) => { setProducts((data as ProductRow[]) ?? []); setLoading(false) })
@@ -38,6 +40,12 @@ export default function SubscriberStore() {
   const cartItems = useMemo(
     () => Object.entries(cart).map(([id, qty]) => ({ product: products.find((p) => p.id === id)!, qty })).filter((i) => i.product),
     [cart, products],
+  )
+
+  const categories = useMemo(() => Array.from(new Set(products.map((p) => p.category))).sort(), [products])
+  const filteredProducts = useMemo(
+    () => products.filter((p) => (!category || p.category === category) && (!search || p.name.toLowerCase().includes(search.toLowerCase()))),
+    [products, category, search],
   )
   const cartCount = cartItems.reduce((sum, i) => sum + i.qty, 0)
   const cartTotal = cartItems.reduce((sum, i) => sum + i.qty * i.product.subscriber_price, 0)
@@ -73,9 +81,40 @@ export default function SubscriberStore() {
 
       {done && <p className="text-sm bg-gold-400/10 text-gold-300 rounded-lg px-3 py-2">Pedido enviado! Acompanhe o status em "Meus pedidos".</p>}
 
+      {!loading && products.length > 0 && (
+        <div className="space-y-3">
+          <div className="relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar produto"
+              className="input !pl-9 !py-2 text-sm w-full"
+            />
+          </div>
+          {categories.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setCategory('')} className={`pill border ${category === '' ? 'bg-white text-ink-950 border-white' : 'border-ink-800 text-white/50'}`}>
+                Todas categorias
+              </button>
+              {categories.map((c) => (
+                <button key={c} onClick={() => setCategory(c)} className={`pill border capitalize ${category === c ? 'bg-white text-ink-950 border-white' : 'border-ink-800 text-white/50'}`}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3 pb-20">
         {loading && <div className="col-span-2"><LoadingState dark label="Carregando produtos..." /></div>}
-        {!loading && products.map((p) => (
+        {!loading && products.length > 0 && !filteredProducts.length && (
+          <div className="col-span-2">
+            <EmptyState dark icon={Search} title="Nenhum produto encontrado" description="Tente buscar por outro termo ou categoria." />
+          </div>
+        )}
+        {!loading && filteredProducts.map((p) => (
           <div key={p.id} className="card !p-3">
             <div className="aspect-square rounded-lg bg-ink-800 mb-2 flex items-center justify-center text-white/20 text-xs overflow-hidden">
               {p.image_url ? <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" /> : 'Sem imagem'}

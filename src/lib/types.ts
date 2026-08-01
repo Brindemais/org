@@ -53,6 +53,7 @@ export interface Partner {
   lng: number | null
   created_at: string
   approved_at: string | null
+  invited_at: string | null
 }
 
 export interface Subscription {

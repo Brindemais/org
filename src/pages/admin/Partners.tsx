@@ -17,6 +17,8 @@ export default function AdminPartners() {
   const [linking, setLinking] = useState<string | null>(null)
   const [linkEmail, setLinkEmail] = useState('')
   const [linkMsg, setLinkMsg] = useState('')
+  const [inviting, setInviting] = useState<string | null>(null)
+  const [inviteMsg, setInviteMsg] = useState<Record<string, string>>({})
 
   async function load() {
     const { data } = await supabase.from('partners').select('*').order('created_at', { ascending: false })
@@ -38,6 +40,40 @@ export default function AdminPartners() {
 
   async function setStatus(id: string, status: PartnerStatus) {
     await supabase.rpc('admin_set_partner_status', { p_partner_id: id, p_status: status })
+    load()
+  }
+
+  async function approveAndInvite(partner: Partner) {
+    setInviteMsg((m) => ({ ...m, [partner.id]: '' }))
+    if (partner.status !== 'approved' && partner.status !== 'active') {
+      await supabase.rpc('admin_set_partner_status', { p_partner_id: partner.id, p_status: 'approved' })
+    }
+    if (partner.invited_at) {
+      await load()
+      return
+    }
+    if (!partner.email) {
+      setInviteMsg((m) => ({ ...m, [partner.id]: 'Este parceiro não tem e-mail cadastrado — adicione um e-mail antes de convidar.' }))
+      return
+    }
+    setInviting(partner.id)
+    const { data: sessionData } = await supabase.auth.getSession()
+    const { data, error } = await supabase.functions.invoke('invite-partner', {
+      body: { partner_id: partner.id, redirect_to: `${window.location.origin}/parceiro/ativar` },
+      headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+    })
+    setInviting(null)
+    if (error || data?.error) {
+      const detail = data?.error === 'PARTNER_HAS_NO_EMAIL' ? 'Parceiro sem e-mail cadastrado.' : (data?.detail ?? error?.message ?? 'Erro desconhecido')
+      setInviteMsg((m) => ({ ...m, [partner.id]: `Não foi possível enviar o convite: ${detail}` }))
+      return
+    }
+    setInviteMsg((m) => ({
+      ...m,
+      [partner.id]: data?.already_had_account
+        ? 'Este e-mail já tinha conta — vinculado direto como parceiro (avise a pessoa para entrar com a senha que já usa).'
+        : 'Convite enviado! A pessoa vai receber um e-mail para definir a senha e acessar o painel.',
+    }))
     load()
   }
 
@@ -127,11 +163,24 @@ export default function AdminPartners() {
             </div>
             <div className="flex flex-wrap gap-2 mb-3">
               {STATUS_FLOW.map((s) => (
-                <button key={s} onClick={() => setStatus(p.id, s)} disabled={p.status === s} className={`pill text-xs ${p.status === s ? 'bg-gold-400/20 text-gold-300' : 'bg-ink-950 border border-ink-800 text-white/50 hover:text-white'}`}>
-                  {s}
+                <button
+                  key={s}
+                  onClick={() => (s === 'approved' ? approveAndInvite(p) : setStatus(p.id, s))}
+                  disabled={p.status === s || inviting === p.id}
+                  className={`pill text-xs ${p.status === s ? 'bg-gold-400/20 text-gold-300' : 'bg-ink-950 border border-ink-800 text-white/50 hover:text-white'}`}
+                >
+                  {s === 'approved' ? (inviting === p.id ? 'enviando convite...' : 'approved (envia convite)') : s}
                 </button>
               ))}
             </div>
+            {p.invited_at ? (
+              <p className="text-xs text-white/40 mb-3">Convite enviado em {new Date(p.invited_at).toLocaleDateString('pt-BR')}.</p>
+            ) : (p.status === 'approved' || p.status === 'active') && (
+              <button onClick={() => approveAndInvite(p)} disabled={inviting === p.id} className="text-xs text-gold-400 font-medium mb-3">
+                {inviting === p.id ? 'Enviando convite...' : 'Enviar convite de acesso por e-mail'}
+              </button>
+            )}
+            {inviteMsg[p.id] && <p className="text-xs text-white/50 mb-3">{inviteMsg[p.id]}</p>}
             {linking === p.id ? (
               <div className="flex gap-2 items-center">
                 <input className="input !py-2 text-xs flex-1" placeholder="E-mail do responsável já cadastrado" value={linkEmail} onChange={(e) => setLinkEmail(e.target.value)} />

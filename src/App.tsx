@@ -10,6 +10,8 @@ import { LoadingState } from './components/ui/LoadingState'
 import Landing from './pages/public/Landing'
 import Login from './pages/public/Login'
 import Signup from './pages/public/Signup'
+import PartnerSignup from './pages/public/PartnerSignup'
+import PartnerActivate from './pages/public/PartnerActivate'
 import NotFound from './pages/public/NotFound'
 import ForgotPassword from './pages/public/ForgotPassword'
 import ResetPassword from './pages/public/ResetPassword'
@@ -38,6 +40,7 @@ const PartnerStock = lazy(() => import('./pages/partner/Stock'))
 const PartnerProducts = lazy(() => import('./pages/partner/Products'))
 const PartnerPromotions = lazy(() => import('./pages/partner/Promotions'))
 const PartnerHistory = lazy(() => import('./pages/partner/History'))
+const PartnerStoreOrders = lazy(() => import('./pages/partner/StoreOrders'))
 const PartnerProfile = lazy(() => import('./pages/partner/Profile'))
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
@@ -64,6 +67,8 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/entrar" element={<Login />} />
         <Route path="/cadastro" element={<Signup />} />
+        <Route path="/seja-parceiro" element={<PartnerSignup />} />
+        <Route path="/parceiro/ativar" element={<PartnerActivate />} />
         <Route path="/esqueci-senha" element={<ForgotPassword />} />
         <Route path="/redefinir-senha" element={<ResetPassword />} />
         <Route path="/termos" element={<Terms />} />
@@ -105,6 +110,7 @@ export default function App() {
           <Route path="estoque" element={<PartnerStock />} />
           <Route path="brindes" element={<PartnerProducts />} />
           <Route path="promocoes" element={<PartnerPromotions />} />
+          <Route path="pedidos-loja" element={<PartnerStoreOrders />} />
           <Route path="historico" element={<PartnerHistory />} />
           <Route path="perfil" element={<PartnerProfile />} />
         </Route>
