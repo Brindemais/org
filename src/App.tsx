@@ -11,6 +11,7 @@ import Landing from './pages/public/Landing'
 import Login from './pages/public/Login'
 import Signup from './pages/public/Signup'
 import PartnerSignup from './pages/public/PartnerSignup'
+import PartnerActivate from './pages/public/PartnerActivate'
 import NotFound from './pages/public/NotFound'
 import ForgotPassword from './pages/public/ForgotPassword'
 import ResetPassword from './pages/public/ResetPassword'
@@ -67,6 +68,7 @@ export default function App() {
         <Route path="/entrar" element={<Login />} />
         <Route path="/cadastro" element={<Signup />} />
         <Route path="/seja-parceiro" element={<PartnerSignup />} />
+        <Route path="/parceiro/ativar" element={<PartnerActivate />} />
         <Route path="/esqueci-senha" element={<ForgotPassword />} />
         <Route path="/redefinir-senha" element={<ResetPassword />} />
         <Route path="/termos" element={<Terms />} />
