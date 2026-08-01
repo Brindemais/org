@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { RequireRole } from './components/RequireRole'
+import { AdminGate } from './components/AdminGate'
 import { SubscriberShell } from './components/layout/SubscriberShell'
 import { PartnerShell } from './components/layout/PartnerShell'
 import { AdminShell } from './components/layout/AdminShell'
@@ -8,7 +9,9 @@ import { LoadingState } from './components/ui/LoadingState'
 
 // Public pages load eagerly (landing especially — it's the entry point for most visits).
 import Landing from './pages/public/Landing'
-import Login from './pages/public/Login'
+import LoginChooser from './pages/public/LoginChooser'
+import SubscriberLogin from './pages/public/SubscriberLogin'
+import PartnerLogin from './pages/public/PartnerLogin'
 import Signup from './pages/public/Signup'
 import PartnerSignup from './pages/public/PartnerSignup'
 import PartnerActivate from './pages/public/PartnerActivate'
@@ -65,7 +68,9 @@ export default function App() {
     <Suspense fallback={<RouteFallback />}>
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/entrar" element={<Login />} />
+        <Route path="/entrar" element={<LoginChooser />} />
+        <Route path="/entrar/assinante" element={<SubscriberLogin />} />
+        <Route path="/entrar/parceiro" element={<PartnerLogin />} />
         <Route path="/cadastro" element={<Signup />} />
         <Route path="/seja-parceiro" element={<PartnerSignup />} />
         <Route path="/parceiro/ativar" element={<PartnerActivate />} />
@@ -77,7 +82,7 @@ export default function App() {
         <Route
           path="/app"
           element={
-            <RequireRole roles={['subscriber']}>
+            <RequireRole roles={['subscriber']} loginPath="/entrar/assinante">
               <SubscriberShell />
             </RequireRole>
           }
@@ -100,7 +105,7 @@ export default function App() {
         <Route
           path="/parceiro"
           element={
-            <RequireRole roles={['partner']}>
+            <RequireRole roles={['partner']} loginPath="/entrar/parceiro">
               <PartnerShell />
             </RequireRole>
           }
@@ -118,9 +123,9 @@ export default function App() {
         <Route
           path="/admin"
           element={
-            <RequireRole roles={['admin', 'operator']}>
+            <AdminGate>
               <AdminShell />
-            </RequireRole>
+            </AdminGate>
           }
         >
           <Route index element={<AdminDashboard />} />

@@ -40,9 +40,12 @@ export function PublicHeader() {
           ))}
         </nav>
 
-        <div className="hidden xl:flex items-center gap-3 shrink-0">
-          <button onClick={() => navigate('/entrar')} className="btn-outline-light !px-4 !py-2 text-sm">
-            Entrar
+        <div className="hidden xl:flex items-center gap-2 shrink-0">
+          <button onClick={() => navigate('/entrar/assinante')} className="btn-outline-light !px-3 !py-2 text-xs whitespace-nowrap">
+            Login assinante
+          </button>
+          <button onClick={() => navigate('/entrar/parceiro')} className="btn-outline-light !px-3 !py-2 text-xs whitespace-nowrap">
+            Login parceiro
           </button>
           <button onClick={() => navigate('/cadastro')} className="btn-gold !px-4 !py-2 text-sm">
             Assine agora
@@ -50,9 +53,6 @@ export function PublicHeader() {
         </div>
 
         <div className="flex xl:hidden items-center gap-2">
-          <button onClick={() => navigate('/entrar')} className="btn-outline-light !px-3 !py-2 text-sm hidden sm:inline-flex">
-            Entrar
-          </button>
           <button
             className="text-ink-950 p-2 -mr-2 focus-ring rounded-lg"
             onClick={() => setOpen((v) => !v)}
@@ -77,9 +77,12 @@ export function PublicHeader() {
               {l.label}
             </a>
           ))}
-          <div className="flex gap-3 pt-4 safe-bottom">
-            <Link to="/entrar" className="btn-outline-light flex-1 !py-2.5 text-sm">Entrar</Link>
-            <Link to="/cadastro" className="btn-gold flex-1 !py-2.5 text-sm">Assinar</Link>
+          <div className="flex flex-col gap-2 pt-4 safe-bottom">
+            <div className="flex gap-2">
+              <Link to="/entrar/assinante" onClick={() => setOpen(false)} className="btn-outline-light flex-1 !py-2.5 text-sm">Login assinante</Link>
+              <Link to="/entrar/parceiro" onClick={() => setOpen(false)} className="btn-outline-light flex-1 !py-2.5 text-sm">Login parceiro</Link>
+            </div>
+            <Link to="/cadastro" onClick={() => setOpen(false)} className="btn-gold !py-2.5 text-sm">Assinar</Link>
           </div>
         </div>
       )}
