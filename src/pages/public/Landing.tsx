@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Gift, Users2, UserPlus, ShieldCheck, Wallet, PackageCheck, Instagram, Facebook,
+  Gift, Users2, UserPlus, ShieldCheck, Wallet, PackageCheck, Instagram, Facebook, Youtube, Music2,
   ChevronRight, ChevronDown, MapPin, ShoppingBag, Percent, Lock, History,
   Headset, Ban, Copy, Share2, Search, ArrowRight,
 } from 'lucide-react'
@@ -496,6 +496,43 @@ export default function Landing() {
         </ResponsiveContainer>
       </section>
 
+      {/* ============ CTA FINAL ============ */}
+      <section className="border-t border-black/10 py-16">
+        <ResponsiveContainer>
+          <div className="rounded-xl2 bg-ink-950 text-white p-8 sm:p-10 flex flex-col lg:flex-row items-center gap-8">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-4">
+                <Logo size="sm" />
+              </div>
+              <h3 className="font-display text-xl sm:text-2xl font-semibold mb-5 max-w-md">
+                Faça parte da maior comunidade de consumo inteligente do Brasil.
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                {[
+                  { icon: Percent, label: 'Descontos exclusivos' },
+                  { icon: Wallet, label: 'Cashback e créditos' },
+                  { icon: Users2, label: 'Indique e ganhe mais benefícios' },
+                  { icon: ShoppingBag, label: 'Loja virtual exclusiva' },
+                  { icon: History, label: 'Carteira interna' },
+                ].map(({ icon: Icon, label }) => (
+                  <div key={label} className="flex flex-col items-start gap-2">
+                    <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
+                      <Icon size={16} className="text-gold-400" />
+                    </div>
+                    <p className="text-xs text-white/60 leading-snug">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="w-full lg:w-auto shrink-0 bg-white/5 border border-white/10 rounded-xl2 p-6 text-center">
+              <p className="text-xs text-white/50 mb-1">Assine agora por apenas</p>
+              <p className="text-3xl font-bold mb-4">R$ 79<span className="text-base font-medium text-white/60">,00 /mês</span></p>
+              <Link to="/cadastro" className="btn-gold w-full !py-2.5 text-sm">Assine agora</Link>
+            </div>
+          </div>
+        </ResponsiveContainer>
+      </section>
+
       {/* ============ 4.13 FAQ ============ */}
       <section id="faq" className="border-t border-black/10 py-16">
         <ResponsiveContainer narrow>
@@ -516,29 +553,34 @@ export default function Landing() {
             <div className="flex gap-3 text-white/50 mt-4">
               <a href="#" aria-label="Instagram" className="hover:text-gold-400"><Instagram size={18} /></a>
               <a href="#" aria-label="Facebook" className="hover:text-gold-400"><Facebook size={18} /></a>
+              <a href="#" aria-label="TikTok" className="hover:text-gold-400"><Music2 size={18} /></a>
+              <a href="#" aria-label="YouTube" className="hover:text-gold-400"><Youtube size={18} /></a>
             </div>
           </div>
           <div>
             <p className="text-white/40 font-semibold mb-3 text-xs uppercase tracking-wide">Institucional</p>
             <ul className="space-y-2 text-white/60">
               <li><a href="#beneficios" className="hover:text-gold-400">Benefícios</a></li>
-              <li><a href="#parceiros" className="hover:text-gold-400">Parceiros</a></li>
               <li><a href="#como-funciona" className="hover:text-gold-400">Como funciona</a></li>
-              <li><a href="#faq" className="hover:text-gold-400">Perguntas frequentes</a></li>
+              <li><a href="#parceiros" className="hover:text-gold-400">Parceiros</a></li>
+              <li><Link to="/seja-parceiro" className="hover:text-gold-400">Seja um parceiro</Link></li>
             </ul>
           </div>
           <div>
-            <p className="text-white/40 font-semibold mb-3 text-xs uppercase tracking-wide">Legal</p>
+            <p className="text-white/40 font-semibold mb-3 text-xs uppercase tracking-wide">Ajuda</p>
             <ul className="space-y-2 text-white/60">
+              <li><a href="#faq" className="hover:text-gold-400">Perguntas frequentes</a></li>
               <li><Link to="/termos" className="hover:text-gold-400">Termos de Uso</Link></li>
               <li><Link to="/privacidade" className="hover:text-gold-400">Política de Privacidade</Link></li>
+              <li><a href={WHATSAPP_PARTNER_LINK} target="_blank" rel="noreferrer" className="hover:text-gold-400">Fale conosco</a></li>
             </ul>
           </div>
           <div>
-            <p className="text-white/40 font-semibold mb-3 text-xs uppercase tracking-wide">Contato</p>
+            <p className="text-white/40 font-semibold mb-3 text-xs uppercase tracking-wide">Pagamento e segurança</p>
             <ul className="space-y-2 text-white/60">
+              <li className="flex items-center gap-2"><Wallet size={14} className="text-gold-400 shrink-0" /> Assinatura via Pix</li>
+              <li className="flex items-center gap-2"><ShieldCheck size={14} className="text-gold-400 shrink-0" /> Ambiente seguro</li>
               <li>contato@brindemais.com.br</li>
-              <li><a href={WHATSAPP_PARTNER_LINK} target="_blank" rel="noreferrer" className="hover:text-gold-400">WhatsApp</a></li>
               <li>Piloto: Rio de Janeiro</li>
             </ul>
           </div>
