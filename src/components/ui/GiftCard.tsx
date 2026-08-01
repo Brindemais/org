@@ -19,7 +19,7 @@ export function GiftCard({ name, description, deadlineLabel, stockNote, image, o
 
   return (
     <div className="card-light flex flex-col">
-      <div className="relative w-full aspect-video rounded-lg bg-gold-gradient-soft border border-gold-400/20 flex items-center justify-center mb-5 overflow-hidden">
+      <div className="relative w-full aspect-[3/4] rounded-lg bg-gold-gradient-soft border border-gold-400/20 flex items-center justify-center mb-5 overflow-hidden">
         {image}
         <span className="absolute top-3 left-3 pill bg-ink-950/85 text-white backdrop-blur-sm inline-flex items-center gap-1.5">
           <Lock size={11} /> Exclusivo para assinantes ativos
