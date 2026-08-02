@@ -29,7 +29,7 @@ export default function PartnerPickups() {
 
   async function load() {
     if (!partner) return
-    const { data } = await supabase.from('partner_pickup_view').select('*').eq('partner_id', partner.id).order('created_at', { ascending: false })
+    const { data } = await supabase.rpc('get_partner_pickups', { p_partner_id: partner.id })
     const rows = (data as PickupRow[]) ?? []
     setPickups(rows)
     const { data: stock } = await supabase.from('stock_partner').select('product_id, quantity, product:product_id(id,name)').eq('partner_id', partner.id).gt('quantity', 0)
