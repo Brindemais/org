@@ -56,7 +56,7 @@ export default function PartnerProfile() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold">Meu estabelecimento</h1>
-        <p className="text-white/50 text-sm">Alterações em dados sensíveis passam por aprovação da administração.</p>
+        <p className="text-white/50 text-sm">O logotipo é atualizado na hora. Endereço e horário de funcionamento passam por aprovação da administração.</p>
       </div>
 
       <div className="card space-y-1">

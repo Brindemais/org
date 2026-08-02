@@ -34,9 +34,10 @@ export default function AdminSubscribers() {
 
   async function toggleActive(r: Row) {
     setBusy(r.id)
-    await supabase.rpc('admin_set_subscriber_active', { p_subscriber_id: r.id, p_active: !r.active })
-    setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, active: !x.active } : x)))
+    const { error } = await supabase.rpc('admin_set_subscriber_active', { p_subscriber_id: r.id, p_active: !r.active })
     setBusy(null)
+    if (error) return
+    setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, active: !x.active } : x)))
   }
 
   function exportCSV() {

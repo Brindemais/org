@@ -4,10 +4,13 @@ import { supabase } from '../../lib/supabase'
 import type { Partner, ProductRow } from '../../lib/types'
 import { EmptyState } from '../../components/ui/EmptyState'
 
+interface PartnerStockRow { partner_id: string; product_id: string; quantity: number; partner: { trade_name: string } | null; product: { name: string } | null }
+
 export default function AdminStock() {
   const [products, setProducts] = useState<ProductRow[]>([])
   const [pendingProducts, setPendingProducts] = useState<(ProductRow & { partner?: { trade_name: string } | null })[]>([])
   const [matrixStock, setMatrixStock] = useState<Record<string, number>>({})
+  const [partnerStock, setPartnerStock] = useState<PartnerStockRow[]>([])
   const [partners, setPartners] = useState<Partner[]>([])
   const [newProduct, setNewProduct] = useState({ name: '', description: '' })
   const [entry, setEntry] = useState({ product_id: '', quantity: '' })
@@ -31,6 +34,11 @@ export default function AdminStock() {
     setMatrixStock(map)
     const { data: p } = await supabase.from('partners').select('*').in('status', ['approved', 'active'])
     setPartners((p as Partner[]) ?? [])
+    const { data: pStock } = await supabase
+      .from('stock_partner')
+      .select('partner_id, product_id, quantity, partner:partner_id(trade_name), product:product_id(name)')
+      .order('quantity', { ascending: true })
+    setPartnerStock((pStock as any) ?? [])
   }
 
   useEffect(() => { load() }, [])
@@ -110,6 +118,23 @@ export default function AdminStock() {
               <tr key={p.id} className="border-t border-ink-800"><td className="py-2">{p.name}</td><td className="py-2 font-semibold">{matrixStock[p.id] ?? 0}</td></tr>
             ))}
             {!products.length && <tr><td colSpan={2}><EmptyState dark icon={Box} title="Nenhum produto de matriz cadastrado" className="py-6" /></td></tr>}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card overflow-x-auto">
+        <p className="font-semibold mb-3">Estoque por parceiro</p>
+        <table className="w-full text-sm min-w-[500px]">
+          <thead><tr className="text-left text-white/40 text-xs uppercase"><th className="pb-2">Parceiro</th><th className="pb-2">Produto</th><th className="pb-2">Quantidade</th></tr></thead>
+          <tbody>
+            {partnerStock.map((s) => (
+              <tr key={`${s.partner_id}-${s.product_id}`} className="border-t border-ink-800">
+                <td className="py-2">{s.partner?.trade_name ?? '-'}</td>
+                <td className="py-2 text-white/60">{s.product?.name ?? '-'}</td>
+                <td className={`py-2 font-semibold ${s.quantity <= 5 ? 'text-red-400' : ''}`}>{s.quantity}</td>
+              </tr>
+            ))}
+            {!partnerStock.length && <tr><td colSpan={3}><EmptyState dark icon={Box} title="Nenhum estoque enviado a parceiros ainda" className="py-6" /></td></tr>}
           </tbody>
         </table>
       </div>

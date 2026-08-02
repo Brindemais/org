@@ -82,9 +82,16 @@ export default function SubscriberProfile() {
     setDeleteRequested(true)
   }
 
+  const [cancelError, setCancelError] = useState<string | null>(null)
+
   async function cancelSubscription() {
     if (!subscription) return
-    await supabase.from('subscriptions').update({ status: 'cancelled', cancelled_at: new Date().toISOString() }).eq('id', subscription.id)
+    setCancelError(null)
+    const { error } = await supabase.rpc('cancel_subscription', { p_subscription_id: subscription.id })
+    if (error) {
+      setCancelError('Não foi possível cancelar a assinatura. Tente novamente ou fale com o suporte.')
+      return
+    }
     setConfirmCancel(false)
     await reload()
   }
@@ -204,6 +211,7 @@ export default function SubscriberProfile() {
                 <button onClick={cancelSubscription} className="btn-dark flex-1 !py-2 text-xs !border-red-500/40 text-red-400">Confirmar cancelamento</button>
                 <button onClick={() => setConfirmCancel(false)} className="btn-ghost flex-1 !py-2 text-xs">Voltar</button>
               </div>
+              {cancelError && <p className="text-xs text-red-400">{cancelError}</p>}
             </div>
           )}
         </div>
