@@ -1,0 +1,13 @@
+-- Security audit finding: partners.pix_key is dead weight that turns into a
+-- real leak the moment anyone populates it. partners_public_read (0003)
+-- allows any anon/authenticated visitor to SELECT the full row of any
+-- approved/active partner (RLS is row-level, not column-level, and
+-- Landing.tsx queries `select('*')`), so a PIX key sitting in that same row
+-- would go out in the public API response the instant it had a value.
+-- Grepping the entire codebase (frontend, edge functions) confirms this
+-- column has never been read or written anywhere — there's no partner
+-- payout/reimbursement flow that uses it, unlike profiles.pix_key (used by
+-- request_withdrawal for subscribers) or withdrawals.pix_key. Dropping it
+-- removes the exposure surface entirely instead of trying to carefully gate
+-- access to a column nothing depends on.
+alter table partners drop column if exists pix_key;
