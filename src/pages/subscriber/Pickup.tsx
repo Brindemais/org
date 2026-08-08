@@ -10,14 +10,17 @@ import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 
+// Only the columns rendered below — see the same note in Landing.tsx.
+type PickupPartner = Pick<Partner, 'id' | 'trade_name' | 'address' | 'neighborhood'>
+
 export default function SubscriberPickup() {
   const { pickup, loading, reload } = useSubscription()
-  const [partner, setPartner] = useState<Partner | null>(null)
+  const [partner, setPartner] = useState<PickupPartner | null>(null)
   const [tick, setTick] = useState(0)
 
   useEffect(() => {
     if (pickup?.partner_id) {
-      supabase.from('partners').select('*').eq('id', pickup.partner_id).maybeSingle().then(({ data }) => setPartner(data as Partner | null))
+      supabase.from('partners').select('id, trade_name, address, neighborhood').eq('id', pickup.partner_id).maybeSingle().then(({ data }) => setPartner(data as PickupPartner | null))
     }
   }, [pickup?.partner_id])
 

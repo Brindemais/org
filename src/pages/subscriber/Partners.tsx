@@ -8,8 +8,14 @@ import { haversineKm, formatDistance } from '../../lib/geo'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 
+// Only the columns this directory actually renders — phone/email/
+// responsible_name/cnpj_cpf of every partner have no business going out to
+// every logged-in subscriber's network tab just because RLS grants row
+// access by status.
+type DirectoryPartner = Pick<Partner, 'id' | 'trade_name' | 'category' | 'neighborhood' | 'logo_url' | 'opening_hours' | 'address' | 'city' | 'state' | 'whatsapp' | 'lat' | 'lng'>
+
 export default function SubscriberPartners() {
-  const [partners, setPartners] = useState<Partner[]>([])
+  const [partners, setPartners] = useState<DirectoryPartner[]>([])
   const [category, setCategory] = useState('')
   const [neighborhood, setNeighborhood] = useState('')
   const [search, setSearch] = useState('')
@@ -18,10 +24,10 @@ export default function SubscriberPartners() {
 
   useEffect(() => {
     setLoading(true)
-    let query = supabase.from('partners').select('*').in('status', ['approved', 'active'])
+    let query = supabase.from('partners').select('id, trade_name, category, neighborhood, logo_url, opening_hours, address, city, state, whatsapp, lat, lng').in('status', ['approved', 'active'])
     if (category) query = query.eq('category', category)
     if (neighborhood) query = query.eq('neighborhood', neighborhood)
-    query.then(({ data }) => { setPartners((data as Partner[]) ?? []); setLoading(false) })
+    query.then(({ data }) => { setPartners((data as DirectoryPartner[]) ?? []); setLoading(false) })
   }, [category, neighborhood])
 
   const neighborhoods = useMemo(() => Array.from(new Set(partners.map((p) => p.neighborhood).filter(Boolean))) as string[], [partners])

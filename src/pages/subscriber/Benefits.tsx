@@ -10,9 +10,12 @@ import { haversineKm, formatDistance } from '../../lib/geo'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 
+// Only the columns this card grid renders — see the same note in Partners.tsx.
+type BenefitPartner = Pick<Partner, 'id' | 'trade_name' | 'category' | 'neighborhood' | 'city' | 'logo_url' | 'lat' | 'lng'>
+
 export default function SubscriberBenefits() {
   const { subscription, pickup, reload } = useSubscription()
-  const [partners, setPartners] = useState<Partner[]>([])
+  const [partners, setPartners] = useState<BenefitPartner[]>([])
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [category, setCategory] = useState<string>('')
   const [choosing, setChoosing] = useState<string | null>(null)
@@ -23,9 +26,9 @@ export default function SubscriberBenefits() {
 
   useEffect(() => {
     setLoading(true)
-    let query = supabase.from('partners').select('*').in('status', ['approved', 'active'])
+    let query = supabase.from('partners').select('id, trade_name, category, neighborhood, city, logo_url, lat, lng').in('status', ['approved', 'active'])
     if (category) query = query.eq('category', category)
-    query.then(({ data }) => { setPartners((data as Partner[]) ?? []); setLoading(false) })
+    query.then(({ data }) => { setPartners((data as BenefitPartner[]) ?? []); setLoading(false) })
     supabase.from('promotions').select('*').eq('status', 'approved').gte('valid_until', new Date().toISOString().slice(0, 10)).then(({ data }) => setPromotions((data as Promotion[]) ?? []))
   }, [category])
 
