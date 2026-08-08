@@ -4,6 +4,16 @@
 -- products/stock, four partner listings, and 7 demo subscribers
 -- with an active referral chain and pending pickups.
 -- Safe to skip in a real production deploy.
+--
+-- SECURITY: this repository is public. An earlier version of this file
+-- hardcoded a single literal password ('BrindeMais2026!') shared by every
+-- seed account, and it ended up applied straight to the live production
+-- project instead of a disposable dev/demo one — so that string was a real,
+-- working password for real accounts, sitting in plain text in public git
+-- history. All affected accounts have since had their passwords rotated to
+-- random values outside of git. To make sure this can't happen again, the
+-- password below is generated fresh on every run and only ever surfaces in
+-- this run's NOTICE output (check the migration log), never committed.
 -- ============================================================
 create or replace function seed_create_auth_user(p_email text, p_password text) returns uuid language plpgsql set search_path = public, extensions, auth as $$
 declare
@@ -44,8 +54,9 @@ declare
   v_sub_joao uuid; v_sub_ana uuid; v_sub_lucas uuid; v_sub_mariana uuid;
   v_prod_taca uuid; v_prod_balde uuid; v_prod_kit uuid; v_prod_abridor uuid;
   v_pay uuid;
+  v_seed_password text := encode(gen_random_bytes(18), 'base64');
 begin
-  v_admin := seed_create_auth_user('admin@brindemais.com.br', 'BrindeMais2026!');
+  v_admin := seed_create_auth_user('admin@brindemais.com.br', v_seed_password);
   insert into profiles (id, role, full_name, cpf, phone, email, referral_code)
   values (v_admin, 'admin', 'Equipe Brinde Mais', '00000000000', '21999999999', 'admin@brindemais.com.br', generate_referral_code())
   on conflict (id) do update set role = 'admin';
@@ -66,7 +77,7 @@ begin
   values (gen_random_uuid(), 'Adega Central Comércio Ltda', 'Adega Central', '44.444.444/0001-44', 'Ana Paula Souza', '21955554444', '21955554444', 'contato@adegacentral.com.br', 'Rua Barão de Ipanema, 45', 'Ipanema', 'Rio de Janeiro', 'RJ', 'adega', 'Seg a Sáb, 9h às 21h', 'active', now() - interval '2 months')
   returning id into v_partner4;
 
-  v_partner1_user := seed_create_auth_user('parceiro@emporiodascervejas.com.br', 'BrindeMais2026!');
+  v_partner1_user := seed_create_auth_user('parceiro@emporiodascervejas.com.br', v_seed_password);
   insert into profiles (id, role, full_name, cpf, phone, email, referral_code)
   values (v_partner1_user, 'partner', 'João Silva', '11111111111', '21988887777', 'parceiro@emporiodascervejas.com.br', generate_referral_code())
   on conflict (id) do update set role = 'partner';
@@ -96,40 +107,40 @@ begin
   insert into promotions (partner_id, title, description, normal_price, subscriber_price, discount_pct, valid_until, status)
   values (v_partner1, '10% OFF em cervejas selecionadas', '10% OFF em todas as cervejas selecionadas para assinantes Brinde Mais', null, null, 10, (now() + interval '30 days')::date, 'approved');
 
-  v_joao := seed_create_auth_user('joao.silva@example.com', 'BrindeMais2026!');
+  v_joao := seed_create_auth_user('joao.silva@example.com', v_seed_password);
   insert into profiles (id, role, full_name, cpf, phone, email, referral_code, city, state)
   values (v_joao, 'subscriber', 'João Silva Assinante', '22222222222', '21991111111', 'joao.silva@example.com', generate_referral_code(), 'Rio de Janeiro', 'RJ')
   on conflict (id) do nothing;
 
-  v_ana := seed_create_auth_user('ana.paula@example.com', 'BrindeMais2026!');
+  v_ana := seed_create_auth_user('ana.paula@example.com', v_seed_password);
   insert into profiles (id, role, full_name, cpf, phone, email, referral_code, referred_by, city, state)
   values (v_ana, 'subscriber', 'Ana Paula', '33333333333', '21992222222', 'ana.paula@example.com', generate_referral_code(), v_joao, 'Rio de Janeiro', 'RJ')
   on conflict (id) do nothing;
   insert into referrals (referrer_id, referred_id) values (v_joao, v_ana) on conflict do nothing;
 
-  v_lucas := seed_create_auth_user('lucas@example.com', 'BrindeMais2026!');
+  v_lucas := seed_create_auth_user('lucas@example.com', v_seed_password);
   insert into profiles (id, role, full_name, cpf, phone, email, referral_code, referred_by, city, state)
   values (v_lucas, 'subscriber', 'Lucas', '44444444444', '21993333333', 'lucas@example.com', generate_referral_code(), v_ana, 'Rio de Janeiro', 'RJ')
   on conflict (id) do nothing;
   insert into referrals (referrer_id, referred_id) values (v_ana, v_lucas) on conflict do nothing;
 
-  v_mariana := seed_create_auth_user('mariana@example.com', 'BrindeMais2026!');
+  v_mariana := seed_create_auth_user('mariana@example.com', v_seed_password);
   insert into profiles (id, role, full_name, cpf, phone, email, referral_code, referred_by, city, state)
   values (v_mariana, 'subscriber', 'Mariana', '55555555555', '21994444444', 'mariana@example.com', generate_referral_code(), v_joao, 'Rio de Janeiro', 'RJ')
   on conflict (id) do nothing;
   insert into referrals (referrer_id, referred_id) values (v_joao, v_mariana) on conflict do nothing;
 
-  v_rafael := seed_create_auth_user('rafael@example.com', 'BrindeMais2026!');
+  v_rafael := seed_create_auth_user('rafael@example.com', v_seed_password);
   insert into profiles (id, role, full_name, cpf, phone, email, referral_code, city, state)
   values (v_rafael, 'subscriber', 'Rafael', '66666666666', '21995555555', 'rafael@example.com', generate_referral_code(), 'Rio de Janeiro', 'RJ')
   on conflict (id) do nothing;
 
-  v_camila := seed_create_auth_user('camila@example.com', 'BrindeMais2026!');
+  v_camila := seed_create_auth_user('camila@example.com', v_seed_password);
   insert into profiles (id, role, full_name, cpf, phone, email, referral_code, city, state)
   values (v_camila, 'subscriber', 'Camila', '77777777777', '21996666666', 'camila@example.com', generate_referral_code(), 'Rio de Janeiro', 'RJ')
   on conflict (id) do nothing;
 
-  v_felipe := seed_create_auth_user('felipe@example.com', 'BrindeMais2026!');
+  v_felipe := seed_create_auth_user('felipe@example.com', v_seed_password);
   insert into profiles (id, role, full_name, cpf, phone, email, referral_code, city, state)
   values (v_felipe, 'subscriber', 'Felipe', '88888888888', '21997777777', 'felipe@example.com', generate_referral_code(), 'Rio de Janeiro', 'RJ')
   on conflict (id) do nothing;
@@ -170,6 +181,8 @@ begin
     (v_felipe, (select id from subscriptions where subscriber_id = v_felipe limit 1), v_partner1, 'ready', generate_pickup_code(), extract(month from now())::int, extract(year from now())::int, now() + interval '25 days', now() - interval '1 days');
 
   insert into support_tickets (user_id, category, subject, status) values (v_joao, 'Retirada', 'Problema com retirada do brinde deste mês', 'open');
+
+  raise notice 'Seed accounts created/reused with password: %', v_seed_password;
 end;
 $$;
 
