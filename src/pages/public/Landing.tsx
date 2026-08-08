@@ -7,6 +7,13 @@ import {
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, Promotion, ProductRow } from '../../lib/types'
+
+// Landing is public/unauthenticated — only request the columns the card
+// actually renders. `partners_public_read` grants row access by status, not
+// column access, so a bare select('*') here would ship phone/email/
+// responsible_name/cnpj_cpf/address of every partner to any visitor's
+// network tab even though the UI never shows them.
+type PublicPartner = Pick<Partner, 'id' | 'trade_name' | 'category' | 'neighborhood' | 'logo_url' | 'opening_hours'>
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { PublicHeader } from './PublicHeader'
 import { Logo } from '../../components/layout/Logo'
@@ -94,15 +101,15 @@ export default function Landing() {
   const navigate = useNavigate()
   const goToSignup = () => navigate('/cadastro')
   const { showToast } = useToast()
-  const [partners, setPartners] = useState<Partner[]>([])
+  const [partners, setPartners] = useState<PublicPartner[]>([])
   const [promos, setPromos] = useState<Promotion[]>([])
   const [products, setProducts] = useState<ProductRow[]>([])
   const [categoryFilter, setCategoryFilter] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
-    supabase.from('partners').select('*').in('status', ['approved', 'active']).limit(8)
-      .then(({ data }) => setPartners((data as Partner[]) ?? []))
+    supabase.from('partners').select('id, trade_name, category, neighborhood, logo_url, opening_hours').in('status', ['approved', 'active']).limit(8)
+      .then(({ data }) => setPartners((data as PublicPartner[]) ?? []))
     supabase.from('promotions').select('*').eq('status', 'approved').gte('valid_until', new Date().toISOString().slice(0, 10)).limit(3)
       .then(({ data }) => setPromos((data as Promotion[]) ?? []))
     supabase.from('products').select('*').eq('store_visible', true).eq('active', true).eq('approved', true).limit(4)

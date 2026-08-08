@@ -46,7 +46,6 @@ export interface Partner {
   opening_hours: string | null
   logo_url: string | null
   images: string[]
-  pix_key: string | null
   status: PartnerStatus
   rating: number
   lat: number | null

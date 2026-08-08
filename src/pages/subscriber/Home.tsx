@@ -11,15 +11,19 @@ import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 
+// Only the columns this preview strip renders — see the same note in
+// Landing.tsx / subscriber/Partners.tsx.
+type HomePartner = Pick<Partner, 'id' | 'trade_name' | 'logo_url'>
+
 export default function SubscriberHome() {
   const { profile } = useAuth()
   const { subscription, pickup, loading: subLoading } = useSubscription()
   const { balance } = useWallet()
-  const [partners, setPartners] = useState<Partner[]>([])
+  const [partners, setPartners] = useState<HomePartner[]>([])
   const [promo, setPromo] = useState<Promotion | null>(null)
 
   useEffect(() => {
-    supabase.from('partners').select('*').in('status', ['approved', 'active']).limit(4).then(({ data }) => setPartners((data as Partner[]) ?? []))
+    supabase.from('partners').select('id, trade_name, logo_url').in('status', ['approved', 'active']).limit(4).then(({ data }) => setPartners((data as HomePartner[]) ?? []))
     supabase.from('promotions').select('*').eq('status', 'approved').gte('valid_until', new Date().toISOString().slice(0, 10)).limit(1).maybeSingle().then(({ data }) => setPromo(data as Promotion | null))
   }, [])
 
