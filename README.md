@@ -36,11 +36,12 @@ Aplique as migrations em `supabase/migrations/` (via Supabase CLI ou MCP) na ord
 
 ## Contas de demonstração (seed)
 
-| Perfil | E-mail | Senha |
-|---|---|---|
-| Administração | admin@brindemais.com.br | BrindeMais2026! |
-| Parceiro (Empório das Cervejas) | parceiro@emporiodascervejas.com.br | BrindeMais2026! |
-| Assinante | lucas@example.com | BrindeMais2026! |
+`0004_seed_demo.sql` cria um usuário de exemplo por perfil (administração, parceiro,
+assinante). As senhas **não ficam neste README** — este repositório é público, então
+credenciais em texto puro aqui seriam visíveis por qualquer pessoa na internet, inclusive
+para as contas reais que hoje existem em produção. Defina/redefina as senhas dessas
+contas de seed diretamente no painel do Supabase Auth (ou via `auth.admin` API) e
+guarde-as num gerenciador de senhas da equipe, não em arquivos versionados.
 
 ## Pagamento Pix (MVP)
 
