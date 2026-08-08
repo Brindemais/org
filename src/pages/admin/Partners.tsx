@@ -13,7 +13,8 @@ export default function AdminPartners() {
   const [partners, setPartners] = useState<Partner[]>([])
   const [requests, setRequests] = useState<any[]>([])
   const [creating, setCreating] = useState(false)
-  const [form, setForm] = useState({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '' })
+  const [createMsg, setCreateMsg] = useState('')
+  const [form, setForm] = useState({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '', email: '' })
   const [linking, setLinking] = useState<string | null>(null)
   const [linkEmail, setLinkEmail] = useState('')
   const [linkMsg, setLinkMsg] = useState('')
@@ -32,9 +33,30 @@ export default function AdminPartners() {
   async function createPartner(e: FormEvent) {
     e.preventDefault()
     setCreating(true)
-    await supabase.from('partners').insert({ ...form, status: 'analyzing' })
+    setCreateMsg('')
+    // Admin is registering someone already vetted (by phone/presencial), so
+    // this goes straight to 'approved' instead of through the interested ->
+    // pending_docs -> analyzing queue that the public "Quero ser parceiro"
+    // form feeds. If an e-mail was given, the access invite fires right
+    // away too — no separate manual step needed.
+    const { data: created, error } = await supabase
+      .from('partners')
+      .insert({ ...form, email: form.email || null, status: 'approved', approved_at: new Date().toISOString() })
+      .select()
+      .single()
     setCreating(false)
-    setForm({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '' })
+    if (error || !created) {
+      setCreateMsg('Não foi possível cadastrar o parceiro.')
+      return
+    }
+    setForm({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '', email: '' })
+    if (created.email) {
+      setCreateMsg('Parceiro cadastrado! Enviando convite de acesso por e-mail...')
+      await approveAndInvite(created as Partner)
+      setCreateMsg('Parceiro cadastrado e convite enviado por e-mail.')
+    } else {
+      setCreateMsg('Parceiro cadastrado! Sem e-mail informado — adicione um e clique em "Enviar convite" na ficha dele para liberar o acesso.')
+    }
     load()
   }
 
@@ -145,9 +167,14 @@ export default function AdminPartners() {
             {PARTNER_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
           <input className="input" placeholder="WhatsApp" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
+          <input className="input" type="email" placeholder="E-mail (login de acesso ao painel)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           <input className="input" placeholder="Endereço" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
           <input className="input" placeholder="Bairro" value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} />
+          <p className="text-xs text-white/40 sm:col-span-2">
+            Informando o e-mail, o convite de acesso ao painel do parceiro é enviado automaticamente ao cadastrar.
+          </p>
           <button type="submit" disabled={creating} className="btn-gold sm:col-span-2">{creating ? 'Salvando...' : 'Cadastrar parceiro'}</button>
+          {createMsg && <p className="text-xs text-gold-300 sm:col-span-2">{createMsg}</p>}
         </form>
       </details>
 
@@ -161,6 +188,16 @@ export default function AdminPartners() {
               </div>
               <StatusBadge status={p.status} />
             </div>
+            {(p.responsible_name || p.email || p.phone || p.cnpj_cpf || p.address) && (
+              <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-white/50 mb-3 bg-ink-950/50 rounded-lg p-3">
+                {p.responsible_name && <p><span className="text-white/30">Responsável:</span> {p.responsible_name}</p>}
+                {p.email && <p><span className="text-white/30">E-mail:</span> {p.email}</p>}
+                {p.phone && <p><span className="text-white/30">Telefone:</span> {p.phone}</p>}
+                {p.whatsapp && p.whatsapp !== p.phone && <p><span className="text-white/30">WhatsApp:</span> {p.whatsapp}</p>}
+                {p.cnpj_cpf && <p><span className="text-white/30">CNPJ/CPF:</span> {p.cnpj_cpf}</p>}
+                {p.address && <p><span className="text-white/30">Endereço:</span> {p.address}{p.city ? `, ${p.city}` : ''}</p>}
+              </div>
+            )}
             <div className="flex flex-wrap gap-2 mb-3">
               {STATUS_FLOW.map((s) => (
                 <button
