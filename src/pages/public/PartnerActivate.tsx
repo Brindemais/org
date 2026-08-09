@@ -38,7 +38,16 @@ export default function PartnerActivate() {
       return
     }
     setDone(true)
-    setTimeout(() => navigate('/parceiro'), 2000)
+    // Same activation page is used for both partner and internal staff
+    // invites (invite-partner / invite-staff) — route to whichever panel
+    // matches the role that was actually granted, instead of assuming
+    // partner.
+    const { data: userData } = await supabase.auth.getUser()
+    const { data: prof } = userData.user
+      ? await supabase.from('profiles').select('role').eq('id', userData.user.id).maybeSingle()
+      : { data: null }
+    const dest = prof?.role === 'admin' || prof?.role === 'operator' ? '/admin' : '/parceiro'
+    setTimeout(() => navigate(dest), 2000)
   }
 
   return (
@@ -47,11 +56,11 @@ export default function PartnerActivate() {
         <Link to="/" className="flex justify-center mb-8"><LogoBadge size={130} /></Link>
         <div className="card-light">
           <h1 className="font-display text-xl font-semibold mb-1 text-ink-950">Bem-vindo à Brinde Mais</h1>
-          <p className="text-sm text-black/50 mb-6">Defina uma senha para acessar o painel do parceiro.</p>
+          <p className="text-sm text-black/50 mb-6">Defina uma senha para acessar o seu painel.</p>
 
           {done ? (
             <p className="flex items-center gap-2 text-sm bg-gold-400/10 text-gold-700 rounded-lg px-3 py-3">
-              <CheckCircle2 size={16} className="shrink-0" /> Senha definida! Entrando no painel do parceiro...
+              <CheckCircle2 size={16} className="shrink-0" /> Senha definida! Entrando no seu painel...
             </p>
           ) : checking ? (
             <p className="text-sm text-black/50">Verificando convite...</p>

@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { Download, Store } from 'lucide-react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Download, Store, Search } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, PartnerStatus } from '../../lib/types'
 import { PARTNER_CATEGORIES } from '../../lib/types'
@@ -8,6 +8,19 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import { downloadCSV } from '../../lib/csv'
 
 const STATUS_FLOW: PartnerStatus[] = ['interested', 'pending_docs', 'analyzing', 'approved', 'active', 'suspended', 'rejected', 'closed']
+
+const EDIT_FIELDS: { key: keyof Partner; label: string }[] = [
+  { key: 'company_name', label: 'Razão social' },
+  { key: 'trade_name', label: 'Nome fantasia' },
+  { key: 'responsible_name', label: 'Responsável' },
+  { key: 'cnpj_cpf', label: 'CNPJ/CPF' },
+  { key: 'email', label: 'E-mail' },
+  { key: 'phone', label: 'Telefone' },
+  { key: 'whatsapp', label: 'WhatsApp' },
+  { key: 'address', label: 'Endereço' },
+  { key: 'neighborhood', label: 'Bairro' },
+  { key: 'city', label: 'Cidade' },
+]
 
 export default function AdminPartners() {
   const [partners, setPartners] = useState<Partner[]>([])
@@ -20,6 +33,13 @@ export default function AdminPartners() {
   const [linkMsg, setLinkMsg] = useState('')
   const [inviting, setInviting] = useState<string | null>(null)
   const [inviteMsg, setInviteMsg] = useState<Record<string, string>>({})
+  const [search, setSearch] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<Record<string, string>>({})
+  const [editCategory, setEditCategory] = useState('bar')
+  const [savingEdit, setSavingEdit] = useState(false)
 
   async function load() {
     const { data } = await supabase.from('partners').select('*').order('created_at', { ascending: false })
@@ -27,6 +47,31 @@ export default function AdminPartners() {
     const { data: reqs } = await supabase.from('partner_change_requests').select('*, partner:partner_id(trade_name)').eq('status', 'pending').order('created_at', { ascending: false })
     setRequests(reqs ?? [])
   }
+
+  function startEdit(p: Partner) {
+    setEditingId(p.id)
+    setEditCategory(p.category)
+    const initial: Record<string, string> = {}
+    for (const f of EDIT_FIELDS) initial[f.key] = (p[f.key] as string) ?? ''
+    setEditForm(initial)
+  }
+
+  async function saveEdit(id: string) {
+    setSavingEdit(true)
+    const payload: Record<string, string | null> = { category: editCategory }
+    for (const f of EDIT_FIELDS) payload[f.key] = editForm[f.key]?.trim() || null
+    const { error } = await supabase.from('partners').update(payload).eq('id', id)
+    setSavingEdit(false)
+    if (!error) { setEditingId(null); load() }
+  }
+
+  const filtered = useMemo(() => partners.filter((p) => {
+    const q = search.trim().toLowerCase()
+    const matchesSearch = !q || p.trade_name.toLowerCase().includes(q) || p.company_name.toLowerCase().includes(q) || (p.email ?? '').toLowerCase().includes(q) || (p.neighborhood ?? '').toLowerCase().includes(q)
+    const matchesCategory = !categoryFilter || p.category === categoryFilter
+    const matchesStatus = !statusFilter || p.status === statusFilter
+    return matchesSearch && matchesCategory && matchesStatus
+  }), [partners, search, categoryFilter, statusFilter])
 
   useEffect(() => { load() }, [])
 
@@ -138,6 +183,21 @@ export default function AdminPartners() {
         <button onClick={exportCSV} className="btn-dark !px-3 !py-2 text-xs gap-1.5 shrink-0"><Download size={14} /> Exportar CSV</button>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+          <input className="input !pl-9" placeholder="Buscar por nome, e-mail ou bairro..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <select className="input !w-auto" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+          <option value="">Todas as categorias</option>
+          {PARTNER_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+        </select>
+        <select className="input !w-auto" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">Todos os status</option>
+          {STATUS_FLOW.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+
       {requests.length > 0 && (
         <div className="card border-gold-400/30">
           <p className="font-semibold mb-3">Solicitações de alteração pendentes</p>
@@ -179,16 +239,41 @@ export default function AdminPartners() {
       </details>
 
       <div className="space-y-3">
-        {partners.map((p) => (
+        {filtered.map((p) => (
           <div key={p.id} className="card">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
               <div>
                 <p className="font-semibold">{p.trade_name}</p>
                 <p className="text-xs text-white/40">{p.company_name} · {p.neighborhood ?? p.city}</p>
               </div>
-              <StatusBadge status={p.status} />
+              <div className="flex items-center gap-2">
+                <StatusBadge status={p.status} />
+                {editingId !== p.id && (
+                  <button onClick={() => startEdit(p)} className="text-xs text-gold-400 font-medium">Editar</button>
+                )}
+              </div>
             </div>
-            {(p.responsible_name || p.email || p.phone || p.cnpj_cpf || p.address) && (
+
+            {editingId === p.id ? (
+              <div className="grid sm:grid-cols-2 gap-3 mb-3 bg-ink-950/50 rounded-lg p-3">
+                {EDIT_FIELDS.map((f) => (
+                  <input
+                    key={f.key}
+                    className="input !py-2 text-xs"
+                    placeholder={f.label}
+                    value={editForm[f.key] ?? ''}
+                    onChange={(e) => setEditForm({ ...editForm, [f.key]: e.target.value })}
+                  />
+                ))}
+                <select className="input !py-2 text-xs" value={editCategory} onChange={(e) => setEditCategory(e.target.value)}>
+                  {PARTNER_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                </select>
+                <div className="sm:col-span-2 flex gap-2">
+                  <button onClick={() => saveEdit(p.id)} disabled={savingEdit} className="btn-gold !py-2 !px-3 text-xs">{savingEdit ? 'Salvando...' : 'Salvar alterações'}</button>
+                  <button onClick={() => setEditingId(null)} className="btn-ghost !py-2 !px-3 text-xs">Cancelar</button>
+                </div>
+              </div>
+            ) : (p.responsible_name || p.email || p.phone || p.cnpj_cpf || p.address) && (
               <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-white/50 mb-3 bg-ink-950/50 rounded-lg p-3">
                 {p.responsible_name && <p><span className="text-white/30">Responsável:</span> {p.responsible_name}</p>}
                 {p.email && <p><span className="text-white/30">E-mail:</span> {p.email}</p>}
@@ -230,7 +315,9 @@ export default function AdminPartners() {
             {linking === p.id && linkMsg && <p className="text-xs text-white/50 mt-2">{linkMsg}</p>}
           </div>
         ))}
-        {!partners.length && <EmptyState dark icon={Store} title="Nenhum parceiro cadastrado ainda" />}
+        {!filtered.length && (
+          <EmptyState dark icon={Store} title={partners.length ? 'Nenhum parceiro encontrado com esse filtro' : 'Nenhum parceiro cadastrado ainda'} />
+        )}
       </div>
     </div>
   )

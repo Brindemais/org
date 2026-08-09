@@ -1,11 +1,13 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { PackageCheck, Box } from 'lucide-react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { PackageCheck, Box, Search } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, ProductRow } from '../../lib/types'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { ImageUpload } from '../../components/ui/ImageUpload'
 
 interface PartnerStockRow { partner_id: string; product_id: string; quantity: number; partner: { trade_name: string } | null; product: { name: string } | null }
+
+const emptyEditProduct = { name: '', description: '', image_url: '', normal_price: '', subscriber_price: '' }
 
 export default function AdminStock() {
   const [products, setProducts] = useState<ProductRow[]>([])
@@ -17,6 +19,10 @@ export default function AdminStock() {
   const [entry, setEntry] = useState({ product_id: '', quantity: '' })
   const [transfer, setTransfer] = useState({ product_id: '', partner_id: '', quantity: '' })
   const [msg, setMsg] = useState('')
+  const [search, setSearch] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editProduct, setEditProduct] = useState(emptyEditProduct)
+  const [savingEdit, setSavingEdit] = useState(false)
 
   async function load() {
     const { data: prods } = await supabase.from('products').select('*').is('partner_id', null)
@@ -69,6 +75,36 @@ export default function AdminStock() {
     load()
   }
 
+  function startEditProduct(p: ProductRow) {
+    setEditingId(p.id)
+    setEditProduct({
+      name: p.name,
+      description: p.description ?? '',
+      image_url: p.image_url ?? '',
+      normal_price: String(p.normal_price ?? ''),
+      subscriber_price: String(p.subscriber_price ?? ''),
+    })
+  }
+
+  async function saveEditProduct(id: string) {
+    setSavingEdit(true)
+    const { error } = await supabase.from('products').update({
+      name: editProduct.name,
+      description: editProduct.description || null,
+      image_url: editProduct.image_url || null,
+      normal_price: Number(editProduct.normal_price || 0),
+      subscriber_price: Number(editProduct.subscriber_price || 0),
+    }).eq('id', id)
+    setSavingEdit(false)
+    if (!error) { setEditingId(null); load() }
+  }
+
+  const filteredProducts = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return products
+    return products.filter((p) => p.name.toLowerCase().includes(q))
+  }, [products, search])
+
   async function doEntry(e: FormEvent) {
     e.preventDefault()
     if (!entry.product_id || !entry.quantity) return
@@ -119,11 +155,17 @@ export default function AdminStock() {
       </div>
 
       <div className="card overflow-x-auto">
-        <p className="font-semibold mb-3">Estoque da matriz</p>
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <p className="font-semibold">Estoque da matriz</p>
+          <div className="relative w-56">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+            <input className="input !pl-9 !py-1.5 text-xs" placeholder="Buscar produto..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+        </div>
         <table className="w-full text-sm">
-          <thead><tr className="text-left text-white/40 text-xs uppercase"><th className="pb-2">Produto</th><th className="pb-2">Quantidade</th></tr></thead>
+          <thead><tr className="text-left text-white/40 text-xs uppercase"><th className="pb-2">Produto</th><th className="pb-2">Quantidade</th><th className="pb-2">Ação</th></tr></thead>
           <tbody>
-            {products.map((p) => (
+            {filteredProducts.map((p) => (
               <tr key={p.id} className="border-t border-ink-800">
                 <td className="py-2">
                   <div className="flex items-center gap-2">
@@ -132,11 +174,32 @@ export default function AdminStock() {
                   </div>
                 </td>
                 <td className="py-2 font-semibold">{matrixStock[p.id] ?? 0}</td>
+                <td className="py-2">
+                  <button onClick={() => startEditProduct(p)} className="text-xs text-gold-400 font-medium">Editar</button>
+                </td>
               </tr>
             ))}
-            {!products.length && <tr><td colSpan={2}><EmptyState dark icon={Box} title="Nenhum produto de matriz cadastrado" className="py-6" /></td></tr>}
+            {!filteredProducts.length && (
+              <tr><td colSpan={3}><EmptyState dark icon={Box} title={products.length ? 'Nenhum produto encontrado' : 'Nenhum produto de matriz cadastrado'} className="py-6" /></td></tr>
+            )}
           </tbody>
         </table>
+
+        {editingId && (
+          <div className="mt-4 bg-ink-950/50 rounded-lg p-4 grid sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <ImageUpload value={editProduct.image_url || null} onChange={(url) => setEditProduct({ ...editProduct, image_url: url })} folder="products" label="Foto do produto" />
+            </div>
+            <input className="input" placeholder="Nome" value={editProduct.name} onChange={(e) => setEditProduct({ ...editProduct, name: e.target.value })} />
+            <input className="input" placeholder="Descrição" value={editProduct.description} onChange={(e) => setEditProduct({ ...editProduct, description: e.target.value })} />
+            <input className="input" type="number" step="0.01" placeholder="Preço normal" value={editProduct.normal_price} onChange={(e) => setEditProduct({ ...editProduct, normal_price: e.target.value })} />
+            <input className="input" type="number" step="0.01" placeholder="Preço assinante" value={editProduct.subscriber_price} onChange={(e) => setEditProduct({ ...editProduct, subscriber_price: e.target.value })} />
+            <div className="sm:col-span-2 flex gap-2">
+              <button onClick={() => saveEditProduct(editingId)} disabled={savingEdit} className="btn-gold !py-2 !px-3 text-xs">{savingEdit ? 'Salvando...' : 'Salvar alterações'}</button>
+              <button onClick={() => setEditingId(null)} className="btn-ghost !py-2 !px-3 text-xs">Cancelar</button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="card overflow-x-auto">
