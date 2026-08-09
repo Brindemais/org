@@ -3,6 +3,7 @@ import { PackageCheck, Box } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, ProductRow } from '../../lib/types'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { ImageUpload } from '../../components/ui/ImageUpload'
 
 interface PartnerStockRow { partner_id: string; product_id: string; quantity: number; partner: { trade_name: string } | null; product: { name: string } | null }
 
@@ -12,7 +13,7 @@ export default function AdminStock() {
   const [matrixStock, setMatrixStock] = useState<Record<string, number>>({})
   const [partnerStock, setPartnerStock] = useState<PartnerStockRow[]>([])
   const [partners, setPartners] = useState<Partner[]>([])
-  const [newProduct, setNewProduct] = useState({ name: '', description: '' })
+  const [newProduct, setNewProduct] = useState({ name: '', description: '', image_url: '', normal_price: '', subscriber_price: '' })
   const [entry, setEntry] = useState({ product_id: '', quantity: '' })
   const [transfer, setTransfer] = useState({ product_id: '', partner_id: '', quantity: '' })
   const [msg, setMsg] = useState('')
@@ -55,8 +56,16 @@ export default function AdminStock() {
 
   async function createProduct(e: FormEvent) {
     e.preventDefault()
-    await supabase.from('products').insert({ name: newProduct.name, description: newProduct.description, is_gift: true, partner_id: null })
-    setNewProduct({ name: '', description: '' })
+    await supabase.from('products').insert({
+      name: newProduct.name,
+      description: newProduct.description,
+      image_url: newProduct.image_url || null,
+      normal_price: Number(newProduct.normal_price || 0),
+      subscriber_price: Number(newProduct.subscriber_price || 0),
+      is_gift: true,
+      partner_id: null,
+    })
+    setNewProduct({ name: '', description: '', image_url: '', normal_price: '', subscriber_price: '' })
     load()
   }
 
@@ -115,7 +124,15 @@ export default function AdminStock() {
           <thead><tr className="text-left text-white/40 text-xs uppercase"><th className="pb-2">Produto</th><th className="pb-2">Quantidade</th></tr></thead>
           <tbody>
             {products.map((p) => (
-              <tr key={p.id} className="border-t border-ink-800"><td className="py-2">{p.name}</td><td className="py-2 font-semibold">{matrixStock[p.id] ?? 0}</td></tr>
+              <tr key={p.id} className="border-t border-ink-800">
+                <td className="py-2">
+                  <div className="flex items-center gap-2">
+                    {p.image_url && <img src={p.image_url} alt="" className="w-8 h-8 rounded object-cover shrink-0" />}
+                    {p.name}
+                  </div>
+                </td>
+                <td className="py-2 font-semibold">{matrixStock[p.id] ?? 0}</td>
+              </tr>
             ))}
             {!products.length && <tr><td colSpan={2}><EmptyState dark icon={Box} title="Nenhum produto de matriz cadastrado" className="py-6" /></td></tr>}
           </tbody>
@@ -142,8 +159,13 @@ export default function AdminStock() {
       <div className="grid lg:grid-cols-3 gap-4">
         <form onSubmit={createProduct} className="card space-y-3">
           <p className="font-semibold text-sm">Cadastrar produto (matriz)</p>
+          <ImageUpload value={newProduct.image_url || null} onChange={(url) => setNewProduct({ ...newProduct, image_url: url })} folder="products" label="Foto do produto" />
           <input className="input" required placeholder="Nome" value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} />
           <input className="input" placeholder="Descrição" value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} />
+          <div className="grid grid-cols-2 gap-3">
+            <input className="input" type="number" step="0.01" placeholder="Preço normal" value={newProduct.normal_price} onChange={(e) => setNewProduct({ ...newProduct, normal_price: e.target.value })} />
+            <input className="input" type="number" step="0.01" placeholder="Preço assinante" value={newProduct.subscriber_price} onChange={(e) => setNewProduct({ ...newProduct, subscriber_price: e.target.value })} />
+          </div>
           <button type="submit" className="btn-gold w-full">Cadastrar</button>
         </form>
 

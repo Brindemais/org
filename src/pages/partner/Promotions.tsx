@@ -5,12 +5,13 @@ import { supabase } from '../../lib/supabase'
 import type { Promotion } from '../../lib/types'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { ImageUpload } from '../../components/ui/ImageUpload'
 import { formatDate } from '../../lib/format'
 
 export default function PartnerPromotions() {
   const { partner } = useAuth()
   const [promotions, setPromotions] = useState<Promotion[]>([])
-  const [form, setForm] = useState({ title: '', description: '', normal_price: '', subscriber_price: '', valid_until: '' })
+  const [form, setForm] = useState({ title: '', description: '', image_url: '', normal_price: '', subscriber_price: '', valid_until: '' })
   const [saving, setSaving] = useState(false)
 
   async function load() {
@@ -29,12 +30,13 @@ export default function PartnerPromotions() {
       partner_id: partner.id,
       title: form.title,
       description: form.description,
+      image_url: form.image_url || null,
       normal_price: Number(form.normal_price || 0),
       subscriber_price: Number(form.subscriber_price || 0),
       valid_until: form.valid_until,
     })
     setSaving(false)
-    setForm({ title: '', description: '', normal_price: '', subscriber_price: '', valid_until: '' })
+    setForm({ title: '', description: '', image_url: '', normal_price: '', subscriber_price: '', valid_until: '' })
     load()
   }
 
@@ -46,6 +48,9 @@ export default function PartnerPromotions() {
       </div>
 
       <form onSubmit={handleSubmit} className="card grid sm:grid-cols-2 gap-3">
+        <div className="sm:col-span-2">
+          <ImageUpload value={form.image_url || null} onChange={(url) => setForm({ ...form, image_url: url })} folder="promotions" label="Foto da promoção" />
+        </div>
         <div className="sm:col-span-2">
           <label className="label">Título da promoção</label>
           <input className="input" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
@@ -71,10 +76,13 @@ export default function PartnerPromotions() {
 
       <div className="space-y-2">
         {promotions.map((p) => (
-          <div key={p.id} className="card flex items-center justify-between">
-            <div>
-              <p className="font-medium text-sm">{p.title}</p>
-              <p className="text-xs text-white/40">Válida até {formatDate(p.valid_until)}</p>
+          <div key={p.id} className="card flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              {p.image_url && <img src={p.image_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />}
+              <div className="min-w-0">
+                <p className="font-medium text-sm truncate">{p.title}</p>
+                <p className="text-xs text-white/40">Válida até {formatDate(p.valid_until)}</p>
+              </div>
             </div>
             <StatusBadge status={p.status} />
           </div>
