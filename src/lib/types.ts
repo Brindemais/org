@@ -153,6 +153,7 @@ export interface Promotion {
   partner_id: string
   title: string
   description: string | null
+  image_url: string | null
   normal_price: number | null
   subscriber_price: number | null
   discount_pct: number | null

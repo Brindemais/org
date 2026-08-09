@@ -30,9 +30,12 @@ export default function AdminPromotions() {
       <div className="space-y-3">
         {promotions.map((p: any) => (
           <div key={p.id} className="card flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="font-semibold">{p.title}</p>
-              <p className="text-xs text-white/40">{p.partner?.trade_name} · Válida até {formatDate(p.valid_until)}</p>
+            <div className="flex items-center gap-3 min-w-0">
+              {p.image_url && <img src={p.image_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />}
+              <div className="min-w-0">
+                <p className="font-semibold truncate">{p.title}</p>
+                <p className="text-xs text-white/40">{p.partner?.trade_name} · Válida até {formatDate(p.valid_until)}</p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <StatusBadge status={p.status} />
