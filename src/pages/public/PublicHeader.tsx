@@ -10,7 +10,6 @@ const LINKS = [
   { href: '#planos', label: 'Planos' },
   { href: '#brinde', label: 'Brinde do mês' },
   { href: '#parceiros', label: 'Parceiros' },
-  { href: '#loja', label: 'Loja' },
   { href: '#seja-parceiro', label: 'Quero ser parceiro' },
 ]
 

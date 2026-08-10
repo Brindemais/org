@@ -6,7 +6,7 @@ import {
   Headset, Ban, Copy, Share2, Search, ArrowRight,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import type { Partner, Promotion, ProductRow } from '../../lib/types'
+import type { Partner, Promotion } from '../../lib/types'
 import { formatBRL } from '../../lib/format'
 import { PLAN_PRICES, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../../lib/plans'
 
@@ -25,7 +25,6 @@ import { SectionTitle } from '../../components/ui/SectionTitle'
 import { BenefitCard } from '../../components/ui/BenefitCard'
 import { PartnerCard } from '../../components/ui/PartnerCard'
 import { OfferCard } from '../../components/ui/OfferCard'
-import { ProductCard } from '../../components/ui/ProductCard'
 import { WalletCard } from '../../components/ui/WalletCard'
 import { GiftCard } from '../../components/ui/GiftCard'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -106,7 +105,6 @@ export default function Landing() {
   const { showToast } = useToast()
   const [partners, setPartners] = useState<PublicPartner[]>([])
   const [promos, setPromos] = useState<Promotion[]>([])
-  const [products, setProducts] = useState<ProductRow[]>([])
   const [categoryFilter, setCategoryFilter] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -115,8 +113,6 @@ export default function Landing() {
       .then(({ data }) => setPartners((data as PublicPartner[]) ?? []))
     supabase.from('promotions').select('*').eq('status', 'approved').gte('valid_until', new Date().toISOString().slice(0, 10)).limit(3)
       .then(({ data }) => setPromos((data as Promotion[]) ?? []))
-    supabase.from('products').select('*').eq('store_visible', true).eq('active', true).eq('approved', true).limit(4)
-      .then(({ data }) => setProducts((data as ProductRow[]) ?? []))
   }, [])
 
   const filteredPartners = useMemo(() => {
@@ -450,33 +446,6 @@ export default function Landing() {
       </section>
 
       {/* ============ 4.10 LOJA EXCLUSIVA ============ */}
-      <section id="loja" className="border-t border-black/10 py-16 bg-surface-subtle">
-        <ResponsiveContainer>
-          <SectionTitle
-            eyebrow="Só para assinantes"
-            title="Loja exclusiva"
-            description="Produtos personalizados com preço especial, retirada em parceiro participante. Sem entrega em domicílio nesta fase."
-            action={<Link to="/cadastro" className="text-sm text-gold-600 font-medium inline-flex items-center gap-1">Ver loja completa <ArrowRight size={15} /></Link>}
-          />
-          {products.length === 0 ? (
-            <EmptyState icon={ShoppingBag} title="Loja em preparação" description="Os primeiros produtos exclusivos para assinantes chegam em breve." />
-          ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-              {products.map((p) => (
-                <ProductCard
-                  key={p.id}
-                  name={p.name}
-                  imageUrl={p.image_url}
-                  normalPrice={p.normal_price}
-                  subscriberPrice={p.subscriber_price}
-                  onView={goToSignup}
-                />
-              ))}
-            </div>
-          )}
-        </ResponsiveContainer>
-      </section>
-
       {/* ============ 4.11 QUERO SER PARCEIRO ============ */}
       <section id="seja-parceiro" className="border-t border-black/10 py-16">
         <ResponsiveContainer className="grid lg:grid-cols-2 gap-10 items-center">
