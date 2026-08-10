@@ -1,5 +1,6 @@
 export type UserRole = 'subscriber' | 'partner' | 'admin' | 'operator'
 export type SubscriptionStatus = 'pending' | 'active' | 'overdue' | 'suspended' | 'cancelled'
+export type SubscriptionPlan = 'monthly' | 'annual'
 export type PaymentStatus = 'pending' | 'confirmed' | 'failed' | 'duplicate' | 'cancelled' | 'refunded'
 export type PartnerStatus = 'interested' | 'pending_docs' | 'analyzing' | 'approved' | 'active' | 'suspended' | 'rejected' | 'closed'
 export type PickupStatus = 'reserved' | 'ready' | 'withdrawn' | 'cancelled' | 'expired'
@@ -59,6 +60,7 @@ export interface Subscription {
   id: string
   subscriber_id: string
   status: SubscriptionStatus
+  plan: SubscriptionPlan
   amount: number
   activated_at: string | null
   expires_at: string | null
@@ -73,6 +75,7 @@ export interface Payment {
   order_id: string | null
   amount: number
   type: 'subscription' | 'store'
+  plan: SubscriptionPlan | null
   status: PaymentStatus
   pix_code: string | null
   external_reference: string

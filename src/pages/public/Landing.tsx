@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, Promotion, ProductRow } from '../../lib/types'
+import { formatBRL } from '../../lib/format'
+import { PLAN_PRICES, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../../lib/plans'
 
 // Landing is public/unauthenticated — only request the columns the card
 // actually renders. `partners_public_read` grants row access by status, not
@@ -52,7 +54,7 @@ const BENEFITS = [
 ]
 
 const FAQ = [
-  { q: 'Quanto custa a assinatura?', a: 'A assinatura mensal custa R$ 79,00, com pagamento via Pix.' },
+  { q: 'Quanto custa a assinatura?', a: 'Existem dois planos: mensal por R$ 99,90, ou anual por R$ 959,04 (pacote de 12 meses cobrado uma vez, com 20% de desconto em relação ao mensal). Pagamento via Pix.' },
   { q: 'Como funciona o pagamento?', a: 'O pagamento é feito via Pix. A assinatura é ativada somente após a confirmação oficial do pagamento.' },
   { q: 'Quando recebo meu brinde?', a: 'Após a ativação da assinatura, você escolhe um parceiro com estoque disponível e retira seu brinde do mês dentro do prazo informado.' },
   { q: 'Como escolho o ponto de retirada?', a: 'Você escolhe entre os parceiros próximos que possuem estoque disponível no momento da retirada.' },
@@ -65,6 +67,7 @@ const FAQ = [
   { q: 'Posso usar meu saldo na plataforma?', a: 'Sim, o saldo disponível na sua carteira pode ser usado dentro da plataforma, conforme as regras de cada funcionalidade.' },
   { q: 'Como solicitar um saque?', a: 'Pela sua carteira, informando a chave Pix. A solicitação passa por validação antes do pagamento.' },
   { q: 'Como cancelar a assinatura?', a: 'O cancelamento pode ser solicitado a qualquer momento na área do assinante, na tela de Assinatura.' },
+  { q: 'O que acontece se eu não renovar a tempo?', a: 'Quando o ciclo do plano (30 dias no mensal, 12 meses no anual) termina sem um novo pagamento confirmado, o acesso a brindes, descontos e promoções fica suspenso até a renovação. Você recebe um alerta com contagem regressiva na sua área de assinante 7 dias antes do vencimento.' },
   { q: 'Como entrar em contato com o suporte?', a: 'Pela área de Suporte dentro da plataforma, após login, ou pelos canais de contato no rodapé deste site.' },
 ]
 
@@ -144,7 +147,9 @@ export default function Landing() {
             <p className="text-black/55 text-lg mb-4 max-w-md">
               Faça parte de uma comunidade nacional de consumo inteligente e tenha acesso a brindes mensais, descontos, cashback, promoções e vantagens exclusivas.
             </p>
-            <p className="text-sm font-semibold text-gold-600 mb-8">Assinatura mensal por R$ 79,00 via Pix.</p>
+            <p className="text-sm font-semibold text-gold-600 mb-8">
+              A partir de {formatBRL(PLAN_PRICES.monthly)}/mês via Pix, ou economize {ANNUAL_DISCOUNT_PCT}% no plano anual.
+            </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link to="/cadastro" className="btn-gold">
                 Quero assinar agora <ChevronRight size={17} />
@@ -202,6 +207,38 @@ export default function Landing() {
           </div>
           <p className="text-center text-xs text-black/40 mt-8 max-w-md mx-auto">
             A assinatura é ativada somente após a confirmação oficial do pagamento.
+          </p>
+        </ResponsiveContainer>
+      </section>
+
+      {/* ============ PLANOS ============ */}
+      <section id="planos" className="border-t border-black/10 py-16 bg-surface-subtle">
+        <ResponsiveContainer narrow>
+          <SectionTitle eyebrow="Planos" title="Escolha como assinar" align="center" />
+          <div className="grid sm:grid-cols-2 gap-5">
+            <div className="card-light flex flex-col">
+              <p className="text-xs font-bold uppercase text-black/40 tracking-wide">Mensal</p>
+              <p className="font-display text-3xl font-semibold text-ink-950 mt-2">
+                {formatBRL(PLAN_PRICES.monthly)}<span className="text-sm font-medium text-black/40">/mês</span>
+              </p>
+              <p className="text-sm text-black/50 mt-2 mb-6">Renovação a cada 30 dias, sem fidelidade.</p>
+              <Link to="/cadastro" className="btn-outline-light w-full mt-auto">Assinar mensal</Link>
+            </div>
+            <div className="relative card-light flex flex-col border-2 border-gold-400">
+              <span className="absolute -top-3 left-6 pill bg-gold-gradient text-ink-950 font-bold">Economize {ANNUAL_DISCOUNT_PCT}%</span>
+              <p className="text-xs font-bold uppercase text-gold-600 tracking-wide">Anual</p>
+              <p className="font-display text-3xl font-semibold text-ink-950 mt-2">
+                {formatBRL(PLAN_PRICES.annual)}<span className="text-sm font-medium text-black/40">/ano</span>
+              </p>
+              <p className="text-sm text-black/50 mt-2 mb-6">
+                Pacote de 12 meses, cobrado uma vez só — equivale a {formatBRL(ANNUAL_MONTHLY_EQUIVALENT)}/mês.
+              </p>
+              <Link to="/cadastro" className="btn-gold w-full mt-auto">Assinar anual</Link>
+            </div>
+          </div>
+          <p className="text-center text-xs text-black/40 mt-6 max-w-md mx-auto">
+            Assinaturas vencidas ficam com os benefícios suspensos até a confirmação de um novo pagamento — você é avisado
+            na sua área de assinante quando faltarem 7 dias para o vencimento.
           </p>
         </ResponsiveContainer>
       </section>
@@ -532,8 +569,11 @@ export default function Landing() {
               </div>
             </div>
             <div className="w-full lg:w-auto shrink-0 bg-white/5 border border-white/10 rounded-xl2 p-6 text-center">
-              <p className="text-xs text-white/50 mb-1">Assine agora por apenas</p>
-              <p className="text-3xl font-bold mb-4">R$ 79<span className="text-base font-medium text-white/60">,00 /mês</span></p>
+              <p className="text-xs text-white/50 mb-1">Assine agora a partir de</p>
+              <p className="text-3xl font-bold mb-1">
+                {formatBRL(PLAN_PRICES.monthly)}<span className="text-base font-medium text-white/60"> /mês</span>
+              </p>
+              <p className="text-xs text-gold-400 font-medium mb-4">ou economize {ANNUAL_DISCOUNT_PCT}% no plano anual</p>
               <Link to="/cadastro" className="btn-gold w-full !py-2.5 text-sm">Assine agora</Link>
             </div>
           </div>

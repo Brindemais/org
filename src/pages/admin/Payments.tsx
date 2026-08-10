@@ -66,7 +66,10 @@ export default function AdminPayments() {
                   <p>{p.subscriber?.full_name}</p>
                   <p className="text-xs text-white/30 font-mono">{p.external_reference.slice(0, 12)}</p>
                 </td>
-                <td className="py-3 text-white/50">{p.type === 'subscription' ? 'Assinatura' : 'Loja'}</td>
+                <td className="py-3 text-white/50">
+                  {p.type === 'subscription' ? 'Assinatura' : 'Loja'}
+                  {p.type === 'subscription' && p.plan && <span className="text-white/30"> · {p.plan === 'annual' ? 'anual' : 'mensal'}</span>}
+                </td>
                 <td className="py-3 font-semibold">{formatBRL(p.amount)}</td>
                 <td className="py-3"><StatusBadge status={p.status} /></td>
                 <td className="py-3 text-white/50">{formatDateTime(p.created_at)}</td>

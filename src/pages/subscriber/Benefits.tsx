@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { MapPin, Percent, Store, LocateFixed } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Lock, MapPin, Percent, Store, LocateFixed } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, Promotion } from '../../lib/types'
 import { useSubscription } from '../../hooks/useSubscription'
@@ -14,7 +14,7 @@ import { LoadingState } from '../../components/ui/LoadingState'
 type BenefitPartner = Pick<Partner, 'id' | 'trade_name' | 'category' | 'neighborhood' | 'city' | 'logo_url' | 'lat' | 'lng'>
 
 export default function SubscriberBenefits() {
-  const { subscription, pickup, reload } = useSubscription()
+  const { subscription, pickup, reload, benefitsBlocked } = useSubscription()
   const [partners, setPartners] = useState<BenefitPartner[]>([])
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [category, setCategory] = useState<string>('')
@@ -47,7 +47,7 @@ export default function SubscriberBenefits() {
   }, [partners, geo])
 
   async function choosePartner(partnerId: string) {
-    if (!subscription) return
+    if (!subscription || benefitsBlocked) return
     setChoosing(partnerId)
     setError(null)
     const { error: rpcError } = await supabase.rpc('choose_pickup_partner', {
@@ -66,6 +66,24 @@ export default function SubscriberBenefits() {
     }
     await reload()
     navigate('/app/retirada')
+  }
+
+  if (benefitsBlocked && subscription) {
+    return (
+      <div className="space-y-6">
+        <h1 className="font-display text-xl font-semibold">Benefícios</h1>
+        <div className="card border-red-500/30 bg-red-500/5 text-center py-8">
+          <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-3">
+            <Lock size={20} className="text-red-400" />
+          </div>
+          <p className="font-semibold mb-1">Benefícios suspensos</p>
+          <p className="text-sm text-white/50 mb-4 max-w-xs mx-auto">
+            Sua assinatura venceu e o acesso a brindes, descontos e promoções fica pausado até a confirmação de um novo pagamento.
+          </p>
+          <Link to="/app/assinatura" className="btn-gold w-full max-w-xs mx-auto">Renovar agora</Link>
+        </div>
+      </div>
+    )
   }
 
   return (
