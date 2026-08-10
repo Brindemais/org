@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Home, Gift, Wallet, MapPin, User, LogOut, Bell, CreditCard, ShoppingBag, Receipt, Share2, LifeBuoy } from 'lucide-react'
+import { Home, Gift, Wallet, MapPin, User, LogOut, Bell, CreditCard, Receipt, Share2, LifeBuoy } from 'lucide-react'
 import { TopBar } from './TopBar'
 import { Logo } from './Logo'
 import { BottomNavigation, type BottomNavItem } from '../ui/BottomNavigation'
@@ -27,7 +27,6 @@ const SIDEBAR_NAV: BottomNavItem[] = [
   { to: '/app/beneficios', label: 'Benefícios', icon: Gift },
   { to: '/app/assinatura', label: 'Planos', icon: CreditCard },
   { to: '/app/parceiros', label: 'Parceiros', icon: MapPin },
-  { to: '/app/loja', label: 'Loja', icon: ShoppingBag },
   { to: '/app/carteira', label: 'Carteira', icon: Wallet },
   { to: '/app/pagamentos', label: 'Pagamentos', icon: Receipt },
   { to: '/app/indique', label: 'Indique', icon: Share2 },

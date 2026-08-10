@@ -162,7 +162,7 @@ export default function SubscriberProfile() {
         </div>
         <div className="flex-1">
           <p className="font-semibold text-sm">Meus pagamentos</p>
-          <p className="text-xs text-white/50">Histórico de assinatura e compras na loja</p>
+          <p className="text-xs text-white/50">Histórico de pagamentos da assinatura</p>
         </div>
         <ChevronRight size={18} className="text-white/30" />
       </Link>

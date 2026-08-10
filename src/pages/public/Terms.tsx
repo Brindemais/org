@@ -21,7 +21,7 @@ export default function Terms() {
         <div className="space-y-6 text-sm text-black/70 leading-relaxed">
           <section>
             <h2 className="font-display text-lg font-semibold text-ink-950 mb-2">1. Sobre o Brinde Mais</h2>
-            <p>O Brinde Mais é um clube de benefícios por assinatura mensal que oferece, entre outras vantagens, um brinde mensal a ser retirado em estabelecimentos parceiros, descontos exclusivos, acesso a uma loja virtual e um programa de bonificação por indicação. Estes Termos de Uso regulam a relação entre você ("assinante") e o Brinde Mais.</p>
+            <p>O Brinde Mais é um clube de benefícios por assinatura mensal que oferece, entre outras vantagens, um brinde mensal a ser retirado em estabelecimentos parceiros, descontos exclusivos e um programa de bonificação por indicação. Estes Termos de Uso regulam a relação entre você ("assinante") e o Brinde Mais.</p>
           </section>
 
           <section>
@@ -41,7 +41,7 @@ export default function Terms() {
 
           <section>
             <h2 className="font-display text-lg font-semibold text-ink-950 mb-2">5. Programa de indicação e bonificação</h2>
-            <p>Assinantes podem indicar novos assinantes por meio de link ou código pessoal de indicação. Bonificações são creditadas na carteira digital do indicador conforme a política vigente de percentuais por nível (até 7 níveis de profundidade), tanto sobre assinaturas quanto sobre consumo na loja virtual, respeitadas as regras de elegibilidade e possíveis limites antifraude.</p>
+            <p>Assinantes podem indicar novos assinantes por meio de link ou código pessoal de indicação. Bonificações são creditadas na carteira digital do indicador conforme a política vigente de percentuais por nível (até 7 níveis de profundidade) sobre o valor das assinaturas, respeitadas as regras de elegibilidade e possíveis limites antifraude.</p>
           </section>
 
           <section>

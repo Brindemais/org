@@ -28,7 +28,7 @@ export default function Privacy() {
             <ul className="list-disc pl-5 space-y-1">
               <li>Dados cadastrais: nome completo, CPF, data de nascimento, e-mail, telefone e endereço.</li>
               <li>Dados de pagamento: chave Pix e histórico de transações (não armazenamos dados de cartão).</li>
-              <li>Dados de uso: histórico de retiradas, pedidos na loja, indicações realizadas e interações de suporte.</li>
+              <li>Dados de uso: histórico de retiradas, indicações realizadas e interações de suporte.</li>
               <li>Dados de localização: apenas quando você autoriza o acesso à geolocalização do navegador, usados para calcular a distância até parceiros próximos. Não armazenamos essa localização em nossos servidores.</li>
             </ul>
           </section>
