@@ -43,7 +43,7 @@ export default function PartnerProducts() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">Brindes cadastrados</h1>
+        <h1 className="font-display text-2xl font-semibold">Produtos cadastrados</h1>
         <p className="text-white/50 text-sm">Cadastre os brindes disponíveis para retirada no seu estabelecimento. Novos brindes e alterações passam por aprovação da administração antes de ficarem visíveis.</p>
       </div>
 

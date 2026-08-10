@@ -6,7 +6,7 @@ const NAV: DashNavItem[] = [
   { to: '/parceiro', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/parceiro/retiradas', label: 'Retiradas pendentes', icon: PackageCheck },
   { to: '/parceiro/estoque', label: 'Estoque', icon: Boxes },
-  { to: '/parceiro/brindes', label: 'Brindes cadastrados', icon: Gift },
+  { to: '/parceiro/brindes', label: 'Produtos cadastrados', icon: Gift },
   { to: '/parceiro/promocoes', label: 'Promoções e descontos', icon: Percent },
   { to: '/parceiro/pedidos-loja', label: 'Pedidos da loja', icon: Receipt },
   { to: '/parceiro/historico', label: 'Histórico', icon: History },
