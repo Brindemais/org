@@ -1,17 +1,30 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { AlertTriangle, ChevronRight, Clock, CreditCard, Gift, Lock, MapPin, Percent, ShoppingBag, Share2, Wallet } from 'lucide-react'
+import {
+  AlertTriangle, ArrowDownLeft, ArrowUpRight, ChevronRight, Clock, Copy, CreditCard,
+  Gift, History, Lock, MapPin, Percent, ShoppingBag, Share2, Users2, Wallet,
+} from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSubscription } from '../../hooks/useSubscription'
 import { useWallet } from '../../hooks/useWallet'
 import { supabase } from '../../lib/supabase'
 import type { Partner } from '../../lib/types'
-import { formatBRL } from '../../lib/format'
+import { formatBRL, formatDate, formatDateTime } from '../../lib/format'
 import { PLAN_PRICES } from '../../lib/plans'
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
+
+const TX_LABELS: Record<string, string> = {
+  bonus_subscription: 'Bonificação de assinatura',
+  bonus_consumption: 'Bonificação de consumo',
+  cashback: 'Cashback',
+  withdrawal: 'Saque',
+  adjustment: 'Ajuste administrativo',
+  reversal: 'Estorno',
+  purchase: 'Compra',
+}
 
 // Only the columns this preview strip renders — see the same note in
 // Landing.tsx / subscriber/Partners.tsx.
@@ -27,10 +40,13 @@ const QUICK_LINKS = [
 export default function SubscriberHome() {
   const { profile } = useAuth()
   const { subscription, pickup, loading: subLoading, benefitsBlocked, renewalDue, daysUntilExpiry } = useSubscription()
-  const { balance } = useWallet()
+  const { balance, transactions } = useWallet()
   const [partners, setPartners] = useState<HomePartner[]>([])
   const [promoCounts, setPromoCounts] = useState<Record<string, number>>({})
   const [loadingClub, setLoadingClub] = useState(true)
+  const [referralCount, setReferralCount] = useState(0)
+  const [referralEarned, setReferralEarned] = useState(0)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     supabase.from('partners').select('id, trade_name, category, logo_url').in('status', ['approved', 'active']).limit(6)
@@ -49,13 +65,32 @@ export default function SubscriberHome() {
       })
   }, [])
 
+  useEffect(() => {
+    if (!profile) return
+    supabase.from('referrals').select('id', { count: 'exact', head: true }).eq('referrer_id', profile.id)
+      .then(({ count }) => setReferralCount(count ?? 0))
+    supabase.from('bonuses').select('amount').eq('beneficiary_id', profile.id)
+      .then(({ data }) => setReferralEarned((data ?? []).reduce((s, b: any) => s + Number(b.amount), 0)))
+  }, [profile])
+
   const firstName = profile?.full_name?.split(' ')[0] ?? ''
+  const referralLink = profile ? `${window.location.origin}/cadastro?ref=${profile.referral_code}` : ''
+
+  function copyReferralLink() {
+    navigator.clipboard.writeText(referralLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const pickupDaysLeft = pickup ? Math.ceil((new Date(pickup.deadline).getTime() - Date.now()) / 86_400_000) : null
 
   return (
     <div className="space-y-5">
       <div>
         <h1 className="font-display text-xl font-semibold">Olá, {firstName}! 👋</h1>
-        <p className="text-sm text-white/50">Bem-vindo(a) ao seu clube de benefícios.</p>
+        <p className="text-sm text-white/50">
+          Bem-vindo(a) ao seu clube de benefícios.{profile?.created_at && ` Assinante desde ${formatDate(profile.created_at)}.`}
+        </p>
       </div>
 
       <div className="rounded-xl2 bg-gold-gradient text-ink-950 p-5">
@@ -137,11 +172,34 @@ export default function SubscriberHome() {
               <Gift size={16} className="text-gold-400" />
               <p className="font-semibold">Seu brinde está pronto</p>
             </div>
-            <p className="text-sm text-white/50">Código {pickup.code}</p>
+            <p className="text-sm text-white/50">
+              Código {pickup.code}
+              {pickupDaysLeft !== null && pickupDaysLeft >= 0 && ` · ${pickupDaysLeft === 0 ? 'último dia para retirar' : `${pickupDaysLeft} ${pickupDaysLeft === 1 ? 'dia' : 'dias'} para retirar`}`}
+            </p>
           </div>
           <StatusBadge status={pickup.status} />
         </Link>
       )}
+
+      <div className="card border-gold-400/30">
+        <div className="flex items-center justify-between mb-2">
+          <p className="font-semibold flex items-center gap-1.5"><Share2 size={15} className="text-gold-400" /> Indique aqui</p>
+          <Link to="/app/indique" className="text-xs text-gold-400 font-medium">Ver rede</Link>
+        </div>
+        <div className="flex items-center gap-4 mb-3">
+          <div className="flex items-center gap-1.5">
+            <Users2 size={14} className="text-white/40" />
+            <p className="text-sm"><span className="font-semibold">{referralCount}</span> <span className="text-white/50">indicado{referralCount === 1 ? '' : 's'}</span></p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Wallet size={14} className="text-white/40" />
+            <p className="text-sm"><span className="font-semibold text-gold-400">{formatBRL(referralEarned)}</span> <span className="text-white/50">ganhos</span></p>
+          </div>
+        </div>
+        <button onClick={copyReferralLink} className="btn-dark w-full !py-2.5 text-sm gap-2">
+          <Copy size={14} /> {copied ? 'Link copiado!' : 'Copiar meu link de indicação'}
+        </button>
+      </div>
 
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -175,6 +233,31 @@ export default function SubscriberHome() {
           )}
         </div>
       </div>
+
+      {transactions.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-semibold flex items-center gap-1.5"><History size={15} className="text-gold-400" /> Atividade recente</p>
+            <Link to="/app/carteira" className="text-xs text-gold-400 font-medium">Ver extrato</Link>
+          </div>
+          <div className="space-y-2">
+            {transactions.slice(0, 3).map((t) => (
+              <div key={t.id} className="card !py-3 flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${t.direction === 'in' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
+                  {t.direction === 'in' ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{TX_LABELS[t.type] ?? t.description}</p>
+                  <p className="text-xs text-white/40">{formatDateTime(t.created_at)}</p>
+                </div>
+                <p className={`text-sm font-semibold shrink-0 ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {t.direction === 'in' ? '+' : '-'} {formatBRL(t.amount)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
