@@ -1,17 +1,19 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Check, Copy, Gift, ShieldCheck, User, Wallet } from 'lucide-react'
+import { Check, Copy, ShieldCheck, User, Wallet } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { LogoBadge } from '../../components/layout/Logo'
 import { isValidCPF, maskCPF, maskPhone } from '../../lib/format'
 
 type Step = 1 | 2 | 3
 
+// A escolha do ponto de retirada acontece depois, dentro do app, quando a
+// assinatura já estiver ativa — não é parte deste assistente de cadastro
+// (que só vai até a confirmação do Pix, ver `type Step` abaixo).
 const STEPS = [
   { n: 1, label: 'Cadastro', icon: User },
   { n: 2, label: 'Assinatura', icon: ShieldCheck },
   { n: 3, label: 'Pagamento Pix', icon: Wallet },
-  { n: 4, label: 'Retirada', icon: Gift },
 ]
 
 export default function Signup() {
