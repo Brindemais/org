@@ -65,7 +65,7 @@ export function DashboardShell({
   )
 
   return (
-    <div className="min-h-dvh bg-ink-950 flex">
+    <div className="dashboard-ui min-h-dvh bg-ink-950 flex">
       <div className="hidden lg:block">{sidebar}</div>
 
       {open && (

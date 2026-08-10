@@ -236,10 +236,6 @@ export default function Landing() {
               <Link to="/cadastro" className="btn-gold w-full mt-auto">Assinar anual</Link>
             </div>
           </div>
-          <p className="text-center text-xs text-black/40 mt-6 max-w-md mx-auto">
-            Assinaturas vencidas ficam com os benefícios suspensos até a confirmação de um novo pagamento — você é avisado
-            na sua área de assinante quando faltarem 7 dias para o vencimento.
-          </p>
         </ResponsiveContainer>
       </section>
 

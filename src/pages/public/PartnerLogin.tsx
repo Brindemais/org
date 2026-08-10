@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { fetchOwnRole } from '../../lib/auth'
 import { LogoBadge } from '../../components/layout/Logo'
 
 export default function PartnerLogin() {
@@ -20,16 +21,16 @@ export default function PartnerLogin() {
       setError('E-mail ou senha inválidos.')
       return
     }
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle()
+    const role = await fetchOwnRole(data.user.id)
     setLoading(false)
-    if (profile?.role === 'partner') {
+    if (role === 'partner') {
       navigate('/parceiro')
       return
     }
     await supabase.auth.signOut()
-    if (profile?.role === 'subscriber') {
+    if (role === 'subscriber') {
       setError('Essa conta é de assinante. Use o login de assinante.')
-    } else if (profile?.role === 'admin' || profile?.role === 'operator') {
+    } else if (role === 'admin' || role === 'operator') {
       setError('Essa conta é administrativa. Use o acesso em /admin.')
     } else {
       setError('Esta conta não é de parceiro.')

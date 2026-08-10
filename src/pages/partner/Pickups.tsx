@@ -84,16 +84,24 @@ export default function PartnerPickups() {
 
   const ready = pickups.filter((p) => p.status === 'ready')
   const others = pickups.filter((p) => p.status !== 'ready')
+  const withdrawnCount = others.filter((p) => p.status === 'withdrawn').length
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">Retiradas pendentes</h1>
+        <h1 className="font-display text-2xl font-semibold">Retiradas</h1>
         <p className="text-white/50 text-sm">Peça o código ao assinante (na tela dele) e confirme aqui. A entrega só é liberada se o código bater.</p>
       </div>
 
-      <div className="space-y-4">
-        {ready.map((p) => (
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-semibold text-sm flex items-center gap-2">
+            Pendentes
+            {ready.length > 0 && <span className="pill bg-gold-400/15 text-gold-300">{ready.length}</span>}
+          </p>
+        </div>
+        <div className="space-y-4">
+          {ready.map((p) => (
           <div key={p.pickup_id} className="card">
             <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
               <div>
@@ -153,13 +161,19 @@ export default function PartnerPickups() {
             {errors[p.pickup_id] && <p className="text-xs text-red-400 mt-2">{errors[p.pickup_id]}</p>}
           </div>
         ))}
-        {!ready.length && (
-          <div className="card"><EmptyState dark icon={PackageCheck} title="Nenhuma retirada pendente" description="Novas reservas de assinantes aparecem aqui." /></div>
-        )}
+          {!ready.length && (
+            <div className="card"><EmptyState dark icon={PackageCheck} title="Nenhuma retirada pendente" description="Novas reservas de assinantes aparecem aqui." /></div>
+          )}
+        </div>
       </div>
 
       <div>
-        <p className="font-semibold mb-3">Histórico de retiradas</p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-semibold text-sm">Histórico</p>
+          {others.length > 0 && (
+            <p className="text-xs text-white/40">{withdrawnCount} retirada{withdrawnCount === 1 ? '' : 's'} concluída{withdrawnCount === 1 ? '' : 's'} · {others.length} no total</p>
+          )}
+        </div>
         <div className="card overflow-x-auto">
           <table className="w-full text-sm min-w-[600px]">
             <thead>
