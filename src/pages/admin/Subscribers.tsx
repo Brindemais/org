@@ -7,7 +7,7 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { downloadCSV } from '../../lib/csv'
 
-interface Row { id: string; full_name: string; cpf: string | null; email: string | null; created_at: string; sub_status: string | null; balance: number; active: boolean }
+interface Row { id: string; full_name: string; cpf: string | null; email: string | null; created_at: string; sub_status: string | null; sub_expires_at: string | null; balance: number; active: boolean }
 
 export default function AdminSubscribers() {
   const [rows, setRows] = useState<Row[]>([])
@@ -21,10 +21,10 @@ export default function AdminSubscribers() {
     const result: Row[] = []
     for (const p of profiles ?? []) {
       const [{ data: sub }, { data: bal }] = await Promise.all([
-        supabase.from('subscriptions').select('status').eq('subscriber_id', p.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+        supabase.from('subscriptions').select('status, expires_at').eq('subscriber_id', p.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
         supabase.rpc('current_wallet_balance', { p_user_id: p.id }),
       ])
-      result.push({ id: p.id, full_name: p.full_name, cpf: p.cpf, email: p.email, created_at: p.created_at, sub_status: sub?.status ?? null, balance: Number(bal ?? 0), active: p.active })
+      result.push({ id: p.id, full_name: p.full_name, cpf: p.cpf, email: p.email, created_at: p.created_at, sub_status: sub?.status ?? null, sub_expires_at: sub?.expires_at ?? null, balance: Number(bal ?? 0), active: p.active })
     }
     setRows(result)
     setLoading(false)
@@ -40,12 +40,17 @@ export default function AdminSubscribers() {
     setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, active: !x.active } : x)))
   }
 
+  function isExpired(r: Row) {
+    return r.sub_status === 'active' && !!r.sub_expires_at && new Date(r.sub_expires_at) < new Date()
+  }
+
   function exportCSV() {
     downloadCSV(
       `assinantes-brinde-mais-${new Date().toISOString().slice(0, 10)}.csv`,
       filtered.map((r) => ({
         nome: r.full_name, cpf: r.cpf ? maskCPF(r.cpf) : '', email: r.email ?? '',
-        assinatura: r.sub_status ?? 'sem_assinatura', saldo: r.balance.toFixed(2),
+        assinatura: r.sub_status ? (isExpired(r) ? 'vencida' : r.sub_status) : 'sem_assinatura',
+        vence_em: r.sub_expires_at ?? '', saldo: r.balance.toFixed(2),
         status_conta: r.active ? 'ativo' : 'suspenso', cadastrado_em: r.created_at,
       })),
     )
@@ -79,7 +84,18 @@ export default function AdminSubscribers() {
                 <td className="py-3">{r.full_name}</td>
                 <td className="py-3 text-white/50">{r.cpf ? maskCPF(r.cpf) : '-'}</td>
                 <td className="py-3 text-white/50">{r.email}</td>
-                <td className="py-3">{r.sub_status ? <StatusBadge status={r.sub_status} /> : <span className="text-white/30">Sem assinatura</span>}</td>
+                <td className="py-3">
+                  {r.sub_status ? (
+                    isExpired(r) ? (
+                      <span className="pill bg-red-500/15 text-red-400">Vencida</span>
+                    ) : (
+                      <StatusBadge status={r.sub_status} />
+                    )
+                  ) : (
+                    <span className="text-white/30">Sem assinatura</span>
+                  )}
+                  {r.sub_expires_at && <p className="text-[11px] text-white/30 mt-1">até {formatDate(r.sub_expires_at)}</p>}
+                </td>
                 <td className="py-3">{formatBRL(r.balance)}</td>
                 <td className="py-3 text-white/50">{formatDate(r.created_at)}</td>
                 <td className="py-3">

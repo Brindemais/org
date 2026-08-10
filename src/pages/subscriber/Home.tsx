@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { ChevronRight, Gift, MapPin, Share2, Wallet } from 'lucide-react'
+import { AlertTriangle, ChevronRight, Clock, Gift, Lock, MapPin, Share2, Wallet } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSubscription } from '../../hooks/useSubscription'
 import { useWallet } from '../../hooks/useWallet'
 import { supabase } from '../../lib/supabase'
 import type { Partner, Promotion } from '../../lib/types'
 import { formatBRL } from '../../lib/format'
+import { PLAN_PRICES } from '../../lib/plans'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
@@ -17,7 +18,7 @@ type HomePartner = Pick<Partner, 'id' | 'trade_name' | 'logo_url'>
 
 export default function SubscriberHome() {
   const { profile } = useAuth()
-  const { subscription, pickup, loading: subLoading } = useSubscription()
+  const { subscription, pickup, loading: subLoading, benefitsBlocked, renewalDue, daysUntilExpiry } = useSubscription()
   const { balance } = useWallet()
   const [partners, setPartners] = useState<HomePartner[]>([])
   const [promo, setPromo] = useState<Promotion | null>(null)
@@ -49,15 +50,44 @@ export default function SubscriberHome() {
 
       {subLoading && <LoadingState dark label="Carregando sua assinatura..." size="sm" />}
 
-      {!subLoading && (!subscription || subscription.status !== 'active') && (
+      {!subLoading && !subscription && (
         <div className="card border-gold-400/30">
           <p className="font-semibold mb-1">Ative sua assinatura</p>
-          <p className="text-sm text-white/50 mb-3">Assine por R$ 79,00/mês e comece a receber seu brinde mensal e todos os benefícios do clube.</p>
-          <Link to="/cadastro" className="btn-gold w-full">Ativar assinatura</Link>
+          <p className="text-sm text-white/50 mb-3">Assine a partir de {formatBRL(PLAN_PRICES.monthly)}/mês e comece a receber seu brinde mensal e todos os benefícios do clube.</p>
+          <Link to="/app/assinatura" className="btn-gold w-full">Ativar assinatura</Link>
         </div>
       )}
 
-      {subscription?.status === 'active' && !pickup && (
+      {!subLoading && subscription && benefitsBlocked && (
+        <div className="card border-red-500/30 bg-red-500/5">
+          <div className="flex items-center gap-2 mb-1">
+            <Lock size={16} className="text-red-400" />
+            <p className="font-semibold">Benefícios suspensos</p>
+          </div>
+          <p className="text-sm text-white/50 mb-3">
+            Seu plano venceu e o acesso ao brinde do mês, descontos e demais benefícios ficou pausado até a confirmação de um novo pagamento.
+          </p>
+          <Link to="/app/assinatura" className="btn-gold w-full">Aguardando pagamento · Renovar agora</Link>
+        </div>
+      )}
+
+      {!subLoading && !benefitsBlocked && renewalDue && (
+        <Link to="/app/assinatura" className="card border-gold-400/40 bg-gold-400/5 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gold-400/15 flex items-center justify-center shrink-0">
+            <Clock size={18} className="text-gold-400" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-sm flex items-center gap-1.5">
+              <AlertTriangle size={13} className="text-gold-400" />
+              {daysUntilExpiry !== null && daysUntilExpiry <= 0 ? 'Sua assinatura vence hoje' : `Vence em ${daysUntilExpiry} ${daysUntilExpiry === 1 ? 'dia' : 'dias'}`}
+            </p>
+            <p className="text-xs text-white/50">Renove agora para não perder o acesso aos benefícios.</p>
+          </div>
+          <ChevronRight size={18} className="text-white/30" />
+        </Link>
+      )}
+
+      {!benefitsBlocked && subscription?.status === 'active' && !pickup && (
         <div className="card border-gold-400/30">
           <div className="flex items-center gap-2 mb-1">
             <Gift size={16} className="text-gold-400" />
@@ -68,7 +98,7 @@ export default function SubscriberHome() {
         </div>
       )}
 
-      {pickup && (
+      {!benefitsBlocked && pickup && (
         <Link to="/app/retirada" className="card border-gold-400/30 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
