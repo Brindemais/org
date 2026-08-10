@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Download, LogOut, ShieldCheck, Trash2, UserPlus } from 'lucide-react'
+import { ChevronRight, Download, LogOut, Receipt, ShieldCheck, Trash2, UserPlus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -144,6 +144,17 @@ export default function SubscriberProfile() {
         </div>
         <button type="submit" disabled={saving} className="btn-gold w-full">{saving ? 'Salvando...' : saved ? 'Salvo!' : 'Salvar alterações'}</button>
       </form>
+
+      <Link to="/app/pagamentos" className="card flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-gold-400/10 flex items-center justify-center shrink-0">
+          <Receipt size={17} className="text-gold-400" />
+        </div>
+        <div className="flex-1">
+          <p className="font-semibold text-sm">Meus pagamentos</p>
+          <p className="text-xs text-white/50">Histórico de assinatura e compras na loja</p>
+        </div>
+        <ChevronRight size={18} className="text-white/30" />
+      </Link>
 
       <div className="card space-y-3">
         <p className="font-semibold text-sm flex items-center gap-2"><UserPlus size={15} className="text-gold-400" /> Pessoas autorizadas para retirada</p>
