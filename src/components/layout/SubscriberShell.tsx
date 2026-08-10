@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Home, Gift, Wallet, MapPin, User, LogOut, Bell } from 'lucide-react'
+import { Home, Gift, Wallet, MapPin, User, LogOut, Bell, CreditCard, ShoppingBag, Receipt, Share2, LifeBuoy } from 'lucide-react'
 import { TopBar } from './TopBar'
 import { Logo } from './Logo'
 import { BottomNavigation, type BottomNavItem } from '../ui/BottomNavigation'
@@ -7,13 +7,32 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useWallet } from '../../hooks/useWallet'
 import { formatBRL } from '../../lib/format'
 
-// Capped at 5 items per the navigation spec. "Indique" and other actions live
-// inside Início (CTA) and Perfil instead of taking a 6th tab slot.
-const NAV: BottomNavItem[] = [
+// Capped at 5 items — the bottom tab bar is a phone-width strip, it can't
+// fit more without shrinking labels into illegibility. "Indique" and other
+// actions live inside Início (CTA) and Perfil on mobile instead of taking a
+// 6th tab slot.
+const MOBILE_NAV: BottomNavItem[] = [
   { to: '/app', label: 'Início', icon: Home, end: true },
   { to: '/app/beneficios', label: 'Benefícios', icon: Gift },
   { to: '/app/parceiros', label: 'Parceiros', icon: MapPin },
   { to: '/app/carteira', label: 'Carteira', icon: Wallet },
+  { to: '/app/perfil', label: 'Perfil', icon: User },
+]
+
+// The desktop/tablet sidebar has no such space constraint — same idea as
+// the admin/parceiro sidebars, which list every top-level screen instead of
+// a curated 5.
+const SIDEBAR_NAV: BottomNavItem[] = [
+  { to: '/app', label: 'Início', icon: Home, end: true },
+  { to: '/app/beneficios', label: 'Benefícios', icon: Gift },
+  { to: '/app/assinatura', label: 'Planos', icon: CreditCard },
+  { to: '/app/parceiros', label: 'Parceiros', icon: MapPin },
+  { to: '/app/loja', label: 'Loja', icon: ShoppingBag },
+  { to: '/app/carteira', label: 'Carteira', icon: Wallet },
+  { to: '/app/pagamentos', label: 'Pagamentos', icon: Receipt },
+  { to: '/app/indique', label: 'Indique', icon: Share2 },
+  { to: '/app/notificacoes', label: 'Notificações', icon: Bell },
+  { to: '/app/suporte', label: 'Suporte', icon: LifeBuoy },
   { to: '/app/perfil', label: 'Perfil', icon: User },
 ]
 
@@ -33,7 +52,7 @@ export function SubscriberShell() {
           <p className="text-xl font-bold">{formatBRL(balance)}</p>
         </div>
         <nav className="flex-1 overflow-y-auto py-3">
-          {NAV.map(({ to, label, icon: Icon, end }) => (
+          {SIDEBAR_NAV.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -84,7 +103,7 @@ export function SubscriberShell() {
         </main>
 
         <div className="lg:hidden">
-          <BottomNavigation items={NAV} />
+          <BottomNavigation items={MOBILE_NAV} />
         </div>
       </div>
     </div>
