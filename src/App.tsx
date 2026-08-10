@@ -29,8 +29,6 @@ const SubscriberPickup = lazy(() => import('./pages/subscriber/Pickup'))
 const SubscriberWallet = lazy(() => import('./pages/subscriber/Wallet'))
 const SubscriberWithdraw = lazy(() => import('./pages/subscriber/Withdraw'))
 const SubscriberReferrals = lazy(() => import('./pages/subscriber/Referrals'))
-const SubscriberStore = lazy(() => import('./pages/subscriber/Store'))
-const SubscriberStoreOrders = lazy(() => import('./pages/subscriber/StoreOrders'))
 const SubscriberPartners = lazy(() => import('./pages/subscriber/Partners'))
 const SubscriberPartnerDetail = lazy(() => import('./pages/subscriber/PartnerDetail'))
 const SubscriberNotifications = lazy(() => import('./pages/subscriber/Notifications'))
@@ -45,7 +43,6 @@ const PartnerStock = lazy(() => import('./pages/partner/Stock'))
 const PartnerProducts = lazy(() => import('./pages/partner/Products'))
 const PartnerPromotions = lazy(() => import('./pages/partner/Promotions'))
 const PartnerHistory = lazy(() => import('./pages/partner/History'))
-const PartnerStoreOrders = lazy(() => import('./pages/partner/StoreOrders'))
 const PartnerProfile = lazy(() => import('./pages/partner/Profile'))
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
@@ -101,8 +98,6 @@ export default function App() {
           <Route path="carteira" element={<SubscriberWallet />} />
           <Route path="carteira/saque" element={<SubscriberWithdraw />} />
           <Route path="indique" element={<SubscriberReferrals />} />
-          <Route path="loja" element={<SubscriberStore />} />
-          <Route path="loja/pedidos" element={<SubscriberStoreOrders />} />
           <Route path="parceiros" element={<SubscriberPartners />} />
           <Route path="parceiros/:id" element={<SubscriberPartnerDetail />} />
           <Route path="notificacoes" element={<SubscriberNotifications />} />
@@ -123,7 +118,6 @@ export default function App() {
           <Route path="estoque" element={<PartnerStock />} />
           <Route path="brindes" element={<PartnerProducts />} />
           <Route path="promocoes" element={<PartnerPromotions />} />
-          <Route path="pedidos-loja" element={<PartnerStoreOrders />} />
           <Route path="historico" element={<PartnerHistory />} />
           <Route path="perfil" element={<PartnerProfile />} />
         </Route>

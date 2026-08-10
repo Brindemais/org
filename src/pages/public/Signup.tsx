@@ -3,7 +3,9 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Check, Copy, ShieldCheck, User, Wallet } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { LogoBadge } from '../../components/layout/Logo'
-import { isValidCPF, maskCPF, maskPhone } from '../../lib/format'
+import { isValidCPF, maskCPF, maskPhone, formatBRL } from '../../lib/format'
+import { PLAN_PRICES, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../../lib/plans'
+import type { SubscriptionPlan } from '../../lib/types'
 
 type Step = 1 | 2 | 3
 
@@ -33,6 +35,7 @@ export default function Signup() {
   const [password, setPassword] = useState('')
   const [accepted, setAccepted] = useState(false)
 
+  const [plan, setPlan] = useState<SubscriptionPlan>('monthly')
   const [pixCode, setPixCode] = useState('')
   const [copied, setCopied] = useState(false)
 
@@ -73,12 +76,14 @@ export default function Signup() {
     const uid = userRes.user?.id
     if (!uid) { setLoading(false); return }
 
-    const fakePix = `00020126360014BR.GOV.BCB.PIX0114${uid.slice(0, 14)}5204000053039865406${(79).toFixed(2)}5802BR5913BRINDEMAIS6009RIOJANEIRO62070503***6304${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+    const amount = PLAN_PRICES[plan]
+    const fakePix = `00020126360014BR.GOV.BCB.PIX0114${uid.slice(0, 14)}5204000053039865406${amount.toFixed(2)}5802BR5913BRINDEMAIS6009RIOJANEIRO62070503***6304${Math.random().toString(36).slice(2, 6).toUpperCase()}`
     setPixCode(fakePix)
 
     const { error: payErr } = await supabase.from('payments').insert({
       subscriber_id: uid,
-      amount: 79.0,
+      amount,
+      plan,
       type: 'subscription',
       pix_code: fakePix,
     })
@@ -163,13 +168,29 @@ export default function Signup() {
         {step === 2 && (
           <div className="card-light space-y-5">
             <h1 className="font-display text-xl font-semibold text-ink-950">Ative sua assinatura</h1>
-            <div className="rounded-xl bg-gold-gradient text-ink-950 p-5">
-              <p className="text-xs font-bold uppercase opacity-70">Assinatura mensal</p>
-              <p className="text-3xl font-bold">R$ 79,00<span className="text-sm font-medium">/mês</span></p>
-              <p className="text-xs opacity-70 mt-1">Ativação imediata via Pix · Cancele quando quiser</p>
+            <div className="grid grid-cols-1 gap-3">
+              <button
+                type="button"
+                onClick={() => setPlan('monthly')}
+                className={`text-left rounded-xl p-5 border transition ${plan === 'monthly' ? 'border-gold-400 bg-gold-400/10' : 'border-black/10'}`}
+              >
+                <p className="text-xs font-bold uppercase text-black/50">Plano mensal</p>
+                <p className="text-3xl font-bold text-ink-950 mt-1">{formatBRL(PLAN_PRICES.monthly)}<span className="text-sm font-medium text-black/40">/mês</span></p>
+                <p className="text-xs text-black/40 mt-1">Renovação a cada 30 dias · cancele quando quiser</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlan('annual')}
+                className={`relative text-left rounded-xl p-5 border transition ${plan === 'annual' ? 'border-gold-400 bg-gold-400/10' : 'border-black/10'}`}
+              >
+                <span className="absolute top-4 right-4 pill bg-gold-gradient text-ink-950 font-bold">-{ANNUAL_DISCOUNT_PCT}%</span>
+                <p className="text-xs font-bold uppercase text-black/50">Plano anual</p>
+                <p className="text-3xl font-bold text-ink-950 mt-1">{formatBRL(PLAN_PRICES.annual)}<span className="text-sm font-medium text-black/40">/ano</span></p>
+                <p className="text-xs text-black/40 mt-1">Equivale a {formatBRL(ANNUAL_MONTHLY_EQUIVALENT)}/mês · pacote de 12 meses, cobrado uma vez</p>
+              </button>
             </div>
             <ul className="space-y-2.5 text-sm text-black/65">
-              {['Brinde mensal em parceiro de sua escolha', 'Descontos exclusivos em toda a rede', 'Cashback e bonificação por indicação', 'Acesso à loja virtual exclusiva'].map((b) => (
+              {['Brinde mensal em parceiro de sua escolha', 'Descontos exclusivos em toda a rede', 'Cashback e bonificação por indicação'].map((b) => (
                 <li key={b} className="flex gap-2"><Check size={16} className="text-gold-500 shrink-0 mt-0.5" />{b}</li>
               ))}
             </ul>
@@ -186,7 +207,7 @@ export default function Signup() {
             <div className="w-44 h-44 mx-auto rounded-xl bg-white border border-black/10 p-3 flex items-center justify-center">
               <div className="w-full h-full bg-[repeating-linear-gradient(45deg,#111_0,#111_4px,#fff_4px,#fff_8px)] opacity-80 rounded" />
             </div>
-            <p className="text-sm text-black/50">Escaneie o QR Code ou copie o código Pix abaixo para pagar R$ 79,00.</p>
+            <p className="text-sm text-black/50">Escaneie o QR Code ou copie o código Pix abaixo para pagar {formatBRL(PLAN_PRICES[plan])}.</p>
             <button onClick={copyPix} className="btn-dark-light w-full !py-2.5 text-sm gap-2">
               <Copy size={14} /> {copied ? 'Código copiado!' : 'Copiar código Pix'}
             </button>

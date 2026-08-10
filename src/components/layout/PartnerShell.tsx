@@ -1,4 +1,4 @@
-import { LayoutDashboard, PackageCheck, Boxes, Gift, Percent, History, Store, Receipt } from 'lucide-react'
+import { LayoutDashboard, PackageCheck, Boxes, Gift, Percent, History, Store } from 'lucide-react'
 import { DashboardShell, type DashNavItem } from './DashboardShell'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -8,7 +8,6 @@ const NAV: DashNavItem[] = [
   { to: '/parceiro/estoque', label: 'Estoque', icon: Boxes },
   { to: '/parceiro/brindes', label: 'Produtos cadastrados', icon: Gift },
   { to: '/parceiro/promocoes', label: 'Promoções e descontos', icon: Percent },
-  { to: '/parceiro/pedidos-loja', label: 'Pedidos da loja', icon: Receipt },
   { to: '/parceiro/historico', label: 'Histórico', icon: History },
   { to: '/parceiro/perfil', label: 'Meu estabelecimento', icon: Store },
 ]

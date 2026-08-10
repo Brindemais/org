@@ -12,18 +12,15 @@ interface MonthRow { key: string; label: string; gross: number; referralCost: nu
 export default function AdminFinancial() {
   const [payments, setPayments] = useState<{ amount: number; confirmed_at: string }[]>([])
   const [bonuses, setBonuses] = useState<{ amount: number; created_at: string }[]>([])
-  const [storeGross, setStoreGross] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     Promise.all([
       supabase.from('payments').select('amount, confirmed_at').eq('type', 'subscription').eq('status', 'confirmed').not('confirmed_at', 'is', null),
       supabase.from('bonuses').select('amount, created_at').eq('status', 'confirmed'),
-      supabase.from('payments').select('amount').eq('type', 'store').eq('status', 'confirmed'),
-    ]).then(([{ data: p }, { data: b }, { data: s }]) => {
+    ]).then(([{ data: p }, { data: b }]) => {
       setPayments((p as any[]) ?? [])
       setBonuses((b as any[]) ?? [])
-      setStoreGross(((s as any[]) ?? []).reduce((sum, r) => sum + Number(r.amount), 0))
       setLoading(false)
     })
   }, [])
@@ -72,7 +69,7 @@ export default function AdminFinancial() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold">Financeiro</h1>
-        <p className="text-white/50 text-sm">Entradas de assinantes, custos e valor líquido — só assinaturas confirmadas (não inclui a loja).</p>
+        <p className="text-white/50 text-sm">Entradas de assinantes, custos e valor líquido — assinaturas confirmadas.</p>
       </div>
 
       <div>
@@ -147,11 +144,6 @@ export default function AdminFinancial() {
           </tbody>
         </table>
       </div>
-
-      <p className="text-xs text-white/30">
-        Vendas na loja (não incluídas no líquido acima): {formatBRL(storeGross)} confirmados no período. Comissão de
-        indicação sobre consumo na loja também é somada em "Custo de indicações" quando a bonificação existir.
-      </p>
     </div>
   )
 }

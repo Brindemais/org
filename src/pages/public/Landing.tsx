@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import {
   Gift, Users2, UserPlus, ShieldCheck, Wallet, PackageCheck, Instagram, Facebook, Youtube, Music2,
-  ChevronRight, ChevronDown, MapPin, ShoppingBag, Percent, Lock, History,
+  ChevronRight, ChevronDown, MapPin, Percent, Lock, History,
   Headset, Ban, Copy, Share2, Search, ArrowRight,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
@@ -48,7 +48,6 @@ const BENEFITS = [
   { icon: ShieldCheck, title: 'Promoções especiais', description: 'Ofertas por tempo limitado só para assinantes ativos.' },
   { icon: Users2, title: 'Indique e ganhe', description: 'Bonificações por indicação em até 7 níveis da sua rede.' },
   { icon: MapPin, title: 'Parceiros próximos', description: 'Encontre estabelecimentos por cidade, bairro ou distância.' },
-  { icon: ShoppingBag, title: 'Loja exclusiva', description: 'Produtos personalizados com preço especial para assinantes.' },
   { icon: History, title: 'Carteira e extrato', description: 'Acompanhe saldo, origem dos créditos e solicite saques.' },
 ]
 
@@ -273,8 +272,8 @@ export default function Landing() {
             </h3>
             <p className="text-black/55 leading-relaxed mb-4">
               O primeiro brinde é uma taça temática personalizada, mas a assinatura Brinde Mais vai muito além: descontos
-              exclusivos, cashback, bonificações por indicação e por consumo na rede, loja virtual exclusiva, carteira
-              interna e acesso a uma comunidade nacional de consumo inteligente.
+              exclusivos, cashback, bonificações por indicação e por consumo na rede, carteira interna e acesso a uma
+              comunidade nacional de consumo inteligente.
             </p>
             <ul className="space-y-2 text-sm text-black/65">
               {['O modelo do brinde pode variar de acordo com o parceiro escolhido', 'Retirada disponível apenas em pontos com estoque', 'Novos brindes e parceiros são adicionados ao longo do tempo'].map((t) => (
@@ -445,7 +444,6 @@ export default function Landing() {
         </ResponsiveContainer>
       </section>
 
-      {/* ============ 4.10 LOJA EXCLUSIVA ============ */}
       {/* ============ 4.11 QUERO SER PARCEIRO ============ */}
       <section id="seja-parceiro" className="border-t border-black/10 py-16">
         <ResponsiveContainer className="grid lg:grid-cols-2 gap-10 items-center">
@@ -521,7 +519,7 @@ export default function Landing() {
                   { icon: Percent, label: 'Descontos exclusivos' },
                   { icon: Wallet, label: 'Cashback e créditos' },
                   { icon: Users2, label: 'Indique e ganhe mais benefícios' },
-                  { icon: ShoppingBag, label: 'Loja virtual exclusiva' },
+                  { icon: MapPin, label: 'Parceiros próximos' },
                   { icon: History, label: 'Carteira interna' },
                 ].map(({ icon: Icon, label }) => (
                   <div key={label} className="flex flex-col items-start gap-2">

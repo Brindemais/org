@@ -7,7 +7,7 @@ import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 
 const CATEGORIES = [
-  'Pagamento', 'Assinatura', 'Retirada', 'Parceiro', 'Estoque', 'Loja', 'Pedido', 'Indicação', 'Bonificação', 'Saque', 'Acesso', 'Outros',
+  'Pagamento', 'Assinatura', 'Retirada', 'Parceiro', 'Estoque', 'Indicação', 'Bonificação', 'Saque', 'Acesso', 'Outros',
 ]
 
 interface Ticket { id: string; category: string; subject: string; status: string; created_at: string }
