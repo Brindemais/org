@@ -24,7 +24,6 @@ const EDIT_FIELDS: { key: keyof Partner; label: string }[] = [
 
 export default function AdminPartners() {
   const [partners, setPartners] = useState<Partner[]>([])
-  const [requests, setRequests] = useState<any[]>([])
   const [creating, setCreating] = useState(false)
   const [createMsg, setCreateMsg] = useState('')
   const [form, setForm] = useState({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '', email: '' })
@@ -44,8 +43,6 @@ export default function AdminPartners() {
   async function load() {
     const { data } = await supabase.from('partners').select('*').order('created_at', { ascending: false })
     setPartners((data as Partner[]) ?? [])
-    const { data: reqs } = await supabase.from('partner_change_requests').select('*, partner:partner_id(trade_name)').eq('status', 'pending').order('created_at', { ascending: false })
-    setRequests(reqs ?? [])
   }
 
   function startEdit(p: Partner) {
@@ -165,14 +162,6 @@ export default function AdminPartners() {
     )
   }
 
-  async function reviewRequest(req: any, approve: boolean) {
-    if (approve) {
-      await supabase.from('partners').update(req.changes).eq('id', req.partner_id)
-    }
-    await supabase.from('partner_change_requests').update({ status: approve ? 'approved' : 'rejected', reviewed_at: new Date().toISOString() }).eq('id', req.id)
-    load()
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -197,26 +186,6 @@ export default function AdminPartners() {
           {STATUS_FLOW.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
-
-      {requests.length > 0 && (
-        <div className="card border-gold-400/30">
-          <p className="font-semibold mb-3">Solicitações de alteração pendentes</p>
-          <div className="space-y-2">
-            {requests.map((r) => (
-              <div key={r.id} className="flex items-center justify-between border-b border-ink-800 last:border-0 pb-2 last:pb-0">
-                <div className="text-sm">
-                  <p className="font-medium">{r.partner?.trade_name}</p>
-                  <p className="text-xs text-white/40">{JSON.stringify(r.changes)}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => reviewRequest(r, true)} className="btn-gold !py-1.5 !px-3 text-xs">Aprovar</button>
-                  <button onClick={() => reviewRequest(r, false)} className="btn-ghost !py-1.5 !px-3 text-xs">Recusar</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <details className="card">
         <summary className="font-semibold cursor-pointer">+ Cadastrar novo parceiro</summary>
