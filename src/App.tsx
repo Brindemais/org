@@ -48,6 +48,7 @@ const PartnerProfile = lazy(() => import('./pages/partner/Profile'))
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
 const AdminSubscribers = lazy(() => import('./pages/admin/Subscribers'))
+const AdminReferrals = lazy(() => import('./pages/admin/Referrals'))
 const AdminPartners = lazy(() => import('./pages/admin/Partners'))
 const AdminPayments = lazy(() => import('./pages/admin/Payments'))
 const AdminStock = lazy(() => import('./pages/admin/Stock'))
@@ -131,6 +132,7 @@ export default function App() {
         >
           <Route index element={<AdminDashboard />} />
           <Route path="assinantes" element={<AdminSubscribers />} />
+          <Route path="indicacoes" element={<AdminReferrals />} />
           <Route path="parceiros" element={<AdminPartners />} />
           <Route path="pagamentos" element={<AdminPayments />} />
           <Route path="estoque" element={<AdminStock />} />
