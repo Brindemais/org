@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Network, Store, Wallet, Boxes, Percent, Landmark, LifeBuoy, UserCog } from 'lucide-react'
+import { LayoutDashboard, Users, Network, Store, Wallet, Boxes, Percent, Landmark, LifeBuoy, UserCog, History } from 'lucide-react'
 import { DashboardShell, type DashNavItem } from './DashboardShell'
 
 const NAV: DashNavItem[] = [
@@ -12,6 +12,7 @@ const NAV: DashNavItem[] = [
   { to: '/admin/saques', label: 'Saques', icon: Landmark },
   { to: '/admin/suporte', label: 'Suporte', icon: LifeBuoy },
   { to: '/admin/equipe', label: 'Equipe', icon: UserCog },
+  { to: '/admin/auditoria', label: 'Auditoria', icon: History },
 ]
 
 export function AdminShell() {

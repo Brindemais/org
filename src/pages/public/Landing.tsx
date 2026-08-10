@@ -624,7 +624,7 @@ export default function Landing() {
               <li className="flex items-center gap-2"><Wallet size={14} className="text-gold-400 shrink-0" /> Assinatura via Pix</li>
               <li className="flex items-center gap-2"><ShieldCheck size={14} className="text-gold-400 shrink-0" /> Ambiente seguro</li>
               <li>contato@brindemais.com.br</li>
-              <li>Piloto: Rio de Janeiro</li>
+              <li>Aceito em todo o Brasil</li>
             </ul>
           </div>
         </ResponsiveContainer>

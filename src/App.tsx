@@ -58,6 +58,7 @@ const AdminPromotions = lazy(() => import('./pages/admin/Promotions'))
 const AdminWithdrawals = lazy(() => import('./pages/admin/Withdrawals'))
 const AdminSupport = lazy(() => import('./pages/admin/Support'))
 const AdminTeam = lazy(() => import('./pages/admin/Team'))
+const AdminAuditLog = lazy(() => import('./pages/admin/AuditLog'))
 
 function RouteFallback() {
   return (
@@ -144,6 +145,7 @@ export default function App() {
           <Route path="saques" element={<AdminWithdrawals />} />
           <Route path="suporte" element={<AdminSupport />} />
           <Route path="equipe" element={<AdminTeam />} />
+          <Route path="auditoria" element={<AdminAuditLog />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

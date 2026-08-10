@@ -35,8 +35,9 @@ export default function SubscriberWallet() {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="card">
-          <p className="text-xs text-white/40 mb-1">Saldo disponível para saque</p>
+          <p className="text-xs text-white/40 mb-1">Disponível para saque</p>
           <p className="font-semibold">{formatBRL(available)}</p>
+          {available < balance && <p className="text-[10px] text-white/30 mt-0.5">{formatBRL(balance - available)} em carência (7 dias)</p>}
         </div>
         <div className="card">
           <p className="text-xs text-white/40 mb-1">Mínimo para saque</p>

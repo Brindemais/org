@@ -31,7 +31,14 @@ export default function SubscriberWithdraw() {
     const { error: rpcError } = await supabase.rpc('request_withdrawal', { p_amount: numAmount, p_pix_key: pixKey })
     setLoading(false)
     if (rpcError) {
-      setError(rpcError.message.includes('INSUFFICIENT_BALANCE') ? 'Saldo insuficiente.' : 'Não foi possível solicitar o saque.')
+      const map: Record<string, string> = {
+        INSUFFICIENT_BALANCE: 'Saldo insuficiente.',
+        MONTHLY_LIMIT_EXCEEDED: 'Limite de R$ 1.000,00 em saques por 30 dias atingido. Tente novamente mais adiante.',
+        MINIMUM_WITHDRAWAL_100: 'O valor mínimo para saque é R$ 100,00.',
+        ACCOUNT_SUSPENDED: 'Sua conta está suspensa. Fale com o suporte.',
+      }
+      const code = Object.keys(map).find((k) => rpcError.message.includes(k))
+      setError(code ? map[code] : 'Não foi possível solicitar o saque.')
       return
     }
     await reload()
@@ -66,7 +73,10 @@ export default function SubscriberWithdraw() {
         </div>
         {error && <p className="text-sm text-red-400">{error}</p>}
         <button type="submit" disabled={loading} className="btn-gold w-full">{loading ? 'Enviando...' : 'Solicitar saque'}</button>
-        <p className="text-xs text-white/40 text-center">Saques passam por análise manual de segurança antes do pagamento.</p>
+        <p className="text-xs text-white/40 text-center">
+          Saques passam por análise manual de segurança antes do pagamento. Bonificações ficam disponíveis para saque
+          7 dias após serem creditadas, e o limite é de R$ 1.000,00 a cada 30 dias.
+        </p>
       </form>
     </div>
   )

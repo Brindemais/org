@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, Copy } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { useSubscription } from '../../hooks/useSubscription'
 import { formatBRL, formatDate } from '../../lib/format'
-import { PLAN_PRICES, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../../lib/plans'
+import { PLAN_PRICES, PLAN_LABELS, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../../lib/plans'
+import { StatusBadge } from '../../components/ui/StatusBadge'
 import type { SubscriptionPlan } from '../../lib/types'
 
 export default function SubscriberSubscription() {
@@ -16,6 +17,13 @@ export default function SubscriberSubscription() {
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const navigate = useNavigate()
+
+  // Pre-select whatever plan they're already on, so renewing/switching
+  // starts from their current choice instead of always defaulting to
+  // monthly.
+  useEffect(() => {
+    if (subscription) setPlan(subscription.plan)
+  }, [subscription])
 
   const amount = PLAN_PRICES[plan]
   const isRenewal = !!subscription && (benefitsBlocked || renewalDue)
@@ -42,9 +50,23 @@ export default function SubscriberSubscription() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const showCurrentPlanCard = subscription && subscription.status === 'active' && !benefitsBlocked && !pixCode
+
   return (
     <div className="space-y-5">
-      <h1 className="font-display text-xl font-semibold">Assinatura</h1>
+      <h1 className="font-display text-xl font-semibold">Planos</h1>
+
+      {showCurrentPlanCard && (
+        <div className="rounded-xl2 bg-gold-gradient text-ink-950 p-5">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs font-bold uppercase tracking-wide opacity-70">Seu plano atual</p>
+            <StatusBadge status="active" />
+          </div>
+          <p className="text-2xl font-bold">Plano {PLAN_LABELS[subscription.plan]}</p>
+          <p className="text-sm font-medium opacity-80 mt-0.5">{formatBRL(subscription.amount)}{subscription.plan === 'annual' ? '/ano' : '/mês'}</p>
+          {subscription.expires_at && <p className="text-xs opacity-70 mt-2">Renova ou vence em {formatDate(subscription.expires_at)}</p>}
+        </div>
+      )}
 
       {benefitsBlocked && subscription && (
         <div className="card border-red-500/30 bg-red-500/5">
@@ -67,6 +89,9 @@ export default function SubscriberSubscription() {
 
       {!pixCode && (
         <>
+          {showCurrentPlanCard && (
+            <p className="font-semibold text-sm">Trocar ou renovar antes do vencimento</p>
+          )}
           <div className="grid grid-cols-1 gap-3">
             <button
               onClick={() => setPlan('monthly')}
