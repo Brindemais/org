@@ -16,6 +16,7 @@ type BenefitPartner = Pick<Partner, 'id' | 'trade_name' | 'category' | 'neighbor
 export default function SubscriberBenefits() {
   const { subscription, pickup, reload, benefitsBlocked } = useSubscription()
   const [partners, setPartners] = useState<BenefitPartner[]>([])
+  const [inStockIds, setInStockIds] = useState<Set<string> | null>(null)
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [category, setCategory] = useState<string>('')
   const [choosing, setChoosing] = useState<string | null>(null)
@@ -30,10 +31,17 @@ export default function SubscriberBenefits() {
     if (category) query = query.eq('category', category)
     query.then(({ data }) => { setPartners((data as BenefitPartner[]) ?? []); setLoading(false) })
     supabase.from('promotions').select('*').eq('status', 'approved').gte('valid_until', new Date().toISOString().slice(0, 10)).then(({ data }) => setPromotions((data as Promotion[]) ?? []))
+    // Only partners with at least one brinde in stock can be chosen as a
+    // pickup point — filtering them out here (instead of only rejecting at
+    // confirm time) is what actually satisfies "não deixar escolher parceiro
+    // sem estoque".
+    supabase.from('stock_partner').select('partner_id, quantity').gt('quantity', 0)
+      .then(({ data }) => setInStockIds(new Set((data ?? []).map((s) => s.partner_id))))
   }, [category])
 
   const sortedPartners = useMemo(() => {
-    const withDistance = partners.map((p) => ({
+    const available = inStockIds ? partners.filter((p) => inStockIds.has(p.id)) : partners
+    const withDistance = available.map((p) => ({
       partner: p,
       distanceKm: geo.status === 'granted' && p.lat != null && p.lng != null ? haversineKm(geo.lat!, geo.lng!, p.lat, p.lng) : null,
     }))
@@ -44,7 +52,9 @@ export default function SubscriberBenefits() {
       return a.distanceKm - b.distanceKm
     })
     return withDistance
-  }, [partners, geo])
+  }, [partners, geo, inStockIds])
+
+  const outOfStockCount = inStockIds ? partners.length - sortedPartners.length : 0
 
   async function choosePartner(partnerId: string) {
     if (!subscription || benefitsBlocked) return
@@ -155,6 +165,11 @@ export default function SubscriberBenefits() {
           ))}
           {!loading && !sortedPartners.length && (
             <EmptyState dark icon={Store} title="Nenhum parceiro encontrado" description="Tente outra categoria ou volte mais tarde." />
+          )}
+          {!loading && outOfStockCount > 0 && (
+            <p className="text-xs text-white/30 text-center pt-1">
+              {outOfStockCount} parceiro{outOfStockCount === 1 ? '' : 's'} sem brinde em estoque no momento não {outOfStockCount === 1 ? 'aparece' : 'aparecem'} aqui.
+            </p>
           )}
         </div>
       </section>

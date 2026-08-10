@@ -1,21 +1,25 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
-import { Users, Wallet, Store, Landmark, Receipt, Headset } from 'lucide-react'
+import { Users, Wallet, Store, Landmark, Receipt, Headset, AlertTriangle, RefreshCw, Banknote, ShoppingBag } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { StatCard } from '../../components/ui/StatCard'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { formatBRL, formatDateTime } from '../../lib/format'
 
+interface TopProduct { name: string; count: number }
+
 export default function AdminDashboard() {
   const [kpi, setKpi] = useState({
     subscribersActive: 0, subscribersTotal: 0, revenueGross: 0, partnersActive: 0,
     pendingPayments: 0, pendingWithdrawals: 0, pendingPartners: 0, lowStock: 0,
+    subscribersExpired: 0, renewalRate: 0, withdrawnTotal: 0,
   })
   const [growth, setGrowth] = useState<{ month: string; count: number }[]>([])
   const [recentPayments, setRecentPayments] = useState<any[]>([])
   const [tickets, setTickets] = useState<any[]>([])
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([])
 
   useEffect(() => {
     async function load() {
@@ -24,6 +28,8 @@ export default function AdminDashboard() {
         { count: partnersActive }, { count: pendingPayments }, { count: pendingWithdrawals },
         { count: pendingPartners }, { data: lowStockRows }, { data: allSubs },
         { data: payments }, { data: ticketRows },
+        { count: subsExpired }, { data: everActivated }, { data: paidWithdrawals },
+        { data: orderItems },
       ] = await Promise.all([
         supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'subscriber'),
@@ -36,9 +42,29 @@ export default function AdminDashboard() {
         supabase.from('subscriptions').select('created_at'),
         supabase.from('payments').select('*, subscriber:subscriber_id(full_name)').order('created_at', { ascending: false }).limit(6),
         supabase.from('support_tickets').select('*, user:user_id(full_name)').order('created_at', { ascending: false }).limit(5),
+        // "Vencida": status ainda diz active mas expires_at já passou — mesma
+        // regra usada no resto do app (useSubscription/AdminSubscribers).
+        supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active').lt('expires_at', new Date().toISOString()),
+        // Taxa de renovação: de tudo que já foi ativado alguma vez, quanto
+        // segue ativo hoje (proxy simples — sem histórico de ciclo a ciclo).
+        supabase.from('subscriptions').select('status').not('activated_at', 'is', null),
+        supabase.from('withdrawals').select('amount').eq('status', 'paid'),
+        supabase.from('store_order_items').select('quantity, product:product_id(name)').limit(500),
       ])
 
       const revenueGross = (activeSubs ?? []).reduce((s: number, r: any) => s + Number(r.amount), 0)
+      const withdrawnTotal = (paidWithdrawals ?? []).reduce((s: number, r: any) => s + Number(r.amount), 0)
+      const everActivatedRows = everActivated ?? []
+      const renewalRate = everActivatedRows.length
+        ? Math.round((everActivatedRows.filter((s: any) => s.status === 'active').length / everActivatedRows.length) * 100)
+        : 0
+
+      const productCounts = new Map<string, number>()
+      for (const item of (orderItems ?? []) as any[]) {
+        const name = item.product?.name ?? 'Produto removido'
+        productCounts.set(name, (productCounts.get(name) ?? 0) + item.quantity)
+      }
+      setTopProducts(Array.from(productCounts, ([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 5))
 
       const monthly: Record<string, number> = {}
       for (const s of allSubs ?? []) {
@@ -57,6 +83,9 @@ export default function AdminDashboard() {
         pendingWithdrawals: pendingWithdrawals ?? 0,
         pendingPartners: pendingPartners ?? 0,
         lowStock: (lowStockRows ?? []).length,
+        subscribersExpired: subsExpired ?? 0,
+        renewalRate,
+        withdrawnTotal,
       })
       setRecentPayments(payments ?? [])
       setTickets(ticketRows ?? [])
@@ -76,6 +105,13 @@ export default function AdminDashboard() {
         <StatCard label="Receita recorrente" value={formatBRL(kpi.revenueGross)} hint="Assinaturas ativas" icon={<Wallet size={18} />} tone="gold" />
         <StatCard label="Parceiros ativos" value={kpi.partnersActive} hint={`${kpi.pendingPartners} aguardando aprovação`} icon={<Store size={18} />} />
         <StatCard label="Saques pendentes" value={kpi.pendingWithdrawals} hint="Aguardando análise" icon={<Landmark size={18} />} />
+      </div>
+
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Assinantes vencidos" value={kpi.subscribersExpired} hint="Aguardando renovação" icon={<AlertTriangle size={18} />} />
+        <StatCard label="Taxa de renovação" value={`${kpi.renewalRate}%`} hint="De quem já ativou, segue ativo" icon={<RefreshCw size={18} />} />
+        <StatCard label="Valores sacados" value={formatBRL(kpi.withdrawnTotal)} hint="Total pago em saques" icon={<Banknote size={18} />} />
+        <StatCard label="Estoque baixo" value={kpi.lowStock} hint="Parceiros com ≤5 unidades" icon={<ShoppingBag size={18} />} />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -121,8 +157,8 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="card">
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="card lg:col-span-2">
           <p className="font-semibold mb-4">Últimos lançamentos financeiros</p>
           <div className="space-y-2">
             {recentPayments.map((p) => (
@@ -142,20 +178,33 @@ export default function AdminDashboard() {
         </div>
 
         <div className="card">
-          <p className="font-semibold mb-4">Tickets de suporte recentes</p>
+          <p className="font-semibold mb-4">Produtos mais vendidos</p>
           <div className="space-y-2">
-            {tickets.map((t) => (
-              <div key={t.id} className="flex items-center justify-between border-b border-ink-800 last:border-0 pb-2 last:pb-0">
-                <div className="min-w-0">
-                  <p className="text-sm truncate">{t.subject}</p>
-                  <p className="text-xs text-white/40">{t.user?.full_name} · {t.category}</p>
-                </div>
-                <StatusBadge status={t.status} />
+            {topProducts.map((p, i) => (
+              <div key={p.name} className="flex items-center justify-between border-b border-ink-800 last:border-0 pb-2 last:pb-0">
+                <p className="text-sm truncate flex items-center gap-2"><span className="text-white/30 text-xs">{i + 1}º</span> {p.name}</p>
+                <span className="text-sm font-semibold text-gold-400 shrink-0">{p.count}</span>
               </div>
             ))}
-            {!tickets.length && <EmptyState dark icon={Headset} title="Nenhum chamado aberto" className="py-6" />}
+            {!topProducts.length && <EmptyState dark icon={ShoppingBag} title="Sem vendas na loja ainda" className="py-6" />}
           </div>
         </div>
+      </div>
+
+      <div className="card">
+        <p className="font-semibold mb-4">Tickets de suporte recentes</p>
+        <div className="grid sm:grid-cols-2 gap-x-6">
+          {tickets.map((t) => (
+            <div key={t.id} className="flex items-center justify-between border-b border-ink-800 last:border-0 py-2">
+              <div className="min-w-0">
+                <p className="text-sm truncate">{t.subject}</p>
+                <p className="text-xs text-white/40">{t.user?.full_name} · {t.category}</p>
+              </div>
+              <StatusBadge status={t.status} />
+            </div>
+          ))}
+        </div>
+        {!tickets.length && <EmptyState dark icon={Headset} title="Nenhum chamado aberto" className="py-6" />}
       </div>
     </div>
   )

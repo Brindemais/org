@@ -18,6 +18,7 @@ export default function SubscriberPartnerDetail() {
   const [partner, setPartner] = useState<DetailPartner | null>(null)
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [gifts, setGifts] = useState<ProductRow[]>([])
+  const [hasStock, setHasStock] = useState(false)
   const [loading, setLoading] = useState(true)
   const [choosing, setChoosing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -29,10 +30,15 @@ export default function SubscriberPartnerDetail() {
       supabase.from('partners').select('id, trade_name, category, address, neighborhood, city, state, opening_hours, logo_url, whatsapp').eq('id', id).maybeSingle(),
       supabase.from('promotions').select('*').eq('partner_id', id).eq('status', 'approved').gte('valid_until', new Date().toISOString().slice(0, 10)).order('created_at', { ascending: false }),
       supabase.from('products').select('*').eq('partner_id', id).eq('active', true).eq('approved', true).order('is_gift', { ascending: false }),
-    ]).then(([{ data: p }, { data: promos }, { data: prods }]) => {
+      // Same rule as Benefícios: a partner without brinde stock can't be
+      // chosen as a pickup point, so the button below reflects that instead
+      // of only failing after the fact.
+      supabase.from('stock_partner').select('quantity').eq('partner_id', id).gt('quantity', 0).limit(1),
+    ]).then(([{ data: p }, { data: promos }, { data: prods }, { data: stock }]) => {
       setPartner(p as DetailPartner | null)
       setPromotions((promos as Promotion[]) ?? [])
       setGifts((prods as ProductRow[]) ?? [])
+      setHasStock(!!stock?.length)
       setLoading(false)
     })
   }, [id])
@@ -89,10 +95,15 @@ export default function SubscriberPartnerDetail() {
 
       {error && <p className="text-xs bg-red-500/10 text-red-400 rounded-lg px-3 py-2">{error}</p>}
 
-      {!benefitsBlocked && subscription && !pickup && (
+      {!benefitsBlocked && subscription && !pickup && hasStock && (
         <button onClick={choosePartner} disabled={choosing} className="btn-gold w-full">
           {choosing ? 'Reservando...' : 'Retirar meu brinde do mês aqui'}
         </button>
+      )}
+      {!benefitsBlocked && subscription && !pickup && !hasStock && !loading && (
+        <p className="text-xs bg-white/5 text-white/50 rounded-lg px-3 py-2 text-center">
+          Este parceiro está sem brindes em estoque no momento — escolha outro na lista de parceiros.
+        </p>
       )}
       {pickup && pickup.partner_id === partner.id && (
         <p className="text-xs bg-gold-400/10 text-gold-300 rounded-lg px-3 py-2 text-center">Você já reservou seu brinde deste mês aqui.</p>

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { ChevronRight, Download, LogOut, Receipt, ShieldCheck, Trash2, UserPlus } from 'lucide-react'
+import { ChevronRight, CreditCard, Download, LogOut, Receipt, ShieldCheck, Trash2, UserPlus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -144,6 +144,17 @@ export default function SubscriberProfile() {
         </div>
         <button type="submit" disabled={saving} className="btn-gold w-full">{saving ? 'Salvando...' : saved ? 'Salvo!' : 'Salvar alterações'}</button>
       </form>
+
+      <Link to="/app/assinatura" className="card flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-gold-400/10 flex items-center justify-center shrink-0">
+          <CreditCard size={17} className="text-gold-400" />
+        </div>
+        <div className="flex-1">
+          <p className="font-semibold text-sm">Planos</p>
+          <p className="text-xs text-white/50">Ver plano atual, renovar ou trocar</p>
+        </div>
+        <ChevronRight size={18} className="text-white/30" />
+      </Link>
 
       <Link to="/app/pagamentos" className="card flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-gold-400/10 flex items-center justify-center shrink-0">

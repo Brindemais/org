@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { AlertTriangle, ChevronRight, Clock, Gift, Lock, MapPin, Percent, ShoppingBag, Share2, Wallet } from 'lucide-react'
+import { AlertTriangle, ChevronRight, Clock, CreditCard, Gift, Lock, MapPin, Percent, ShoppingBag, Share2, Wallet } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSubscription } from '../../hooks/useSubscription'
 import { useWallet } from '../../hooks/useWallet'
@@ -19,7 +19,7 @@ type HomePartner = Pick<Partner, 'id' | 'trade_name' | 'category' | 'logo_url'>
 
 const QUICK_LINKS = [
   { to: '/app/beneficios', label: 'Benefícios', icon: Gift },
-  { to: '/app/parceiros', label: 'Clube', icon: Percent },
+  { to: '/app/assinatura', label: 'Planos', icon: CreditCard },
   { to: '/app/loja', label: 'Loja', icon: ShoppingBag },
   { to: '/app/indique', label: 'Indique', icon: Share2 },
 ]
