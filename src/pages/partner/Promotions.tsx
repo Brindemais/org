@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Percent } from 'lucide-react'
+import { Percent, Trash2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import type { Promotion } from '../../lib/types'
@@ -13,6 +13,7 @@ export default function PartnerPromotions() {
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [form, setForm] = useState({ title: '', description: '', image_url: '', normal_price: '', subscriber_price: '', valid_until: '' })
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   async function load() {
     if (!partner) return
@@ -34,9 +35,20 @@ export default function PartnerPromotions() {
       normal_price: Number(form.normal_price || 0),
       subscriber_price: Number(form.subscriber_price || 0),
       valid_until: form.valid_until,
+      // Partner-created promotions go live immediately — no admin approval
+      // step. The admin panel can still suspend one after the fact if needed.
+      status: 'approved',
     })
     setSaving(false)
     setForm({ title: '', description: '', image_url: '', normal_price: '', subscriber_price: '', valid_until: '' })
+    load()
+  }
+
+  async function remove(id: string) {
+    if (!window.confirm('Excluir esta promoção? Essa ação não pode ser desfeita.')) return
+    setDeleting(id)
+    await supabase.from('promotions').delete().eq('id', id)
+    setDeleting(null)
     load()
   }
 
@@ -44,7 +56,7 @@ export default function PartnerPromotions() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold">Promoções e descontos</h1>
-        <p className="text-white/50 text-sm">Novas promoções passam por aprovação da administração antes de ficarem visíveis.</p>
+        <p className="text-white/50 text-sm">Promoções publicadas aqui ficam visíveis para assinantes imediatamente.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="card grid sm:grid-cols-2 gap-3">
@@ -71,7 +83,7 @@ export default function PartnerPromotions() {
           <label className="label">Válida até</label>
           <input className="input" type="date" required value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} />
         </div>
-        <button type="submit" disabled={saving} className="btn-gold sm:col-span-2">{saving ? 'Enviando...' : 'Enviar para aprovação'}</button>
+        <button type="submit" disabled={saving} className="btn-gold sm:col-span-2">{saving ? 'Publicando...' : 'Publicar promoção'}</button>
       </form>
 
       <div className="space-y-2">
@@ -84,10 +96,20 @@ export default function PartnerPromotions() {
                 <p className="text-xs text-white/40">Válida até {formatDate(p.valid_until)}</p>
               </div>
             </div>
-            <StatusBadge status={p.status} />
+            <div className="flex items-center gap-2 shrink-0">
+              <StatusBadge status={p.status} />
+              <button
+                onClick={() => remove(p.id)}
+                disabled={deleting === p.id}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-white/40 hover:text-red-400 hover:bg-red-500/10 transition"
+                aria-label="Excluir promoção"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
           </div>
         ))}
-        {!promotions.length && <EmptyState dark icon={Percent} title="Nenhuma promoção cadastrada" description="Envie a primeira promoção no formulário acima." />}
+        {!promotions.length && <EmptyState dark icon={Percent} title="Nenhuma promoção cadastrada" description="Publique a primeira promoção no formulário acima." />}
       </div>
     </div>
   )

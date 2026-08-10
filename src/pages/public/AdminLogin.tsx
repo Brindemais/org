@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '../../lib/supabase'
+import { fetchOwnRole } from '../../lib/auth'
 import { LogoBadge } from '../../components/layout/Logo'
 
 export default function AdminLogin() {
@@ -18,8 +19,8 @@ export default function AdminLogin() {
       setError('E-mail ou senha inválidos.')
       return
     }
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle()
-    if (profile?.role !== 'admin' && profile?.role !== 'operator') {
+    const role = await fetchOwnRole(data.user.id)
+    if (role !== 'admin' && role !== 'operator') {
       await supabase.auth.signOut()
       setLoading(false)
       setError('Esta conta não tem acesso administrativo.')

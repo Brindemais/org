@@ -1,20 +1,26 @@
 import { useEffect, useState } from 'react'
-import { Package, History } from 'lucide-react'
+import { Package, History, PackagePlus } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatDateTime } from '../../lib/format'
 import { EmptyState } from '../../components/ui/EmptyState'
 
 interface StockRow { id: string; quantity: number; product: { id: string; name: string } }
+interface ProductOpt { id: string; name: string }
 
 export default function PartnerStock() {
   const { partner } = useAuth()
   const [stock, setStock] = useState<StockRow[]>([])
+  const [ownProducts, setOwnProducts] = useState<ProductOpt[]>([])
   const [movements, setMovements] = useState<any[]>([])
   const [adjusting, setAdjusting] = useState<string | null>(null)
   const [qty, setQty] = useState('')
   const [reason, setReason] = useState('')
   const [type, setType] = useState<'loss' | 'damage' | 'adjustment'>('loss')
+
+  const [receiveProduct, setReceiveProduct] = useState('')
+  const [receiveQty, setReceiveQty] = useState('')
+  const [receiving, setReceiving] = useState(false)
 
   async function load() {
     if (!partner) return
@@ -22,6 +28,11 @@ export default function PartnerStock() {
     setStock((data as any[]) ?? [])
     const { data: mv } = await supabase.from('stock_movements').select('*, product:product_id(name)').eq('partner_id', partner.id).order('created_at', { ascending: false }).limit(20)
     setMovements(mv ?? [])
+    // Every brinde the partner registered (see Brindes cadastrados), so
+    // they can receive stock for one even before it has a stock_partner
+    // row — the table above only lists products that already have one.
+    const { data: products } = await supabase.from('products').select('id, name').eq('partner_id', partner.id).order('name')
+    setOwnProducts((products as ProductOpt[]) ?? [])
   }
 
   useEffect(() => { load() }, [partner])
@@ -36,11 +47,49 @@ export default function PartnerStock() {
     load()
   }
 
+  async function receiveStock() {
+    if (!partner || !receiveProduct || !receiveQty || Number(receiveQty) <= 0) return
+    setReceiving(true)
+    await supabase.rpc('partner_adjust_stock', {
+      p_product_id: receiveProduct, p_partner_id: partner.id, p_quantity: Math.abs(Number(receiveQty)), p_type: 'adjustment', p_reason: 'Recebimento de estoque',
+    })
+    setReceiving(false)
+    setReceiveProduct(''); setReceiveQty('')
+    load()
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold">Estoque</h1>
         <p className="text-white/50 text-sm">Brindes recebidos da matriz e disponíveis para retirada.</p>
+      </div>
+
+      <div className="card">
+        <div className="flex items-center gap-2 mb-3">
+          <PackagePlus size={16} className="text-gold-400" />
+          <p className="font-semibold text-sm">Receber estoque</p>
+        </div>
+        {ownProducts.length ? (
+          <div className="grid sm:grid-cols-[1fr_auto_auto] gap-3 items-end">
+            <div>
+              <label className="label">Brinde</label>
+              <select className="input" value={receiveProduct} onChange={(e) => setReceiveProduct(e.target.value)}>
+                <option value="">Selecione um brinde cadastrado...</option>
+                {ownProducts.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div className="w-full sm:w-32">
+              <label className="label">Quantidade</label>
+              <input className="input" type="number" min="1" placeholder="0" value={receiveQty} onChange={(e) => setReceiveQty(e.target.value)} />
+            </div>
+            <button onClick={receiveStock} disabled={!receiveProduct || !receiveQty || receiving} className="btn-gold !py-3">
+              {receiving ? 'Adicionando...' : 'Adicionar'}
+            </button>
+          </div>
+        ) : (
+          <p className="text-xs text-white/40">Cadastre um brinde em "Brindes" antes de receber estoque para ele.</p>
+        )}
       </div>
 
       <div className="card overflow-x-auto">
@@ -81,7 +130,7 @@ export default function PartnerStock() {
                 </td>
               </tr>
             ))}
-            {!stock.length && <tr><td colSpan={4}><EmptyState dark icon={Package} title="Nenhum brinde recebido da matriz ainda" className="py-8" /></td></tr>}
+            {!stock.length && <tr><td colSpan={4}><EmptyState dark icon={Package} title="Nenhum brinde em estoque ainda" description="Use 'Receber estoque' acima para adicionar." className="py-8" /></td></tr>}
           </tbody>
         </table>
       </div>
