@@ -37,6 +37,7 @@ const SubscriberNotifications = lazy(() => import('./pages/subscriber/Notificati
 const SubscriberSupport = lazy(() => import('./pages/subscriber/Support'))
 const SubscriberProfile = lazy(() => import('./pages/subscriber/Profile'))
 const SubscriberSubscription = lazy(() => import('./pages/subscriber/SubscriptionCheckout'))
+const SubscriberPayments = lazy(() => import('./pages/subscriber/Payments'))
 
 const PartnerDashboard = lazy(() => import('./pages/partner/Dashboard'))
 const PartnerPickups = lazy(() => import('./pages/partner/Pickups'))
@@ -93,6 +94,7 @@ export default function App() {
           <Route index element={<SubscriberHome />} />
           <Route path="beneficios" element={<SubscriberBenefits />} />
           <Route path="assinatura" element={<SubscriberSubscription />} />
+          <Route path="pagamentos" element={<SubscriberPayments />} />
           <Route path="retirada" element={<SubscriberPickup />} />
           <Route path="carteira" element={<SubscriberWallet />} />
           <Route path="carteira/saque" element={<SubscriberWithdraw />} />
