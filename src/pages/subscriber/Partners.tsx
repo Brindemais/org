@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { MapPin, Phone, Search, LocateFixed } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { MapPin, Percent, Phone, Search, LocateFixed } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner } from '../../lib/types'
 import { PARTNER_CATEGORIES } from '../../lib/types'
@@ -16,6 +17,7 @@ type DirectoryPartner = Pick<Partner, 'id' | 'trade_name' | 'category' | 'neighb
 
 export default function SubscriberPartners() {
   const [partners, setPartners] = useState<DirectoryPartner[]>([])
+  const [promoCounts, setPromoCounts] = useState<Record<string, number>>({})
   const [category, setCategory] = useState('')
   const [neighborhood, setNeighborhood] = useState('')
   const [search, setSearch] = useState('')
@@ -28,6 +30,15 @@ export default function SubscriberPartners() {
     if (category) query = query.eq('category', category)
     if (neighborhood) query = query.eq('neighborhood', neighborhood)
     query.then(({ data }) => { setPartners((data as DirectoryPartner[]) ?? []); setLoading(false) })
+
+    // How many active promotions each partner has, so the "clube de
+    // benefícios" badge on the card is meaningful before opening it.
+    supabase.from('promotions').select('partner_id').eq('status', 'approved').gte('valid_until', new Date().toISOString().slice(0, 10))
+      .then(({ data }) => {
+        const counts: Record<string, number> = {}
+        for (const p of data ?? []) counts[p.partner_id] = (counts[p.partner_id] ?? 0) + 1
+        setPromoCounts(counts)
+      })
   }, [category, neighborhood])
 
   const neighborhoods = useMemo(() => Array.from(new Set(partners.map((p) => p.neighborhood).filter(Boolean))) as string[], [partners])
@@ -82,7 +93,7 @@ export default function SubscriberPartners() {
       <div className="space-y-3">
         {loading && <LoadingState dark label="Carregando parceiros..." />}
         {!loading && filtered.map(({ partner: p, distanceKm }) => (
-          <div key={p.id} className="card">
+          <Link key={p.id} to={`/app/parceiros/${p.id}`} className="card block active:scale-[0.99] transition">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-12 h-12 rounded-full bg-gold-gradient p-[1.5px] shrink-0">
                 <div className="w-full h-full rounded-full bg-ink-800 flex items-center justify-center font-display text-gold-400 font-semibold overflow-hidden">
@@ -97,8 +108,13 @@ export default function SubscriberPartners() {
             </div>
             <p className="text-xs text-white/50 flex items-center gap-1.5 mb-1"><MapPin size={12} /> {p.address}, {p.neighborhood}, {p.city}/{p.state}</p>
             {p.opening_hours && <p className="text-xs text-white/40 mb-1">{p.opening_hours}</p>}
-            {p.whatsapp && <p className="text-xs text-white/40 flex items-center gap-1.5"><Phone size={12} /> {p.whatsapp}</p>}
-          </div>
+            {p.whatsapp && <p className="text-xs text-white/40 flex items-center gap-1.5 mb-1"><Phone size={12} /> {p.whatsapp}</p>}
+            {!!promoCounts[p.id] && (
+              <p className="text-[11px] font-semibold text-gold-400 flex items-center gap-1 mt-1">
+                <Percent size={11} /> {promoCounts[p.id]} {promoCounts[p.id] === 1 ? 'oferta ativa' : 'ofertas ativas'}
+              </p>
+            )}
+          </Link>
         ))}
         {!loading && !filtered.length && (
           <EmptyState dark icon={MapPin} title="Nenhum parceiro encontrado" description="Tente ajustar a busca, categoria ou bairro." />

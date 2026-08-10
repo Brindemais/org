@@ -95,14 +95,14 @@ export default function SubscriberBenefits() {
           <p className="font-semibold mb-3 flex items-center gap-1.5"><Percent size={16} className="text-gold-400" /> Descontos e promoções</p>
           <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pb-1">
             {promotions.map((p) => (
-              <div key={p.id} className="shrink-0 w-56 card !bg-ink-900">
+              <Link key={p.id} to={`/app/parceiros/${p.partner_id}`} className="shrink-0 w-56 card !bg-ink-900 block active:scale-[0.99] transition">
                 <p className="font-semibold text-sm mb-1">{p.title}</p>
                 <p className="text-xs text-white/50 mb-2">{p.description}</p>
                 <div className="flex items-baseline gap-2">
                   {p.normal_price && <span className="text-xs line-through text-white/30">R$ {p.normal_price.toFixed(2)}</span>}
                   {p.subscriber_price && <span className="text-gold-400 font-bold text-sm">R$ {p.subscriber_price.toFixed(2)}</span>}
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </section>
