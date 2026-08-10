@@ -28,7 +28,7 @@ export default function PartnerStock() {
     setStock((data as any[]) ?? [])
     const { data: mv } = await supabase.from('stock_movements').select('*, product:product_id(name)').eq('partner_id', partner.id).order('created_at', { ascending: false }).limit(20)
     setMovements(mv ?? [])
-    // Every brinde the partner registered (see Brindes cadastrados), so
+    // Every brinde the partner registered (see Produtos cadastrados), so
     // they can receive stock for one even before it has a stock_partner
     // row — the table above only lists products that already have one.
     const { data: products } = await supabase.from('products').select('id, name').eq('partner_id', partner.id).order('name')
@@ -88,7 +88,7 @@ export default function PartnerStock() {
             </button>
           </div>
         ) : (
-          <p className="text-xs text-white/40">Cadastre um brinde em "Brindes" antes de receber estoque para ele.</p>
+          <p className="text-xs text-white/40">Cadastre um brinde em "Produtos" antes de receber estoque para ele.</p>
         )}
       </div>
 
