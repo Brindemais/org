@@ -19,7 +19,11 @@ interface BottomNavigationProps {
 export function BottomNavigation({ items }: BottomNavigationProps) {
   return (
     <nav className="fixed bottom-0 inset-x-0 z-30">
-      <div className="mobile-shell safe-bottom bg-ink-900/95 backdrop-blur border-t border-ink-800 flex">
+      {/* Same 480px content-width cap as .mobile-shell, without its
+          min-height:100dvh — that rule is meant for full-page screens and
+          would blow this fixed, backdrop-blurred bar up to cover the whole
+          viewport instead of hugging the bottom edge. */}
+      <div className="max-w-[480px] mx-auto safe-bottom bg-ink-900/95 backdrop-blur border-t border-ink-800 flex">
         {items.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
