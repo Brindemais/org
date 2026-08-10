@@ -1,22 +1,22 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Send } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { formatDateTime } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { ImageUpload } from '../../components/ui/ImageUpload'
-import { EmptyState } from '../../components/ui/EmptyState'
 
 export default function PartnerProfile() {
-  const { partner } = useAuth()
+  const { partner, refreshProfile } = useAuth()
   const [form, setForm] = useState({ address: '', opening_hours: '' })
-  const [requests, setRequests] = useState<any[]>([])
-  const [sent, setSent] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [logoSaved, setLogoSaved] = useState(false)
 
   useEffect(() => {
-    if (partner) setLogoUrl(partner.logo_url ?? null)
+    if (partner) {
+      setLogoUrl(partner.logo_url ?? null)
+      setForm({ address: partner.address ?? '', opening_hours: partner.opening_hours ?? '' })
+    }
   }, [partner])
 
   async function saveLogo(url: string) {
@@ -27,27 +27,15 @@ export default function PartnerProfile() {
     setTimeout(() => setLogoSaved(false), 2000)
   }
 
-  useEffect(() => {
-    if (partner) setForm({ address: partner.address ?? '', opening_hours: partner.opening_hours ?? '' })
-  }, [partner])
-
-  useEffect(() => {
-    if (!partner) return
-    supabase.from('partner_change_requests').select('*').eq('partner_id', partner.id).order('created_at', { ascending: false })
-      .then(({ data }) => setRequests(data ?? []))
-  }, [partner])
-
-  async function requestChange(e: FormEvent) {
+  async function saveDetails(e: FormEvent) {
     e.preventDefault()
     if (!partner) return
-    await supabase.from('partner_change_requests').insert({
-      partner_id: partner.id,
-      changes: { address: form.address, opening_hours: form.opening_hours },
-    })
-    setSent(true)
-    setTimeout(() => setSent(false), 2500)
-    const { data } = await supabase.from('partner_change_requests').select('*').eq('partner_id', partner.id).order('created_at', { ascending: false })
-    setRequests(data ?? [])
+    setSaving(true)
+    await supabase.from('partners').update({ address: form.address, opening_hours: form.opening_hours }).eq('id', partner.id)
+    await refreshProfile()
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
   }
 
   if (!partner) return null
@@ -56,7 +44,7 @@ export default function PartnerProfile() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold">Meu estabelecimento</h1>
-        <p className="text-white/50 text-sm">O logotipo é atualizado na hora. Endereço e horário de funcionamento passam por aprovação da administração.</p>
+        <p className="text-white/50 text-sm">As alterações abaixo são aplicadas na hora.</p>
       </div>
 
       <div className="card space-y-1">
@@ -71,8 +59,8 @@ export default function PartnerProfile() {
         {logoSaved && <p className="text-xs text-emerald-400">Logotipo atualizado!</p>}
       </div>
 
-      <form onSubmit={requestChange} className="card space-y-3">
-        <p className="font-semibold text-sm">Solicitar alteração de endereço / horário</p>
+      <form onSubmit={saveDetails} className="card space-y-3">
+        <p className="font-semibold text-sm">Endereço e horário de funcionamento</p>
         <div>
           <label className="label">Endereço</label>
           <input className="input" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
@@ -81,21 +69,8 @@ export default function PartnerProfile() {
           <label className="label">Horário de funcionamento</label>
           <input className="input" value={form.opening_hours} onChange={(e) => setForm({ ...form, opening_hours: e.target.value })} placeholder="Seg a Dom, 10h às 22h" />
         </div>
-        <button type="submit" className="btn-gold w-full">{sent ? 'Enviado para análise!' : 'Enviar para aprovação'}</button>
+        <button type="submit" disabled={saving} className="btn-gold w-full">{saving ? 'Salvando...' : saved ? 'Salvo!' : 'Salvar alterações'}</button>
       </form>
-
-      <div>
-        <p className="font-semibold mb-3">Solicitações enviadas</p>
-        <div className="space-y-2">
-          {requests.map((r) => (
-            <div key={r.id} className="card !py-3 flex items-center justify-between">
-              <p className="text-xs text-white/50">{formatDateTime(r.created_at)}</p>
-              <StatusBadge status={r.status} />
-            </div>
-          ))}
-          {!requests.length && <EmptyState dark icon={Send} title="Nenhuma solicitação enviada" className="py-6" />}
-        </div>
-      </div>
     </div>
   )
 }
