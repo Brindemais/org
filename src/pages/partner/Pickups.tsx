@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import { PackageCheck, History } from 'lucide-react'
+import { PackageCheck, History, ScanLine } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatDateTime } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { QrScannerModal } from '../../components/ui/QrScannerModal'
 
 interface PickupRow {
   pickup_id: string; partner_id: string; status: string; code: string; product_id: string | null
@@ -27,6 +28,7 @@ export default function PartnerPickups() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [cancelling, setCancelling] = useState<string | null>(null)
   const [reason, setReason] = useState('')
+  const [scanningFor, setScanningFor] = useState<string | null>(null)
 
   async function load() {
     if (!partner) return
@@ -130,12 +132,23 @@ export default function PartnerPickups() {
               <div className="grid sm:grid-cols-4 gap-3 items-end">
                 <div>
                   <label className="label">Código informado pelo assinante</label>
-                  <input
-                    className="input !py-2 !text-sm font-mono tracking-wider"
-                    placeholder="BM24560"
-                    value={codeInput[p.pickup_id] ?? ''}
-                    onChange={(e) => setCodeInput({ ...codeInput, [p.pickup_id]: e.target.value })}
-                  />
+                  <div className="flex gap-1.5">
+                    <input
+                      className="input !py-2 !text-sm font-mono tracking-wider flex-1"
+                      placeholder="BM24560"
+                      value={codeInput[p.pickup_id] ?? ''}
+                      onChange={(e) => setCodeInput({ ...codeInput, [p.pickup_id]: e.target.value })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setScanningFor(p.pickup_id)}
+                      className="shrink-0 w-9 rounded-xl bg-ink-900 border border-ink-700 flex items-center justify-center hover:bg-ink-800 transition"
+                      aria-label="Escanear QR code"
+                      title="Escanear QR code"
+                    >
+                      <ScanLine size={16} className="text-gold-400" />
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="label">Brinde entregue</label>
@@ -209,6 +222,14 @@ export default function PartnerPickups() {
           </table>
         </div>
       </div>
+
+      <QrScannerModal
+        open={!!scanningFor}
+        onClose={() => setScanningFor(null)}
+        onScan={(text) => {
+          if (scanningFor) setCodeInput((c) => ({ ...c, [scanningFor]: text }))
+        }}
+      />
     </div>
   )
 }
