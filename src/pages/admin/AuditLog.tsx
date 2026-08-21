@@ -56,7 +56,7 @@ export default function AdminAuditLog() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold">Auditoria</h1>
-        <p className="text-white/50 text-sm">Registro de ações administrativas sensíveis — pagamentos, saques, status de parceiros/promoções/assinantes.</p>
+        <p className="text-white/50 text-sm">Registro de ações administrativas sensíveis: pagamentos, saques, status de parceiros/promoções/assinantes.</p>
       </div>
 
       <div className="flex flex-wrap gap-2">

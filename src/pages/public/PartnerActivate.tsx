@@ -34,7 +34,7 @@ export default function PartnerActivate() {
     const { error: updateError } = await supabase.auth.updateUser({ password })
     setLoading(false)
     if (updateError) {
-      setError('Não foi possível definir sua senha. O link pode ter expirado — peça para a equipe reenviar o convite.')
+      setError('Não foi possível definir sua senha. O link pode ter expirado. Peça para a equipe reenviar o convite.')
       return
     }
     setDone(true)

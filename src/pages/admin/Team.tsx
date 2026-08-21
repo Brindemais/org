@@ -47,7 +47,7 @@ export default function AdminTeam() {
     }
     setInviteMsg(
       data?.already_had_account
-        ? 'Este e-mail já tinha conta — papel atualizado direto (avise a pessoa para entrar com a senha que já usa).'
+        ? 'Este e-mail já tinha conta, papel atualizado direto (avise a pessoa para entrar com a senha que já usa).'
         : 'Convite enviado! A pessoa vai receber um e-mail para definir a senha e acessar o painel.',
     )
     setForm({ full_name: '', email: '', role: 'operator' })

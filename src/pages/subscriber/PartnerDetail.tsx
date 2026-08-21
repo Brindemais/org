@@ -86,7 +86,7 @@ export default function SubscriberPartnerDetail() {
           <h1 className="font-display text-lg font-semibold truncate">{partner.trade_name}</h1>
           <p className="text-xs text-gold-400 font-medium">{PARTNER_CATEGORIES.find((c) => c.value === partner.category)?.label ?? partner.category}</p>
           <p className="text-xs text-white/40 flex items-center gap-1 mt-1">
-            <MapPin size={11} /> {partner.address}, {partner.neighborhood} — {partner.city}/{partner.state}
+            <MapPin size={11} /> {partner.address}, {partner.neighborhood}, {partner.city}/{partner.state}
           </p>
           {partner.opening_hours && <p className="text-xs text-white/40 flex items-center gap-1 mt-0.5"><Clock size={11} /> {partner.opening_hours}</p>}
           {partner.whatsapp && <p className="text-xs text-white/40 flex items-center gap-1 mt-0.5"><Phone size={11} /> {partner.whatsapp}</p>}
@@ -102,7 +102,7 @@ export default function SubscriberPartnerDetail() {
       )}
       {!benefitsBlocked && subscription && !pickup && !hasStock && !loading && (
         <p className="text-xs bg-white/5 text-white/50 rounded-lg px-3 py-2 text-center">
-          Este parceiro está sem brindes em estoque no momento — escolha outro na lista de parceiros.
+          Este parceiro está sem brindes em estoque no momento. Escolha outro na lista de parceiros.
         </p>
       )}
       {pickup && pickup.partner_id === partner.id && (

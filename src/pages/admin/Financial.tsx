@@ -69,7 +69,7 @@ export default function AdminFinancial() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold">Financeiro</h1>
-        <p className="text-white/50 text-sm">Entradas de assinantes, custos e valor líquido — assinaturas confirmadas.</p>
+        <p className="text-white/50 text-sm">Entradas de assinantes, custos e valor líquido (assinaturas confirmadas).</p>
       </div>
 
       <div>

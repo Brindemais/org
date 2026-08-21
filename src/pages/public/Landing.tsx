@@ -52,7 +52,7 @@ const BENEFITS = [
 ]
 
 const FAQ = [
-  { q: 'Quanto custa a assinatura?', a: `Existem dois planos: mensal por ${formatBRL(PLAN_PRICES.monthly)}, ou anual por ${formatBRL(PLAN_PRICES.annual)} (pacote de 12 meses cobrado uma vez, com ${ANNUAL_DISCOUNT_PCT}% de desconto em relação ao mensal). Pagamento via Pix.` },
+  { q: 'Quanto custa a assinatura?', a: `Existem dois planos: mensal por ${formatBRL(PLAN_PRICES.monthly)}, ou anual em 12x ${formatBRL(ANNUAL_MONTHLY_EQUIVALENT)} (pacote de 12 meses cobrado uma vez, com ${ANNUAL_DISCOUNT_PCT}% de desconto em relação ao mensal). Pagamento via Pix.` },
   { q: 'Como funciona o pagamento?', a: 'O pagamento é feito via Pix. A assinatura é ativada somente após a confirmação oficial do pagamento.' },
   { q: 'Quando recebo meu brinde?', a: 'Após a ativação da assinatura, você escolhe um parceiro com estoque disponível e retira seu brinde do mês dentro do prazo informado.' },
   { q: 'Como escolho o ponto de retirada?', a: 'Você escolhe entre os parceiros próximos que possuem estoque disponível no momento da retirada.' },
@@ -223,10 +223,10 @@ export default function Landing() {
               <span className="absolute -top-3 left-6 pill bg-gold-gradient text-ink-950 font-bold">Economize {ANNUAL_DISCOUNT_PCT}%</span>
               <p className="text-xs font-bold uppercase text-gold-600 tracking-wide">Anual</p>
               <p className="font-display text-3xl font-semibold text-ink-950 mt-2">
-                {formatBRL(PLAN_PRICES.annual)}<span className="text-sm font-medium text-black/40">/ano</span>
+                12x {formatBRL(ANNUAL_MONTHLY_EQUIVALENT)}<span className="text-sm font-medium text-black/40">/mês</span>
               </p>
               <p className="text-sm text-black/50 mt-2 mb-6">
-                Pacote de 12 meses, cobrado uma vez só — equivale a {formatBRL(ANNUAL_MONTHLY_EQUIVALENT)}/mês.
+                Pacote de 12 meses, cobrado uma vez só.
               </p>
               <Link to="/cadastro" className="btn-gold w-full mt-auto">Assinar anual</Link>
             </div>

@@ -108,9 +108,9 @@ export default function SubscriberSubscription() {
             >
               <span className="absolute top-4 right-4 pill bg-gold-gradient text-ink-950 font-bold">-{ANNUAL_DISCOUNT_PCT}%</span>
               <p className="text-xs font-bold uppercase opacity-70">Plano anual</p>
-              <p className="text-3xl font-bold mt-1">{formatBRL(PLAN_PRICES.annual)}<span className="text-sm font-medium opacity-60">/ano</span></p>
+              <p className="text-3xl font-bold mt-1">12x {formatBRL(ANNUAL_MONTHLY_EQUIVALENT)}<span className="text-sm font-medium opacity-60">/mês</span></p>
               <p className="text-xs text-white/40 mt-1">
-                Equivale a {formatBRL(ANNUAL_MONTHLY_EQUIVALENT)}/mês · pacote de 12 meses, cobrado uma vez.
+                Pacote de 12 meses, cobrado uma vez.
               </p>
             </button>
           </div>
