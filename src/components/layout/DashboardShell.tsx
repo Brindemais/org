@@ -1,7 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useState } from 'react'
-import { Bell, LogOut, Menu, type LucideIcon } from 'lucide-react'
+import { Bell, LogOut, Menu, Moon, Sun, type LucideIcon } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { DashboardThemeProvider, useDashboardTheme } from '../../contexts/DashboardThemeContext'
 import { Logo } from './Logo'
 
 export interface DashNavItem {
@@ -11,10 +12,19 @@ export interface DashNavItem {
   end?: boolean
 }
 
-export function DashboardShell({
+export function DashboardShell(props: { navItems: DashNavItem[]; eyebrow: string; subtitle: string; accountLabel: string }) {
+  return (
+    <DashboardThemeProvider>
+      <DashboardShellInner {...props} />
+    </DashboardThemeProvider>
+  )
+}
+
+function DashboardShellInner({
   navItems, eyebrow, subtitle, accountLabel,
 }: { navItems: DashNavItem[]; eyebrow: string; subtitle: string; accountLabel: string }) {
   const { profile, partner, signOut } = useAuth()
+  const { theme, toggleTheme } = useDashboardTheme()
   const [open, setOpen] = useState(false)
 
   const sidebar = (
@@ -65,7 +75,7 @@ export function DashboardShell({
   )
 
   return (
-    <div className="dashboard-ui min-h-dvh bg-ink-950 flex">
+    <div className="dashboard-ui min-h-dvh bg-ink-950 flex" data-theme={theme}>
       <div className="hidden lg:block">{sidebar}</div>
 
       {open && (
@@ -84,9 +94,19 @@ export function DashboardShell({
             <p className="text-lg font-display font-semibold">{eyebrow}</p>
             <p className="text-sm text-white/40">{subtitle}</p>
           </div>
-          <button className="relative w-9 h-9 rounded-full bg-ink-900 border border-ink-800 flex items-center justify-center">
-            <Bell size={16} className="text-white/70" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="w-9 h-9 rounded-full bg-ink-900 border border-ink-800 flex items-center justify-center hover:bg-ink-800 transition"
+              aria-label={theme === 'dark' ? 'Mudar para fundo claro' : 'Mudar para fundo escuro'}
+              title={theme === 'dark' ? 'Fundo claro' : 'Fundo escuro'}
+            >
+              {theme === 'dark' ? <Sun size={16} className="text-white/70" /> : <Moon size={16} className="text-white/70" />}
+            </button>
+            <button className="relative w-9 h-9 rounded-full bg-ink-900 border border-ink-800 flex items-center justify-center">
+              <Bell size={16} className="text-white/70" />
+            </button>
+          </div>
         </header>
         <main className="flex-1 p-4 lg:p-8 overflow-x-hidden">
           <Outlet />
