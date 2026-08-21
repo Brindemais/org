@@ -97,7 +97,7 @@ export default function AdminPartners() {
       await approveAndInvite(created as Partner)
       setCreateMsg('Parceiro cadastrado e convite enviado por e-mail.')
     } else {
-      setCreateMsg('Parceiro cadastrado! Sem e-mail informado — adicione um e clique em "Enviar convite" na ficha dele para liberar o acesso.')
+      setCreateMsg('Parceiro cadastrado! Sem e-mail informado. Adicione um e clique em "Enviar convite" na ficha dele para liberar o acesso.')
     }
     load()
   }
@@ -117,7 +117,7 @@ export default function AdminPartners() {
       return
     }
     if (!partner.email) {
-      setInviteMsg((m) => ({ ...m, [partner.id]: 'Este parceiro não tem e-mail cadastrado — adicione um e-mail antes de convidar.' }))
+      setInviteMsg((m) => ({ ...m, [partner.id]: 'Este parceiro não tem e-mail cadastrado. Adicione um e-mail antes de convidar.' }))
       return
     }
     setInviting(partner.id)
@@ -135,7 +135,7 @@ export default function AdminPartners() {
     setInviteMsg((m) => ({
       ...m,
       [partner.id]: data?.already_had_account
-        ? 'Este e-mail já tinha conta — vinculado direto como parceiro (avise a pessoa para entrar com a senha que já usa).'
+        ? 'Este e-mail já tinha conta, vinculado direto como parceiro (avise a pessoa para entrar com a senha que já usa).'
         : 'Convite enviado! A pessoa vai receber um e-mail para definir a senha e acessar o painel.',
     }))
     load()

@@ -185,8 +185,8 @@ export default function Signup() {
               >
                 <span className="absolute top-4 right-4 pill bg-gold-gradient text-ink-950 font-bold">-{ANNUAL_DISCOUNT_PCT}%</span>
                 <p className="text-xs font-bold uppercase text-black/50">Plano anual</p>
-                <p className="text-3xl font-bold text-ink-950 mt-1">{formatBRL(PLAN_PRICES.annual)}<span className="text-sm font-medium text-black/40">/ano</span></p>
-                <p className="text-xs text-black/40 mt-1">Equivale a {formatBRL(ANNUAL_MONTHLY_EQUIVALENT)}/mês · pacote de 12 meses, cobrado uma vez</p>
+                <p className="text-3xl font-bold text-ink-950 mt-1">12x {formatBRL(ANNUAL_MONTHLY_EQUIVALENT)}<span className="text-sm font-medium text-black/40">/mês</span></p>
+                <p className="text-xs text-black/40 mt-1">Pacote de 12 meses, cobrado uma vez</p>
               </button>
             </div>
             <ul className="space-y-2.5 text-sm text-black/65">
