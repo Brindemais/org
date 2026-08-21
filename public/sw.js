@@ -1,9 +1,9 @@
 // Brinde Mais service worker — lightweight runtime caching + offline fallback.
 // No build-time asset manifest is generated for this project, so we cache
 // opportunistically at runtime instead of precaching hashed bundle filenames.
-const CACHE_VERSION = 'brinde-mais-v1'
+const CACHE_VERSION = 'brinde-mais-v2'
 const OFFLINE_URL = '/offline.html'
-const PRECACHE_URLS = ['/', '/offline.html', '/manifest.webmanifest', '/favicon.svg', '/icon-192.svg']
+const PRECACHE_URLS = ['/', '/offline.html', '/manifest.webmanifest', '/favicon.png', '/icon-192.png']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
