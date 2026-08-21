@@ -137,6 +137,10 @@ function DashboardShellInner({
         <main className="flex-1 p-4 lg:p-8 overflow-x-hidden">
           <Outlet />
         </main>
+        <footer className="px-4 lg:px-8 py-4 border-t border-ink-800 flex flex-col sm:flex-row items-center justify-between gap-1 text-xs text-white/30">
+          <p>© {new Date().getFullYear()} Brinde Mais. Todos os direitos reservados.</p>
+          <p>Versão 1.0.0</p>
+        </footer>
       </div>
     </div>
   )
