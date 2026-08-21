@@ -21,12 +21,12 @@ export default function Terms() {
         <div className="space-y-6 text-sm text-black/70 leading-relaxed">
           <section>
             <h2 className="font-display text-lg font-semibold text-ink-950 mb-2">1. Sobre o Brinde Mais</h2>
-            <p>O Brinde Mais é um clube de benefícios por assinatura mensal que oferece, entre outras vantagens, um brinde mensal a ser retirado em estabelecimentos parceiros, descontos exclusivos e um programa de bonificação por indicação. Estes Termos de Uso regulam a relação entre você ("assinante") e o Brinde Mais.</p>
+            <p>O Brinde Mais é uma comunidade de consumo inteligente por assinatura mensal que oferece, entre outras vantagens, um brinde mensal a ser retirado em estabelecimentos parceiros, descontos exclusivos e um programa de bonificação por indicação. Estes Termos de Uso regulam a relação entre você ("assinante") e o Brinde Mais.</p>
           </section>
 
           <section>
             <h2 className="font-display text-lg font-semibold text-ink-950 mb-2">2. Cadastro e elegibilidade</h2>
-            <p>Para assinar o clube, você deve ser maior de 18 anos e fornecer dados verdadeiros, completos e atualizados, incluindo CPF válido. Cada CPF pode estar associado a apenas uma conta ativa. É proibido o consumo de bebidas alcoólicas por menores de idade; os brindes e descontos relacionados a bebidas alcoólicas destinam-se exclusivamente a maiores de 18 anos, e o parceiro poderá exigir documento de identificação no momento da retirada.</p>
+            <p>Para assinar a comunidade, você deve ser maior de 18 anos e fornecer dados verdadeiros, completos e atualizados, incluindo CPF válido. Cada CPF pode estar associado a apenas uma conta ativa. É proibido o consumo de bebidas alcoólicas por menores de idade; os brindes e descontos relacionados a bebidas alcoólicas destinam-se exclusivamente a maiores de 18 anos, e o parceiro poderá exigir documento de identificação no momento da retirada.</p>
           </section>
 
           <section>
