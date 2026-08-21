@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import {
   AlertTriangle, ArrowDownLeft, ArrowUpRight, ChevronRight, Clock, Copy, CreditCard,
-  Gift, History, Lock, MapPin, Percent, Share2, Users2, Wallet,
+  Eye, EyeOff, Gift, History, Lock, MapPin, Percent, Share2, Users2, Wallet,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSubscription } from '../../hooks/useSubscription'
@@ -15,6 +15,9 @@ import { PARTNER_CATEGORIES } from '../../lib/types'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
+import { LogoMark } from '../../components/layout/Logo'
+
+interface OfferRow { id: string; title: string; discount_pct: number | null; subscriber_price: number | null; normal_price: number | null; image_url: string | null; partner: { trade_name: string } | null }
 
 const TX_LABELS: Record<string, string> = {
   bonus_subscription: 'Bonificação de assinatura',
@@ -47,6 +50,9 @@ export default function SubscriberHome() {
   const [referralCount, setReferralCount] = useState(0)
   const [referralEarned, setReferralEarned] = useState(0)
   const [copied, setCopied] = useState(false)
+  const [hideBalance, setHideBalance] = useState(false)
+  const [offers, setOffers] = useState<OfferRow[]>([])
+  const [loadingOffers, setLoadingOffers] = useState(true)
 
   useEffect(() => {
     supabase.from('partners').select('id, trade_name, category, logo_url').in('status', ['approved', 'active']).limit(6)
@@ -73,6 +79,20 @@ export default function SubscriberHome() {
       .then(({ data }) => setReferralEarned((data ?? []).reduce((s, b: any) => s + Number(b.amount), 0)))
   }, [profile])
 
+  useEffect(() => {
+    supabase
+      .from('promotions')
+      .select('id, title, discount_pct, subscriber_price, normal_price, image_url, partner:partner_id(trade_name)')
+      .eq('status', 'approved')
+      .gte('valid_until', new Date().toISOString().slice(0, 10))
+      .order('created_at', { ascending: false })
+      .limit(6)
+      .then(({ data }) => {
+        setOffers((data as any as OfferRow[]) ?? [])
+        setLoadingOffers(false)
+      })
+  }, [])
+
   const firstName = profile?.full_name?.split(' ')[0] ?? ''
   const referralLink = profile ? `${window.location.origin}/cadastro?ref=${profile.referral_code}` : ''
 
@@ -88,20 +108,33 @@ export default function SubscriberHome() {
     <div className="space-y-5">
       <div>
         <h1 className="font-display text-xl font-semibold">Olá, {firstName}! 👋</h1>
-        <p className="text-sm text-white/50">
+        <p className="text-sm text-white/50 mb-2">
           Bem-vindo(a) à sua comunidade de consumo inteligente.{profile?.created_at && ` Assinante desde ${formatDate(profile.created_at)}.`}
         </p>
+        {!subLoading && subscription && (
+          <span className={`pill ${benefitsBlocked ? 'bg-red-500/15 text-red-400' : 'bg-emerald-500/15 text-emerald-400'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${benefitsBlocked ? 'bg-red-400' : 'bg-emerald-400'}`} />
+            {benefitsBlocked ? 'Assinatura suspensa' : 'Assinatura ativa'}
+          </span>
+        )}
       </div>
 
-      <div className="rounded-xl2 bg-gold-gradient text-ink-950 p-5">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-xs font-bold uppercase tracking-wide opacity-70">Saldo disponível</p>
-          <Wallet size={16} className="opacity-60" />
+      <div className="relative rounded-xl2 bg-ink-950 border border-ink-800 p-5 overflow-hidden">
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs font-bold uppercase tracking-wide text-gold-400">Saldo disponível</p>
+            <button onClick={() => setHideBalance(!hideBalance)} className="text-white/40 hover:text-white/70" aria-label={hideBalance ? 'Mostrar saldo' : 'Ocultar saldo'}>
+              {hideBalance ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          <p className="text-3xl font-bold text-white">{hideBalance ? '••••••' : formatBRL(balance)}</p>
+          <Link to="/app/carteira" className="text-xs font-semibold mt-2 inline-flex items-center gap-1 text-gold-400">
+            Ver carteira <ChevronRight size={13} />
+          </Link>
         </div>
-        <p className="text-3xl font-bold">{formatBRL(balance)}</p>
-        <Link to="/app/carteira" className="text-xs font-semibold mt-2 inline-flex items-center gap-1">
-          Ver carteira <ChevronRight size={13} />
-        </Link>
+        <div className="absolute -right-3 -bottom-3 opacity-90">
+          <LogoMark size={68} />
+        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-2">
@@ -154,31 +187,34 @@ export default function SubscriberHome() {
         </Link>
       )}
 
-      {!benefitsBlocked && subscription?.status === 'active' && !pickup && (
-        <div className="card border-gold-400/30">
-          <div className="flex items-center gap-2 mb-1">
-            <Gift size={16} className="text-gold-400" />
-            <p className="font-semibold">Brinde do mês disponível</p>
-          </div>
-          <p className="text-sm text-white/50 mb-3">Escolha o parceiro onde deseja retirar seu brinde deste mês.</p>
-          <Link to="/app/beneficios" className="btn-gold w-full">Escolher ponto de retirada</Link>
-        </div>
-      )}
-
-      {!benefitsBlocked && pickup && (
-        <Link to="/app/retirada" className="card border-gold-400/30 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Gift size={16} className="text-gold-400" />
-              <p className="font-semibold">Seu brinde está pronto</p>
+      {!benefitsBlocked && subscription?.status === 'active' && (
+        <div className="card !p-0 overflow-hidden border-gold-400/30">
+          <div className="flex items-center gap-3 p-4">
+            <img
+              src="/images/gift-glass.webp"
+              alt="Taça de Cerveja Premium Brinde Mais"
+              className="w-16 h-16 object-contain rounded-lg bg-white shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-gold-400">Brinde do mês</p>
+              <p className="font-semibold text-sm truncate">Taça de Cerveja Premium Brinde Mais</p>
+              {!pickup ? (
+                <p className="text-xs text-white/50 mt-0.5">Escolha onde retirar</p>
+              ) : (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <p className="text-xs text-white/50">
+                    Código {pickup.code}
+                    {pickupDaysLeft !== null && pickupDaysLeft >= 0 && ` · ${pickupDaysLeft === 0 ? 'último dia' : `${pickupDaysLeft} ${pickupDaysLeft === 1 ? 'dia' : 'dias'}`}`}
+                  </p>
+                  <StatusBadge status={pickup.status} />
+                </div>
+              )}
             </div>
-            <p className="text-sm text-white/50">
-              Código {pickup.code}
-              {pickupDaysLeft !== null && pickupDaysLeft >= 0 && ` · ${pickupDaysLeft === 0 ? 'último dia para retirar' : `${pickupDaysLeft} ${pickupDaysLeft === 1 ? 'dia' : 'dias'} para retirar`}`}
-            </p>
           </div>
-          <StatusBadge status={pickup.status} />
-        </Link>
+          <Link to={pickup ? '/app/retirada' : '/app/beneficios'} className="btn-gold w-full !rounded-none text-sm">
+            {pickup ? 'Ver minha retirada' : 'Escolher ponto de retirada'}
+          </Link>
+        </div>
       )}
 
       <div className="card border-gold-400/30">
@@ -233,6 +269,29 @@ export default function SubscriberHome() {
           )}
         </div>
       </div>
+
+      {!loadingOffers && offers.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-semibold flex items-center gap-1.5"><Percent size={15} className="text-gold-400" /> Ofertas para você</p>
+            <Link to="/app/beneficios" className="text-xs text-gold-400 font-medium">Ver todas</Link>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4">
+            {offers.map((o) => (
+              <Link key={o.id} to="/app/beneficios" className="shrink-0 w-40 rounded-xl2 bg-ink-900 border border-ink-800 overflow-hidden hover:border-gold-400/30 transition">
+                <div className="h-20 bg-white flex items-center justify-center overflow-hidden">
+                  {o.image_url ? <img src={o.image_url} alt="" className="w-full h-full object-cover" /> : <Gift size={22} className="text-ink-950/20" />}
+                </div>
+                <div className="p-2.5">
+                  {o.discount_pct && <p className="text-[10px] font-bold text-gold-400 mb-0.5">-{o.discount_pct}% OFF</p>}
+                  <p className="text-xs font-medium truncate">{o.title}</p>
+                  <p className="text-[10px] text-white/40 truncate">{o.partner?.trade_name}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {transactions.length > 0 && (
         <div>
