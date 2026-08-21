@@ -89,7 +89,7 @@ export default function SubscriberHome() {
       <div>
         <h1 className="font-display text-xl font-semibold">Olá, {firstName}! 👋</h1>
         <p className="text-sm text-white/50">
-          Bem-vindo(a) ao seu clube de benefícios.{profile?.created_at && ` Assinante desde ${formatDate(profile.created_at)}.`}
+          Bem-vindo(a) à sua comunidade de consumo inteligente.{profile?.created_at && ` Assinante desde ${formatDate(profile.created_at)}.`}
         </p>
       </div>
 
@@ -120,7 +120,7 @@ export default function SubscriberHome() {
       {!subLoading && !subscription && (
         <div className="card border-gold-400/30">
           <p className="font-semibold mb-1">Ative sua assinatura</p>
-          <p className="text-sm text-white/50 mb-3">Assine a partir de {formatBRL(PLAN_PRICES.monthly)}/mês e comece a receber seu brinde mensal e todos os benefícios do clube.</p>
+          <p className="text-sm text-white/50 mb-3">Assine a partir de {formatBRL(PLAN_PRICES.monthly)}/mês e comece a receber seu brinde mensal e todos os benefícios da comunidade.</p>
           <Link to="/app/assinatura" className="btn-gold w-full">Ativar assinatura</Link>
         </div>
       )}
@@ -203,8 +203,8 @@ export default function SubscriberHome() {
 
       <div>
         <div className="flex items-center justify-between mb-3">
-          <p className="font-semibold flex items-center gap-1.5"><Percent size={15} className="text-gold-400" /> Clube de Benefícios</p>
-          <Link to="/app/parceiros" className="text-xs text-gold-400 font-medium">Ver todos</Link>
+          <p className="font-semibold flex items-center gap-1.5 min-w-0"><Percent size={15} className="text-gold-400 shrink-0" /> <span className="truncate">Comunidade de Consumo Inteligente</span></p>
+          <Link to="/app/parceiros" className="text-xs text-gold-400 font-medium shrink-0">Ver todos</Link>
         </div>
         <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4">
           {loadingClub && <LoadingState dark label="Carregando parceiros..." size="sm" />}

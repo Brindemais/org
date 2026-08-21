@@ -35,7 +35,7 @@ export default function Privacy() {
 
           <section>
             <h2 className="font-display text-lg font-semibold text-ink-950 mb-2">2. Finalidade do tratamento</h2>
-            <p>Usamos seus dados para: viabilizar sua assinatura e o acesso aos benefícios do clube; processar pagamentos e saques; calcular e creditar bonificações do programa de indicação; permitir a confirmação segura de retiradas de brinde; prevenir fraudes; e para comunicações operacionais sobre sua conta (confirmações, avisos de vencimento, notificações de retirada).</p>
+            <p>Usamos seus dados para: viabilizar sua assinatura e o acesso aos benefícios da comunidade; processar pagamentos e saques; calcular e creditar bonificações do programa de indicação; permitir a confirmação segura de retiradas de brinde; prevenir fraudes; e para comunicações operacionais sobre sua conta (confirmações, avisos de vencimento, notificações de retirada).</p>
           </section>
 
           <section>

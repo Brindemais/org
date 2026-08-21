@@ -145,7 +145,7 @@ export default function SubscriberPartnerDetail() {
                 </div>
                 <p className="text-xs font-medium truncate">{g.name}</p>
                 {g.is_gift ? (
-                  <p className="text-[11px] text-gold-400 font-semibold mt-0.5">Brinde do clube</p>
+                  <p className="text-[11px] text-gold-400 font-semibold mt-0.5">Brinde da comunidade</p>
                 ) : (
                   <div className="flex items-baseline gap-1.5 mt-0.5">
                     <span className="text-[11px] line-through text-white/30">{formatBRL(g.normal_price)}</span>

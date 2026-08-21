@@ -38,7 +38,7 @@ const STEPS = [
   { icon: UserPlus, title: 'Faça seu cadastro', desc: 'Crie sua conta em poucos passos' },
   { icon: ShieldCheck, title: 'Ative via Pix', desc: 'Confirmação oficial e segura' },
   { icon: MapPin, title: 'Escolha um parceiro', desc: 'Com estoque disponível perto de você' },
-  { icon: PackageCheck, title: 'Retire e aproveite', desc: 'Seu brinde e os benefícios do clube' },
+  { icon: PackageCheck, title: 'Retire e aproveite', desc: 'Seu brinde e os benefícios da comunidade' },
 ]
 
 const BENEFITS = [
@@ -52,7 +52,7 @@ const BENEFITS = [
 ]
 
 const FAQ = [
-  { q: 'Quanto custa a assinatura?', a: 'Existem dois planos: mensal por R$ 99,90, ou anual por R$ 959,04 (pacote de 12 meses cobrado uma vez, com 20% de desconto em relação ao mensal). Pagamento via Pix.' },
+  { q: 'Quanto custa a assinatura?', a: `Existem dois planos: mensal por ${formatBRL(PLAN_PRICES.monthly)}, ou anual por ${formatBRL(PLAN_PRICES.annual)} (pacote de 12 meses cobrado uma vez, com ${ANNUAL_DISCOUNT_PCT}% de desconto em relação ao mensal). Pagamento via Pix.` },
   { q: 'Como funciona o pagamento?', a: 'O pagamento é feito via Pix. A assinatura é ativada somente após a confirmação oficial do pagamento.' },
   { q: 'Quando recebo meu brinde?', a: 'Após a ativação da assinatura, você escolhe um parceiro com estoque disponível e retira seu brinde do mês dentro do prazo informado.' },
   { q: 'Como escolho o ponto de retirada?', a: 'Você escolhe entre os parceiros próximos que possuem estoque disponível no momento da retirada.' },
@@ -135,7 +135,7 @@ export default function Landing() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_-10%,rgba(212,148,30,0.10),transparent_55%)]" />
         <ResponsiveContainer className="pt-12 pb-10 grid lg:grid-cols-2 gap-12 items-center relative">
           <div>
-            <span className="pill bg-gold-400/15 text-gold-600 mb-5">Clube de benefícios</span>
+            <span className="pill bg-gold-400/15 text-gold-600 mb-5">Comunidade de consumo inteligente</span>
             <h1 className="font-display text-4xl sm:text-5xl font-semibold leading-[1.1] mb-5 text-ink-950">
               Mais amigos. Mais benefícios.<br className="hidden sm:block" /> Mais motivos para <span className="text-gold-500">brindar!</span>
             </h1>
@@ -237,7 +237,7 @@ export default function Landing() {
       {/* ============ 4.4 BENEFÍCIOS PRINCIPAIS ============ */}
       <section id="beneficios" className="border-t border-black/10 py-16 bg-surface-subtle">
         <ResponsiveContainer>
-          <SectionTitle eyebrow="O clube completo" title="Benefícios principais" description="O copo faz parte de um clube completo de benefícios, economia, fidelização e recompensas." />
+          <SectionTitle eyebrow="A comunidade completa" title="Benefícios principais" description="O copo faz parte de uma comunidade completa de consumo inteligente, economia, fidelização e recompensas." />
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {BENEFITS.map((b, i) => (
               <BenefitCard key={b.title} {...b} delay={i * 60} onLearnMore={goToSignup} />
@@ -268,7 +268,7 @@ export default function Landing() {
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-gold-600 mb-2">Não é só um copo</p>
             <h3 className="font-display text-2xl font-semibold text-ink-950 mb-4">
-              Um clube completo de benefícios, economia e recompensas
+              Uma comunidade completa de consumo inteligente, economia e recompensas
             </h3>
             <p className="text-black/55 leading-relaxed mb-4">
               O primeiro brinde é uma taça temática personalizada, mas a assinatura Brinde Mais vai muito além: descontos
@@ -357,7 +357,7 @@ export default function Landing() {
         <ResponsiveContainer>
           <SectionTitle eyebrow="Ofertas para assinantes" title="Descontos e promoções" description="Preços e condições especiais em parceiros selecionados, válidos apenas para assinantes ativos." />
           {promos.length === 0 ? (
-            <EmptyState icon={Percent} title="Sem promoções ativas no momento" description="Novas promoções são publicadas com frequência pelos parceiros do clube." />
+            <EmptyState icon={Percent} title="Sem promoções ativas no momento" description="Novas promoções são publicadas com frequência pelos parceiros da comunidade." />
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {promos.map((promo) => (
@@ -454,7 +454,7 @@ export default function Landing() {
               {[
                 'Exposição da marca para uma comunidade de consumidores',
                 'Fidelização de clientes recorrentes',
-                'Participação em campanhas promocionais do clube',
+                'Participação em campanhas promocionais da comunidade',
                 'Divulgação por meio de brindes personalizados',
                 'Acesso a relatórios de desempenho',
                 'Aumento de recorrência de compra',
@@ -557,7 +557,7 @@ export default function Landing() {
           <div className="lg:col-span-2">
             <Logo size="sm" />
             <p className="text-white/40 mt-3 text-xs leading-relaxed max-w-xs">
-              Mais amigos, mais benefícios, mais motivos para brindar. Clube de assinatura e benefícios que conecta
+              Mais amigos, mais benefícios, mais motivos para brindar. Comunidade de consumo inteligente que conecta
               consumidores e estabelecimentos parceiros.
             </p>
             <div className="flex gap-3 text-white/50 mt-4">
