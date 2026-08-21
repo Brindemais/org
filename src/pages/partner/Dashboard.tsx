@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { QRCodeSVG } from 'qrcode.react'
 import { Package, Percent, PackageCheck, ShoppingBag, History, Truck, CalendarCheck, Bell, AlertTriangle } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -86,10 +87,15 @@ export default function PartnerDashboard() {
           </div>
           <div className="space-y-2">
             {pending.slice(0, 5).map((p) => (
-              <div key={p.pickup_id} className="flex items-center justify-between border-b border-ink-800 last:border-0 pb-2 last:pb-0">
-                <div>
-                  <p className="text-sm font-medium">{p.subscriber_name}</p>
-                  <p className="text-xs text-white/40">{p.code}</p>
+              <div key={p.pickup_id} className="flex items-center justify-between gap-3 border-b border-ink-800 last:border-0 pb-2 last:pb-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="bg-white p-1 rounded shrink-0">
+                    <QRCodeSVG value={p.code} size={28} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{p.subscriber_name}</p>
+                    <p className="text-xs text-white/40 font-mono">{p.code}</p>
+                  </div>
                 </div>
                 <StatusBadge status={p.status} />
               </div>

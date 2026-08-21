@@ -1,7 +1,8 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import { useState } from 'react'
+import { NavLink, Link, Outlet } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { Bell, LogOut, Menu, Moon, Sun, type LucideIcon } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { supabase } from '../../lib/supabase'
 import { DashboardThemeProvider, useDashboardTheme } from '../../contexts/DashboardThemeContext'
 import { Logo } from './Logo'
 
@@ -12,7 +13,7 @@ export interface DashNavItem {
   end?: boolean
 }
 
-export function DashboardShell(props: { navItems: DashNavItem[]; eyebrow: string; subtitle: string; accountLabel: string }) {
+export function DashboardShell(props: { navItems: DashNavItem[]; eyebrow: string; subtitle: string; accountLabel: string; notificationsPath?: string }) {
   return (
     <DashboardThemeProvider>
       <DashboardShellInner {...props} />
@@ -21,11 +22,18 @@ export function DashboardShell(props: { navItems: DashNavItem[]; eyebrow: string
 }
 
 function DashboardShellInner({
-  navItems, eyebrow, subtitle, accountLabel,
-}: { navItems: DashNavItem[]; eyebrow: string; subtitle: string; accountLabel: string }) {
+  navItems, eyebrow, subtitle, accountLabel, notificationsPath,
+}: { navItems: DashNavItem[]; eyebrow: string; subtitle: string; accountLabel: string; notificationsPath?: string }) {
   const { profile, partner, signOut } = useAuth()
   const { theme, toggleTheme } = useDashboardTheme()
   const [open, setOpen] = useState(false)
+  const [unread, setUnread] = useState(0)
+
+  useEffect(() => {
+    if (!profile) return
+    supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).eq('read', false)
+      .then(({ count }) => setUnread(count ?? 0))
+  }, [profile])
 
   const sidebar = (
     <aside className="w-72 shrink-0 bg-ink-900 border-r border-ink-800 flex flex-col h-full">
@@ -74,6 +82,18 @@ function DashboardShellInner({
     </aside>
   )
 
+  const bellButtonClass = 'relative w-9 h-9 rounded-full bg-ink-900 border border-ink-800 flex items-center justify-center hover:bg-ink-800 transition'
+  const bellInner = (
+    <>
+      <Bell size={16} className="text-white/70" />
+      {unread > 0 && (
+        <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-gold-400 text-ink-950 text-[10px] font-bold flex items-center justify-center">
+          {unread > 9 ? '9+' : unread}
+        </span>
+      )}
+    </>
+  )
+
   return (
     <div className="dashboard-ui min-h-dvh bg-ink-950 flex" data-theme={theme}>
       <div className="hidden lg:block">{sidebar}</div>
@@ -103,9 +123,15 @@ function DashboardShellInner({
             >
               {theme === 'dark' ? <Sun size={16} className="text-white/70" /> : <Moon size={16} className="text-white/70" />}
             </button>
-            <button className="relative w-9 h-9 rounded-full bg-ink-900 border border-ink-800 flex items-center justify-center">
-              <Bell size={16} className="text-white/70" />
-            </button>
+            {notificationsPath ? (
+              <Link to={notificationsPath} className={bellButtonClass} aria-label="Notificações">
+                {bellInner}
+              </Link>
+            ) : (
+              <button className={bellButtonClass} aria-label="Notificações">
+                {bellInner}
+              </button>
+            )}
           </div>
         </header>
         <main className="flex-1 p-4 lg:p-8 overflow-x-hidden">

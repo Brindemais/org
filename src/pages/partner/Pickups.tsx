@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
 import { PackageCheck, History } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -104,9 +105,15 @@ export default function PartnerPickups() {
           {ready.map((p) => (
           <div key={p.pickup_id} className="card">
             <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-              <div>
-                <p className="font-medium">{p.subscriber_name}</p>
-                <p className="text-xs text-white/40">{p.subscriber_phone} · reservado em {formatDateTime(p.created_at)}</p>
+              <div className="flex items-center gap-3">
+                <div className="bg-white p-1.5 rounded shrink-0">
+                  <QRCodeSVG value={p.code} size={44} />
+                </div>
+                <div>
+                  <p className="font-medium">{p.subscriber_name}</p>
+                  <p className="text-xs text-white/40">{p.subscriber_phone} · reservado em {formatDateTime(p.created_at)}</p>
+                  <p className="text-xs text-gold-400 font-mono tracking-wider mt-0.5">{p.code}</p>
+                </div>
               </div>
               <StatusBadge status={p.status} />
             </div>
@@ -185,7 +192,14 @@ export default function PartnerPickups() {
               {others.map((p) => (
                 <tr key={p.pickup_id} className="border-t border-ink-800">
                   <td className="py-3">{p.subscriber_name}</td>
-                  <td className="py-3 font-mono text-xs">{p.code}</td>
+                  <td className="py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-white p-1 rounded shrink-0">
+                        <QRCodeSVG value={p.code} size={24} />
+                      </div>
+                      <span className="font-mono text-xs">{p.code}</span>
+                    </div>
+                  </td>
                   <td className="py-3"><StatusBadge status={p.status} /></td>
                   <td className="py-3 text-white/50">{formatDateTime(p.created_at)}</td>
                 </tr>
