@@ -13,20 +13,24 @@ export default function AdminLogin() {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-    if (signInError || !data.user) {
+    try {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInError || !data.user) {
+        setError('E-mail ou senha inválidos.')
+        return
+      }
+      const role = await fetchOwnRole(data.user.id)
+      if (role !== 'admin' && role !== 'operator') {
+        await supabase.auth.signOut()
+        setError('Esta conta não tem acesso administrativo.')
+        return
+      }
+      // AuthContext picks up the new session and AdminGate renders the dashboard.
+    } catch {
+      setError('Não foi possível entrar agora. Verifique sua conexão e tente novamente.')
+    } finally {
       setLoading(false)
-      setError('E-mail ou senha inválidos.')
-      return
     }
-    const role = await fetchOwnRole(data.user.id)
-    if (role !== 'admin' && role !== 'operator') {
-      await supabase.auth.signOut()
-      setLoading(false)
-      setError('Esta conta não tem acesso administrativo.')
-      return
-    }
-    // AuthContext picks up the new session and AdminGate renders the dashboard.
   }
 
   return (

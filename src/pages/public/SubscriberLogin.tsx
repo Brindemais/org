@@ -15,25 +15,29 @@ export default function SubscriberLogin() {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-    if (signInError || !data.user) {
+    try {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInError || !data.user) {
+        setError('E-mail ou senha inválidos.')
+        return
+      }
+      const role = await fetchOwnRole(data.user.id)
+      if (role === 'subscriber') {
+        navigate('/app')
+        return
+      }
+      await supabase.auth.signOut()
+      if (role === 'partner') {
+        setError('Essa conta é de parceiro. Use o login de parceiro.')
+      } else if (role === 'admin' || role === 'operator') {
+        setError('Essa conta é administrativa. Use o acesso em /admin.')
+      } else {
+        setError('Esta conta não é de assinante.')
+      }
+    } catch {
+      setError('Não foi possível entrar agora. Verifique sua conexão e tente novamente.')
+    } finally {
       setLoading(false)
-      setError('E-mail ou senha inválidos.')
-      return
-    }
-    const role = await fetchOwnRole(data.user.id)
-    setLoading(false)
-    if (role === 'subscriber') {
-      navigate('/app')
-      return
-    }
-    await supabase.auth.signOut()
-    if (role === 'partner') {
-      setError('Essa conta é de parceiro. Use o login de parceiro.')
-    } else if (role === 'admin' || role === 'operator') {
-      setError('Essa conta é administrativa. Use o acesso em /admin.')
-    } else {
-      setError('Esta conta não é de assinante.')
     }
   }
 
