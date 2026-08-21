@@ -42,15 +42,17 @@ export default function SubscriberWallet() {
     <div className="space-y-5">
       <h1 className="font-display text-xl font-semibold">Carteira e ganhos</h1>
 
-      <div className="relative rounded-xl2 bg-ink-950 border border-ink-800 p-5 overflow-hidden">
+      {/* Fixed dark "premium card" look, not theme-reactive on purpose — see
+          the same note on Home.tsx's balance card. */}
+      <div className="relative rounded-xl2 bg-[#0a0a0c] border border-[#1a1a1e] p-5 overflow-hidden">
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-1">
             <p className="text-xs font-bold uppercase tracking-wide text-gold-400">Saldo disponível</p>
-            <button onClick={() => setHide(!hide)} className="text-white/40 hover:text-white/70" aria-label={hide ? 'Mostrar saldo' : 'Ocultar saldo'}>
+            <button onClick={() => setHide(!hide)} className="text-[#ffffff]/40 hover:text-[#ffffff]/70" aria-label={hide ? 'Mostrar saldo' : 'Ocultar saldo'}>
               {hide ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
-          <p className="text-3xl font-bold text-white">{hide ? '••••••' : formatBRL(balance)}</p>
+          <p className="text-3xl font-bold text-[#ffffff]">{hide ? '••••••' : formatBRL(balance)}</p>
         </div>
         <div className="absolute -right-3 -bottom-3 opacity-90">
           <LogoMark size={68} />

@@ -1,11 +1,12 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Home, Gift, Wallet, MapPin, User, LogOut, Bell, CreditCard, Receipt, Share2, LifeBuoy } from 'lucide-react'
+import { Home, Gift, Wallet, MapPin, User, LogOut, Bell, CreditCard, Receipt, Share2, LifeBuoy, Moon, Sun } from 'lucide-react'
 import { TopBar } from './TopBar'
 import { Logo } from './Logo'
 import { BottomNavigation, type BottomNavItem } from '../ui/BottomNavigation'
 import { useAuth } from '../../contexts/AuthContext'
 import { useWallet } from '../../hooks/useWallet'
 import { formatBRL } from '../../lib/format'
+import { DashboardThemeProvider, useDashboardTheme } from '../../contexts/DashboardThemeContext'
 
 // Capped at 5 items — the bottom tab bar is a phone-width strip, it can't
 // fit more without shrinking labels into illegibility. "Indique" and other
@@ -36,11 +37,23 @@ const SIDEBAR_NAV: BottomNavItem[] = [
 ]
 
 export function SubscriberShell() {
+  return (
+    // Light-first here (unlike admin/parceiro, which stay dark by default) —
+    // the assinante app opens in light mode; subscribers who prefer dark can
+    // switch, same toggle, and it's remembered separately per browser.
+    <DashboardThemeProvider defaultTheme="light" storageKey="bm-subscriber-theme">
+      <SubscriberShellInner />
+    </DashboardThemeProvider>
+  )
+}
+
+function SubscriberShellInner() {
   const { profile, signOut } = useAuth()
   const { balance } = useWallet()
+  const { theme, toggleTheme } = useDashboardTheme()
 
   return (
-    <div className="min-h-dvh bg-ink-950 lg:flex">
+    <div className="theme-scope min-h-dvh bg-ink-950 lg:flex" data-theme={theme}>
       {/* Desktop/tablet sidebar — mobile keeps the bottom tab bar instead */}
       <aside className="hidden lg:flex w-72 shrink-0 bg-ink-900 border-r border-ink-800 flex-col h-dvh sticky top-0">
         <div className="p-6 border-b border-ink-800">
@@ -87,7 +100,15 @@ export function SubscriberShell() {
         <div className="lg:hidden">
           <TopBar />
         </div>
-        <header className="hidden lg:flex items-center justify-end px-8 py-3.5 border-b border-ink-800 sticky top-0 bg-ink-950/90 backdrop-blur z-20">
+        <header className="hidden lg:flex items-center justify-end gap-2 px-8 py-3.5 border-b border-ink-800 sticky top-0 bg-ink-950/90 backdrop-blur z-20">
+          <button
+            onClick={toggleTheme}
+            className="w-9 h-9 rounded-full bg-ink-900 border border-ink-800 flex items-center justify-center hover:bg-ink-800 transition"
+            aria-label={theme === 'dark' ? 'Mudar para fundo claro' : 'Mudar para fundo escuro'}
+            title={theme === 'dark' ? 'Fundo claro' : 'Fundo escuro'}
+          >
+            {theme === 'dark' ? <Sun size={16} className="text-white/70" /> : <Moon size={16} className="text-white/70" />}
+          </button>
           <NavLink
             to="/app/notificacoes"
             className="relative w-9 h-9 rounded-full bg-ink-900 border border-ink-800 flex items-center justify-center hover:bg-ink-800"

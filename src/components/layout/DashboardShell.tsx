@@ -95,7 +95,7 @@ function DashboardShellInner({
   )
 
   return (
-    <div className="dashboard-ui min-h-dvh bg-ink-950 flex" data-theme={theme}>
+    <div className="dashboard-ui theme-scope min-h-dvh bg-ink-950 flex" data-theme={theme}>
       <div className="hidden lg:block">{sidebar}</div>
 
       {open && (
