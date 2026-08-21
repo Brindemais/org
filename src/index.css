@@ -27,6 +27,14 @@ html, body, #root { height: 100%; }
    permanently-gold surfaces (StatCard tone="gold", the sidebar's account
    band) which must stay dark even though ink-950 itself just became light. */
 .dashboard-ui[data-theme='light'] {
+  /* Root fix: `body` sets color:white (from `@apply text-white`) as a plain
+     property on the `body` element itself, not a `.text-white` class match —
+     so any text with no explicit text-color class (headings especially,
+     e.g. every page's <h1>) was inheriting that white from body straight
+     through the light theme, invisible on the new light background. Setting
+     color here on the .dashboard-ui subtree's root overrides what its
+     descendants inherit, same idea as the ink-* variables below. */
+  color: #100e0b;
   --ink-950: 250 248 244;
   --ink-900: 255 255 255;
   --ink-850: 255 255 255;
