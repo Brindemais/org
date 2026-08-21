@@ -4,12 +4,17 @@ import { TrendingDown, TrendingUp, Users2, Wallet } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { StatCard } from '../../components/ui/StatCard'
 import { formatBRL } from '../../lib/format'
+import { useDashboardTheme } from '../../contexts/DashboardThemeContext'
 
 const PLATFORM_COST_PCT = 0.15
 
 interface MonthRow { key: string; label: string; gross: number; referralCost: number }
 
 export default function AdminFinancial() {
+  const { theme } = useDashboardTheme()
+  const chartColors = theme === 'light'
+    ? { grid: '#e8e4db', axis: '#8a8578', tooltipBg: '#ffffff', tooltipBorder: '#e8e4db' }
+    : { grid: '#26262d', axis: '#666666', tooltipBg: '#151519', tooltipBorder: '#26262d' }
   const [payments, setPayments] = useState<{ amount: number; confirmed_at: string }[]>([])
   const [bonuses, setBonuses] = useState<{ amount: number; created_at: string }[]>([])
   const [loading, setLoading] = useState(true)
@@ -103,10 +108,10 @@ export default function AdminFinancial() {
                   <stop offset="100%" stopColor="#d4941e" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#26262d" vertical={false} />
-              <XAxis dataKey="month" stroke="#666" fontSize={12} />
-              <YAxis stroke="#666" fontSize={12} tickFormatter={(v) => formatBRL(v)} width={80} />
-              <Tooltip contentStyle={{ background: '#151519', border: '1px solid #26262d', borderRadius: 8, fontSize: 12 }} formatter={(v: number) => formatBRL(v)} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+              <XAxis dataKey="month" stroke={chartColors.axis} fontSize={12} />
+              <YAxis stroke={chartColors.axis} fontSize={12} tickFormatter={(v) => formatBRL(v)} width={80} />
+              <Tooltip contentStyle={{ background: chartColors.tooltipBg, border: `1px solid ${chartColors.tooltipBorder}`, borderRadius: 8, fontSize: 12 }} formatter={(v: number) => formatBRL(v)} />
               <Area type="monotone" dataKey="liquido" stroke="#d4941e" fill="url(#gold2)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>

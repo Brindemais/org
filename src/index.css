@@ -6,6 +6,60 @@
 
 html, body, #root { height: 100%; }
 
+:root {
+  --ink-950: 8 8 10;
+  --ink-900: 14 14 17;
+  --ink-850: 21 21 25;
+  --ink-800: 27 27 32;
+  --ink-700: 38 38 45;
+  --ink-600: 55 55 63;
+}
+
+/* Light theme for the internal dashboards (admin + parceiro, both rendered
+   through DashboardShell — see the .dashboard-ui[data-theme] toggle there).
+   Re-declaring the ink-* variables flips every bg-ink and border-ink class
+   already used throughout those pages; nothing else needs to change. Two
+   groups of classes DON'T ride along automatically and need an explicit
+   override here instead: `text-white(/opacity)` and `bg-white(/opacity)`
+   (Tailwind's built-in white, which the public/light marketing pages also
+   use as a literal color — we can't repoint it globally) used as dark-UI
+   foreground text, and `text-ink-950` used as *fixed* dark text on
+   permanently-gold surfaces (StatCard tone="gold", the sidebar's account
+   band) which must stay dark even though ink-950 itself just became light. */
+.dashboard-ui[data-theme='light'] {
+  --ink-950: 250 248 244;
+  --ink-900: 255 255 255;
+  --ink-850: 255 255 255;
+  --ink-800: 232 228 219;
+  --ink-700: 216 210 196;
+  --ink-600: 200 193 176;
+}
+
+.dashboard-ui[data-theme='light'] .text-ink-950 { color: #08080a; }
+.dashboard-ui[data-theme='light'] .text-ink-950\/70 { color: rgb(8 8 10 / 0.7); }
+
+.dashboard-ui[data-theme='light'] .text-white { color: #100e0b; }
+.dashboard-ui[data-theme='light'] .text-white\/80 { color: rgb(16 14 11 / 0.82); }
+.dashboard-ui[data-theme='light'] .text-white\/70 { color: rgb(16 14 11 / 0.74); }
+.dashboard-ui[data-theme='light'] .text-white\/60 { color: rgb(16 14 11 / 0.68); }
+.dashboard-ui[data-theme='light'] .text-white\/55 { color: rgb(16 14 11 / 0.62); }
+.dashboard-ui[data-theme='light'] .text-white\/50 { color: rgb(16 14 11 / 0.58); }
+.dashboard-ui[data-theme='light'] .text-white\/45 { color: rgb(16 14 11 / 0.52); }
+.dashboard-ui[data-theme='light'] .text-white\/40 { color: rgb(16 14 11 / 0.48); }
+.dashboard-ui[data-theme='light'] .text-white\/35 { color: rgb(16 14 11 / 0.42); }
+.dashboard-ui[data-theme='light'] .text-white\/30 { color: rgb(16 14 11 / 0.38); }
+.dashboard-ui[data-theme='light'] .text-white\/25 { color: rgb(16 14 11 / 0.32); }
+.dashboard-ui[data-theme='light'] .text-white\/20 { color: rgb(16 14 11 / 0.28); }
+.dashboard-ui[data-theme='light'] .hover\:text-white:hover { color: #100e0b; }
+.dashboard-ui[data-theme='light'] .hover\:text-white\/70:hover { color: rgb(16 14 11 / 0.74); }
+.dashboard-ui[data-theme='light'] .hover\:text-white\/60:hover { color: rgb(16 14 11 / 0.68); }
+.dashboard-ui[data-theme='light'] .placeholder\:text-white\/30::placeholder { color: rgb(16 14 11 / 0.38); }
+
+.dashboard-ui[data-theme='light'] .bg-white\/5 { background-color: rgb(16 14 11 / 0.035); }
+.dashboard-ui[data-theme='light'] .bg-white\/10 { background-color: rgb(16 14 11 / 0.06); }
+.dashboard-ui[data-theme='light'] .bg-white\/20 { background-color: rgb(16 14 11 / 0.08); }
+.dashboard-ui[data-theme='light'] .hover\:bg-white\/5:hover { background-color: rgb(16 14 11 / 0.035); }
+
 body {
   @apply bg-ink-950 text-white antialiased;
   font-feature-settings: 'ss01';

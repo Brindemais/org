@@ -4,13 +4,20 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Backed by CSS custom properties (defined in index.css) instead of
+        // fixed hex so the internal dashboards (.dashboard-ui, see
+        // DashboardShell) can flip to a light theme by re-declaring these
+        // variables — every existing bg-ink-*/border-ink-*/text-ink-950
+        // class keeps working unchanged, it just resolves to a different
+        // color when [data-theme="light"] is set. Public/subscriber pages
+        // never set that attribute, so they render identically to before.
         ink: {
-          950: '#08080a',
-          900: '#0e0e11',
-          850: '#151519',
-          800: '#1b1b20',
-          700: '#26262d',
-          600: '#37373f',
+          950: 'rgb(var(--ink-950) / <alpha-value>)',
+          900: 'rgb(var(--ink-900) / <alpha-value>)',
+          850: 'rgb(var(--ink-850) / <alpha-value>)',
+          800: 'rgb(var(--ink-800) / <alpha-value>)',
+          700: 'rgb(var(--ink-700) / <alpha-value>)',
+          600: 'rgb(var(--ink-600) / <alpha-value>)',
         },
         gold: {
           50: '#fdf8ec',

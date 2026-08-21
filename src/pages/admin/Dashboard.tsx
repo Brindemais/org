@@ -7,8 +7,14 @@ import { StatCard } from '../../components/ui/StatCard'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { formatBRL, formatDateTime } from '../../lib/format'
+import { useDashboardTheme } from '../../contexts/DashboardThemeContext'
 
 export default function AdminDashboard() {
+  const { theme } = useDashboardTheme()
+  const chartColors = theme === 'light'
+    ? { grid: '#e8e4db', axis: '#8a8578', tooltipBg: '#ffffff', tooltipBorder: '#e8e4db' }
+    : { grid: '#26262d', axis: '#666666', tooltipBg: '#151519', tooltipBorder: '#26262d' }
+
   const [kpi, setKpi] = useState({
     subscribersActive: 0, subscribersTotal: 0, revenueGross: 0, partnersActive: 0,
     pendingPayments: 0, pendingWithdrawals: 0, pendingPartners: 0, lowStock: 0,
@@ -114,10 +120,10 @@ export default function AdminDashboard() {
                     <stop offset="100%" stopColor="#d4941e" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#26262d" vertical={false} />
-                <XAxis dataKey="month" stroke="#666" fontSize={12} />
-                <YAxis stroke="#666" fontSize={12} allowDecimals={false} />
-                <Tooltip contentStyle={{ background: '#151519', border: '1px solid #26262d', borderRadius: 8, fontSize: 12 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                <XAxis dataKey="month" stroke={chartColors.axis} fontSize={12} />
+                <YAxis stroke={chartColors.axis} fontSize={12} allowDecimals={false} />
+                <Tooltip contentStyle={{ background: chartColors.tooltipBg, border: `1px solid ${chartColors.tooltipBorder}`, borderRadius: 8, fontSize: 12 }} />
                 <Area type="monotone" dataKey="count" stroke="#d4941e" fill="url(#gold)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
