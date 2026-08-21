@@ -15,7 +15,7 @@ type Step = 1 | 2 | 3
 const STEPS = [
   { n: 1, label: 'Cadastro', icon: User },
   { n: 2, label: 'Assinatura', icon: ShieldCheck },
-  { n: 3, label: 'Pagamento Pix', icon: Wallet },
+  { n: 3, label: 'Pagamento', icon: Wallet },
 ]
 
 export default function Signup() {
