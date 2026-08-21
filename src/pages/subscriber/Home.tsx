@@ -119,15 +119,20 @@ export default function SubscriberHome() {
         )}
       </div>
 
-      <div className="relative rounded-xl2 bg-ink-950 border border-ink-800 p-5 overflow-hidden">
+      {/* Fixed dark "premium card" look, on purpose not theme-reactive — matches
+          the brand's own hero-glass-wallet.webp reference art, which doesn't
+          have a light variant. Uses literal colors instead of bg-ink-950/
+          text-white so it stays this way even when the page itself is in
+          light mode (see the light-theme overrides in index.css). */}
+      <div className="relative rounded-xl2 bg-[#0a0a0c] border border-[#1a1a1e] p-5 overflow-hidden">
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-1">
             <p className="text-xs font-bold uppercase tracking-wide text-gold-400">Saldo disponível</p>
-            <button onClick={() => setHideBalance(!hideBalance)} className="text-white/40 hover:text-white/70" aria-label={hideBalance ? 'Mostrar saldo' : 'Ocultar saldo'}>
+            <button onClick={() => setHideBalance(!hideBalance)} className="text-[#ffffff]/40 hover:text-[#ffffff]/70" aria-label={hideBalance ? 'Mostrar saldo' : 'Ocultar saldo'}>
               {hideBalance ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
-          <p className="text-3xl font-bold text-white">{hideBalance ? '••••••' : formatBRL(balance)}</p>
+          <p className="text-3xl font-bold text-[#ffffff]">{hideBalance ? '••••••' : formatBRL(balance)}</p>
           <Link to="/app/carteira" className="text-xs font-semibold mt-2 inline-flex items-center gap-1 text-gold-400">
             Ver carteira <ChevronRight size={13} />
           </Link>

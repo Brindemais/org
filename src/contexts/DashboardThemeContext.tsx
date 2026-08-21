@@ -2,8 +2,6 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 
 export type DashboardTheme = 'dark' | 'light'
 
-const STORAGE_KEY = 'bm-dashboard-theme'
-
 interface DashboardThemeContextValue {
   theme: DashboardTheme
   toggleTheme: () => void
@@ -11,30 +9,37 @@ interface DashboardThemeContextValue {
 
 const DashboardThemeContext = createContext<DashboardThemeContextValue | undefined>(undefined)
 
-function readStoredTheme(): DashboardTheme {
-  if (typeof window === 'undefined') return 'dark'
+function readStoredTheme(storageKey: string, defaultTheme: DashboardTheme): DashboardTheme {
+  if (typeof window === 'undefined') return defaultTheme
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    return stored === 'light' ? 'light' : 'dark'
+    const stored = window.localStorage.getItem(storageKey)
+    return stored === 'light' || stored === 'dark' ? stored : defaultTheme
   } catch {
     // Private browsing / storage blocked — fall back to the default.
-    return 'dark'
+    return defaultTheme
   }
 }
 
-// Scoped to admin + parceiro (both render through DashboardShell). Each
-// person's choice is remembered per browser, not tied to their account —
-// simplest option for a preference this cosmetic, and it means it works
-// the same whether they're on a shared machine or not.
-export function DashboardThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<DashboardTheme>(readStoredTheme)
+// Shared by every internal shell (admin, parceiro, assinante — each wraps
+// its own <Outlet> with this provider, using its own storageKey so the
+// three preferences don't collide, and its own defaultTheme since the
+// assinante app opens light-first while admin/parceiro stay dark-first).
+// Each person's choice is remembered per browser, not tied to their
+// account — simplest option for a preference this cosmetic.
+export function DashboardThemeProvider({
+  children, defaultTheme = 'dark', storageKey = 'bm-dashboard-theme',
+}: { children: ReactNode; defaultTheme?: DashboardTheme; storageKey?: string }) {
+  const [theme, setTheme] = useState<DashboardTheme>(() => readStoredTheme(storageKey, defaultTheme))
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, theme)
+      window.localStorage.setItem(storageKey, theme)
     } catch {
       // Ignore — nothing to fall back to here, the toggle still works for the session.
     }
+    // Only run when the theme itself changes — re-persisting under a
+    // different key if storageKey ever changed at runtime isn't a real case.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme])
 
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
