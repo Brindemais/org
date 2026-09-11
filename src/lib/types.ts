@@ -98,6 +98,8 @@ export interface ProductRow {
   active: boolean
   approved: boolean
   created_at: string
+  discount_pct: number
+  subscriber_discount_pct: number
 }
 
 export interface StockPartnerRow {

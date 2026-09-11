@@ -70,6 +70,7 @@ export default function AdminStock() {
       subscriber_price: Number(newProduct.subscriber_price || 0),
       is_gift: true,
       partner_id: null,
+      approved: true,
     })
     setNewProduct({ name: '', description: '', image_url: '', normal_price: '', subscriber_price: '' })
     load()
@@ -141,7 +142,10 @@ export default function AdminStock() {
                 {p.image_url && <img src={p.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />}
                 <div className="min-w-0">
                   <p className="font-medium text-sm truncate">{p.name}</p>
-                  <p className="text-xs text-white/40">{p.partner?.trade_name} · R$ {Number(p.subscriber_price).toFixed(2)}</p>
+                  <p className="text-xs text-white/40">
+                    {p.partner?.trade_name} · de R$ {Number(p.normal_price).toFixed(2)} por R$ {Number(p.subscriber_price).toFixed(2)}
+                    {p.discount_pct > 0 && ` · desconto ${p.discount_pct}% (comissão de consumo ${(7).toFixed(0)}% + lucro líquido ${(p.discount_pct - p.subscriber_discount_pct - 7).toFixed(2)}%)`}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronDown, ChevronRight as ChevronRightIcon, Copy, Share2, Users } from 'lucide-react'
+import { ChevronDown, ChevronRight as ChevronRightIcon, Copy, Share2, Users, Crown } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatBRL } from '../../lib/format'
@@ -12,6 +12,11 @@ interface TreeNode {
   referred_by: string | null
 }
 interface LevelEarning { level: number; total: number }
+
+// Selo de reconhecimento: 100 indicados diretos (nível 1) com assinatura
+// ativa e em dia viram "VIP". Não muda comissão (já é 10% no nível 1),
+// é só status/selo no painel.
+const VIP_THRESHOLD = 100
 
 export default function SubscriberReferrals() {
   const { profile } = useAuth()
@@ -44,6 +49,12 @@ export default function SubscriberReferrals() {
     for (const n of tree) (map[n.level] ??= []).push(n)
     return map
   }, [tree])
+
+  const activeDirectCount = useMemo(
+    () => (byLevel[1] ?? []).filter((p) => p.has_active_subscription).length,
+    [byLevel],
+  )
+  const isVip = activeDirectCount >= VIP_THRESHOLD
 
   function toggleLevel(lvl: number) {
     setExpanded((prev) => {
@@ -78,6 +89,27 @@ export default function SubscriberReferrals() {
         </div>
         <p className="text-xs text-white/40">Seu código: <span className="text-gold-400 font-semibold">{profile?.referral_code}</span></p>
       </div>
+
+      {isVip ? (
+        <div className="card !bg-gold-gradient !border-transparent flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-ink-950/20 flex items-center justify-center shrink-0"><Crown size={20} className="text-ink-950" /></div>
+          <div>
+            <p className="font-display font-semibold text-ink-950">Você é VIP Brinde Mais!</p>
+            <p className="text-xs text-ink-950/70">{activeDirectCount} indicados diretos com assinatura ativa. Selo de reconhecimento por trazer o maior volume de rede.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="card space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-semibold flex items-center gap-1.5"><Crown size={15} className="text-gold-400" /> Caminho para o selo VIP</p>
+            <span className="text-xs text-white/40">{activeDirectCount}/{VIP_THRESHOLD} indicados diretos ativos</span>
+          </div>
+          <div className="h-2 rounded-full bg-ink-800 overflow-hidden">
+            <div className="h-full bg-gold-gradient" style={{ width: `${Math.min(100, (activeDirectCount / VIP_THRESHOLD) * 100)}%` }} />
+          </div>
+          <p className="text-xs text-white/40">Chegue a {VIP_THRESHOLD} indicados diretos com assinatura ativa e ganhe o selo VIP no seu painel.</p>
+        </div>
+      )}
 
       <div>
         <p className="font-semibold mb-3 flex items-center gap-1.5"><Users size={16} className="text-gold-400" /> Sua árvore de indicações (7 níveis)</p>
