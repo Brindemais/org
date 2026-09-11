@@ -56,7 +56,7 @@ export default function SubscriberPickup() {
 
   useEffect(() => {
     if (pickup?.partner_id) {
-      supabase.from('partners').select('id, trade_name, address, neighborhood, logo_url, lat, lng').eq('id', pickup.partner_id).maybeSingle().then(({ data }) => setPartner(data as PickupPartner | null))
+      supabase.from('partners_public').select('id, trade_name, address, neighborhood, logo_url, lat, lng').eq('id', pickup.partner_id).maybeSingle().then(({ data }) => setPartner(data as PickupPartner | null))
     }
   }, [pickup?.partner_id])
 

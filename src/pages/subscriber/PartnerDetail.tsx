@@ -27,9 +27,9 @@ export default function SubscriberPartnerDetail() {
     if (!id) return
     setLoading(true)
     Promise.all([
-      supabase.from('partners').select('id, trade_name, category, address, neighborhood, city, state, opening_hours, logo_url, whatsapp').eq('id', id).maybeSingle(),
+      supabase.from('partners_public').select('id, trade_name, category, address, neighborhood, city, state, opening_hours, logo_url, whatsapp').eq('id', id).maybeSingle(),
       supabase.from('promotions').select('*').eq('partner_id', id).eq('status', 'approved').gte('valid_until', new Date().toISOString().slice(0, 10)).order('created_at', { ascending: false }),
-      supabase.from('products').select('*').eq('partner_id', id).eq('active', true).eq('approved', true).order('is_gift', { ascending: false }),
+      supabase.from('products_public').select('*').eq('partner_id', id).order('is_gift', { ascending: false }),
       // Same rule as Benefícios: a partner without brinde stock can't be
       // chosen as a pickup point, so the button below reflects that instead
       // of only failing after the fact.

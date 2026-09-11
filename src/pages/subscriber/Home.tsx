@@ -55,7 +55,7 @@ export default function SubscriberHome() {
   const [loadingOffers, setLoadingOffers] = useState(true)
 
   useEffect(() => {
-    supabase.from('partners').select('id, trade_name, category, logo_url').in('status', ['approved', 'active']).limit(6)
+    supabase.from('partners_public').select('id, trade_name, category, logo_url').limit(6)
       .then(({ data }) => {
         const rows = (data as HomePartner[]) ?? []
         setPartners(rows)
