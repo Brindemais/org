@@ -35,8 +35,8 @@ export default function PartnerPickups() {
     const { data } = await supabase.rpc('get_partner_pickups', { p_partner_id: partner.id })
     const rows = (data as PickupRow[]) ?? []
     setPickups(rows)
-    const { data: stock } = await supabase.from('stock_partner').select('product_id, quantity, product:product_id(id,name)').eq('partner_id', partner.id).gt('quantity', 0)
-    setProducts((stock ?? []).map((s: any) => ({ id: s.product.id, name: s.product.name, quantity: s.quantity })))
+    const { data: stock } = await supabase.from('stock_partner').select('product_id, quantity, product:product_id(id,name,active,approved)').eq('partner_id', partner.id).gt('quantity', 0)
+    setProducts((stock ?? []).filter((s: any) => s.product?.active && s.product?.approved).map((s: any) => ({ id: s.product.id, name: s.product.name, quantity: s.quantity })))
 
     const readyRows = rows.filter((r) => r.status === 'ready')
     const authEntries = await Promise.all(
@@ -69,6 +69,7 @@ export default function PartnerPickups() {
         CODE_MISMATCH: 'Código não confere com o da retirada.',
         NO_STOCK: 'Sem estoque para este brinde.',
         INVALID_AUTHORIZED_PERSON: 'Pessoa autorizada inválida.',
+        PRODUCT_NOT_APPROVED: 'Este brinde ainda não foi aprovado pela administração.',
       }
       setErrors((e) => ({ ...e, [pickupId]: map[error.message] ?? 'Não foi possível confirmar.' }))
       return
