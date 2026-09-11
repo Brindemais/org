@@ -27,7 +27,7 @@ export default function SubscriberBenefits() {
 
   useEffect(() => {
     setLoading(true)
-    let query = supabase.from('partners').select('id, trade_name, category, neighborhood, city, logo_url, lat, lng').in('status', ['approved', 'active'])
+    let query = supabase.from('partners_public').select('id, trade_name, category, neighborhood, city, logo_url, lat, lng')
     if (category) query = query.eq('category', category)
     query.then(({ data }) => { setPartners((data as BenefitPartner[]) ?? []); setLoading(false) })
     supabase.from('promotions').select('*').eq('status', 'approved').gte('valid_until', new Date().toISOString().slice(0, 10)).then(({ data }) => setPromotions((data as Promotion[]) ?? []))

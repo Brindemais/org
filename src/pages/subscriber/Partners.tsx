@@ -26,7 +26,7 @@ export default function SubscriberPartners() {
 
   useEffect(() => {
     setLoading(true)
-    let query = supabase.from('partners').select('id, trade_name, category, neighborhood, logo_url, opening_hours, address, city, state, whatsapp, lat, lng').in('status', ['approved', 'active'])
+    let query = supabase.from('partners_public').select('id, trade_name, category, neighborhood, logo_url, opening_hours, address, city, state, whatsapp, lat, lng')
     if (category) query = query.eq('category', category)
     if (neighborhood) query = query.eq('neighborhood', neighborhood)
     query.then(({ data }) => { setPartners((data as DirectoryPartner[]) ?? []); setLoading(false) })

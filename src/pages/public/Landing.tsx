@@ -108,7 +108,7 @@ export default function Landing() {
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
-    supabase.from('partners').select('id, trade_name, category, neighborhood, logo_url, opening_hours').in('status', ['approved', 'active']).limit(8)
+    supabase.from('partners_public').select('id, trade_name, category, neighborhood, logo_url, opening_hours').limit(8)
       .then(({ data }) => setPartners((data as PublicPartner[]) ?? []))
     supabase.from('promotions').select('*').eq('status', 'approved').gte('valid_until', new Date().toISOString().slice(0, 10)).limit(3)
       .then(({ data }) => setPromos((data as Promotion[]) ?? []))
