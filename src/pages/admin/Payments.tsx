@@ -32,7 +32,7 @@ export default function AdminPayments() {
       `pagamentos-brinde-mais-${new Date().toISOString().slice(0, 10)}.csv`,
       payments.map((p) => ({
         assinante: p.subscriber?.full_name ?? '', referencia: p.external_reference,
-        tipo: p.type === 'subscription' ? 'assinatura' : 'loja', valor: Number(p.amount).toFixed(2),
+        tipo: p.type === 'subscription' ? 'assinatura' : p.type === 'partner_fee' ? 'taxa de anunciante' : 'loja', valor: Number(p.amount).toFixed(2),
         status: p.status, criado_em: p.created_at, confirmado_em: p.confirmed_at ?? '',
       })),
     )
@@ -67,7 +67,7 @@ export default function AdminPayments() {
                   <p className="text-xs text-white/30 font-mono">{p.external_reference.slice(0, 12)}</p>
                 </td>
                 <td className="py-3 text-white/50">
-                  {p.type === 'subscription' ? 'Assinatura' : 'Loja'}
+                  {p.type === 'subscription' ? 'Assinatura' : p.type === 'partner_fee' ? 'Taxa de anunciante' : 'Loja'}
                   {p.type === 'subscription' && p.plan && <span className="text-white/30"> · {p.plan === 'annual' ? 'anual' : 'mensal'}</span>}
                 </td>
                 <td className="py-3 font-semibold">{formatBRL(p.amount)}</td>
