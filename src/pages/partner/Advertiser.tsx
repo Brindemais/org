@@ -9,9 +9,10 @@ const FEE_AMOUNT = 149.9
 interface PendingPayment { id: string; status: string; pix_code: string | null; created_at: string }
 
 export default function PartnerAdvertiser() {
-  const { partner, profile, refreshProfile } = useAuth()
+  const { partner, profile } = useAuth()
   const [pending, setPending] = useState<PendingPayment | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState({ products: 0, promotions: 0 })
 
   const isActive = !!partner?.is_advertiser && (!partner.advertiser_expires_at || new Date(partner.advertiser_expires_at) > new Date())
@@ -30,8 +31,9 @@ export default function PartnerAdvertiser() {
   async function payFee() {
     if (!partner || !profile) return
     setLoading(true)
+    setError(null)
     const fakePix = `00020126360014BR.GOV.BCB.PIX0114${partner.id.slice(0, 14)}5204000053039865406${FEE_AMOUNT.toFixed(2)}5802BR5913BRINDEMAIS6009RIOJANEIRO62070503***6304${Math.random().toString(36).slice(2, 6).toUpperCase()}`
-    const { data, error } = await supabase.from('payments').insert({
+    const { data, error: insertError } = await supabase.from('payments').insert({
       subscriber_id: profile.id,
       partner_id: partner.id,
       amount: FEE_AMOUNT,
@@ -39,7 +41,11 @@ export default function PartnerAdvertiser() {
       pix_code: fakePix,
     }).select('id, status, pix_code, created_at').single()
     setLoading(false)
-    if (!error && data) setPending(data as PendingPayment)
+    if (insertError || !data) {
+      setError('Não foi possível gerar o pagamento. Você precisa ter uma assinatura Brinde Mais ativa para pagar a taxa de anunciante.')
+      return
+    }
+    setPending(data as PendingPayment)
   }
 
   if (!partner) return null
@@ -83,6 +89,7 @@ export default function PartnerAdvertiser() {
       ) : (
         <div className="card space-y-3">
           <p className="text-sm text-white/60">Pague a taxa de anunciante para liberar sua área com brindes, promoções e destaque para os assinantes Brinde Mais.</p>
+          {error && <p className="text-sm text-red-400">{error}</p>}
           <button onClick={payFee} disabled={loading} className="btn-gold w-full">{loading ? 'Gerando Pix...' : `Pagar ${formatBRL(FEE_AMOUNT)}`}</button>
         </div>
       )}
