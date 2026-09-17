@@ -144,7 +144,7 @@ export default function AdminStock() {
                   <p className="font-medium text-sm truncate">{p.name}</p>
                   <p className="text-xs text-white/40">
                     {p.partner?.trade_name} · de R$ {Number(p.normal_price).toFixed(2)} por R$ {Number(p.subscriber_price).toFixed(2)}
-                    {p.discount_pct > 0 && ` · desconto ${p.discount_pct}% (comissão de consumo ${(7).toFixed(0)}% + lucro líquido ${(p.discount_pct - p.subscriber_discount_pct - 7).toFixed(2)}%)`}
+                    {p.discount_pct > 0 && ` · desconto ${p.discount_pct}% (comissão de consumo ${(4).toFixed(0)}% + lucro líquido ${(p.discount_pct - p.subscriber_discount_pct - 4).toFixed(2)}%)`}
                   </p>
                 </div>
               </div>
