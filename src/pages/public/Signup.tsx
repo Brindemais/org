@@ -1,20 +1,26 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { KeyRound, ShieldCheck, User } from 'lucide-react'
+import { Check, Copy, KeyRound, ShieldCheck, User, Wallet } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { LogoBadge } from '../../components/layout/Logo'
-import { isValidCPF, maskCPF, maskPhone } from '../../lib/format'
+import { isValidCPF, maskCPF, maskPhone, formatBRL } from '../../lib/format'
+import { PLAN_PRICES, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../../lib/plans'
+import type { SubscriptionPlan } from '../../lib/types'
 
-type Step = 1 | 2
+type Step = 1 | 2 | 3 | 4
 
-// A escolha de plano e o pagamento Pix não fazem mais parte deste
-// assistente — acontecem dentro do próprio painel (SubscriptionPaywall),
-// que passa a ser a tela que qualquer assinante sem assinatura ativa vê
-// ao entrar em /app, seja no primeiro cadastro ou numa renovação depois
-// de vencida. Este fluxo agora só cria a conta e confirma o e-mail.
+// A escolha do ponto de retirada acontece depois, dentro do app, quando a
+// assinatura já estiver ativa — não é parte deste assistente. Se a pessoa
+// sair antes de terminar o passo 4 (ou deixar a assinatura vencer depois),
+// o próprio painel (SubscriberShell -> SubscriptionPaywall) mostra a mesma
+// tela de assinatura/Pix como rede de segurança — este assistente não é o
+// único jeito de chegar lá, só o caminho normal de quem termina o cadastro
+// de uma vez.
 const STEPS = [
   { n: 1, label: 'Cadastro', icon: User },
-  { n: 2, label: 'Confirmar e-mail', icon: ShieldCheck },
+  { n: 2, label: 'Confirmar e-mail', icon: KeyRound },
+  { n: 3, label: 'Assinatura', icon: ShieldCheck },
+  { n: 4, label: 'Pagamento', icon: Wallet },
 ]
 
 export default function Signup() {
@@ -36,6 +42,10 @@ export default function Signup() {
 
   const [code, setCode] = useState('')
   const [resent, setResent] = useState(false)
+
+  const [plan, setPlan] = useState<SubscriptionPlan>('monthly')
+  const [pixCode, setPixCode] = useState('')
+  const [copied, setCopied] = useState(false)
 
   async function handleStep1(e: FormEvent) {
     e.preventDefault()
@@ -65,17 +75,14 @@ export default function Signup() {
       return
     }
 
-    // data.session is already present when Supabase auto-confirms the
-    // email (i.e. "Confirm email" is off in Authentication settings) —
-    // skip straight to the app instead of stranding the person on a code
-    // screen no code was ever sent for. The moment that setting gets
-    // turned on, signUp starts returning session: null and this same
-    // code automatically starts asking for the OTP, no redeploy needed.
-    if (data.session) {
-      navigate('/app')
-      return
-    }
-    setStep(2)
+    // data.session já vem preenchido quando o Supabase confirma o e-mail
+    // sozinho (ou seja, "Confirm email" está desligado em Authentication
+    // settings) — pula direto pra escolha de assinatura em vez de travar
+    // numa tela pedindo um código que nunca foi enviado. No dia em que
+    // "Confirm email" for ativado no painel do Supabase, signUp passa a
+    // devolver session: null e este mesmo código passa a pedir o código
+    // automaticamente, sem precisar mexer em nada.
+    setStep(data.session ? 3 : 2)
   }
 
   async function handleVerifyCode(e: FormEvent) {
@@ -88,7 +95,7 @@ export default function Signup() {
       setError('Código incorreto ou expirado. Confira o e-mail ou peça um novo código.')
       return
     }
-    navigate('/app')
+    setStep(3)
   }
 
   async function resendCode() {
@@ -98,6 +105,34 @@ export default function Signup() {
       setResent(true)
       setTimeout(() => setResent(false), 4000)
     }
+  }
+
+  async function handleActivateSubscription() {
+    setLoading(true)
+    setError(null)
+    const { data: userRes } = await supabase.auth.getUser()
+    const uid = userRes.user?.id
+    if (!uid) { setLoading(false); return }
+
+    const amount = PLAN_PRICES[plan]
+    const fakePix = `00020126360014BR.GOV.BCB.PIX0114${uid.slice(0, 14)}5204000053039865406${amount.toFixed(2)}5802BR5913BRINDEMAIS6009RIOJANEIRO62070503***6304${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+    const { error: payErr } = await supabase.from('payments').insert({
+      subscriber_id: uid,
+      amount,
+      plan,
+      type: 'subscription',
+      pix_code: fakePix,
+    })
+    setLoading(false)
+    if (payErr) { setError('Não foi possível gerar o Pix. Tente novamente.'); return }
+    setPixCode(fakePix)
+    setStep(4)
+  }
+
+  function copyPix() {
+    navigator.clipboard.writeText(pixCode)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -114,7 +149,7 @@ export default function Signup() {
                     step >= s.n ? 'bg-gold-gradient border-transparent text-ink-950' : 'border-black/15 text-black/30'
                   }`}
                 >
-                  <s.icon size={15} />
+                  {step > s.n ? <Check size={16} /> : <s.icon size={15} />}
                 </div>
                 <span className={`text-[10px] font-medium ${step >= s.n ? 'text-gold-600' : 'text-black/30'}`}>{s.label}</span>
               </div>
@@ -191,6 +226,61 @@ export default function Signup() {
               {resent ? 'Código reenviado!' : 'Não recebeu? Reenviar código'}
             </button>
           </form>
+        )}
+
+        {step === 3 && (
+          <div className="card-light space-y-5">
+            <h1 className="font-display text-xl font-semibold text-ink-950">Ative sua assinatura</h1>
+            <div className="grid grid-cols-1 gap-3">
+              <button
+                type="button"
+                onClick={() => setPlan('monthly')}
+                className={`text-left rounded-xl p-5 border transition ${plan === 'monthly' ? 'border-gold-400 bg-gold-400/10' : 'border-black/10'}`}
+              >
+                <p className="text-xs font-bold uppercase text-black/50">Plano mensal</p>
+                <p className="text-3xl font-bold text-ink-950 mt-1">{formatBRL(PLAN_PRICES.monthly)}<span className="text-sm font-medium text-black/40">/mês</span></p>
+                <p className="text-xs text-black/40 mt-1">Renovação a cada 30 dias · cancele quando quiser</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlan('annual')}
+                className={`relative text-left rounded-xl p-5 border transition ${plan === 'annual' ? 'border-gold-400 bg-gold-400/10' : 'border-black/10'}`}
+              >
+                <span className="absolute top-4 right-4 pill bg-gold-gradient text-ink-950 font-bold">-{ANNUAL_DISCOUNT_PCT}%</span>
+                <p className="text-xs font-bold uppercase text-black/50">Plano anual</p>
+                <p className="text-3xl font-bold text-ink-950 mt-1">12x {formatBRL(ANNUAL_MONTHLY_EQUIVALENT)}<span className="text-sm font-medium text-black/40">/mês</span></p>
+                <p className="text-xs text-black/40 mt-1">Pacote de 12 meses, cobrado uma vez</p>
+              </button>
+            </div>
+            <ul className="space-y-2.5 text-sm text-black/65">
+              {['Brinde mensal em parceiro de sua escolha', 'Descontos exclusivos em toda a rede', 'Cashback e bonificação por indicação'].map((b) => (
+                <li key={b} className="flex gap-2"><Check size={16} className="text-gold-500 shrink-0 mt-0.5" />{b}</li>
+              ))}
+            </ul>
+            {error && <p className="text-sm text-red-500">{error}</p>}
+            <button onClick={handleActivateSubscription} disabled={loading} className="btn-gold w-full">
+              {loading ? 'Gerando Pix...' : 'Ativar assinatura via Pix'}
+            </button>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="card-light space-y-5 text-center">
+            <h1 className="font-display text-xl font-semibold text-ink-950">Pagamento via Pix</h1>
+            <div className="w-44 h-44 mx-auto rounded-xl bg-white border border-black/10 p-3 flex items-center justify-center">
+              <div className="w-full h-full bg-[repeating-linear-gradient(45deg,#111_0,#111_4px,#fff_4px,#fff_8px)] opacity-80 rounded" />
+            </div>
+            <p className="text-sm text-black/50">Escaneie o QR Code ou copie o código Pix abaixo para pagar {formatBRL(PLAN_PRICES[plan])}.</p>
+            <button onClick={copyPix} className="btn-dark-light w-full !py-2.5 text-sm gap-2">
+              <Copy size={14} /> {copied ? 'Código copiado!' : 'Copiar código Pix'}
+            </button>
+            <div className="rounded-lg bg-black/5 border border-black/10 p-3 text-[10px] text-black/40 break-all">{pixCode}</div>
+            <p className="text-xs text-black/40">
+              A confirmação é manual pela equipe Brinde Mais, normalmente em poucos minutos. Seu painel libera sozinho
+              assim que o pagamento for confirmado — não precisa voltar aqui.
+            </p>
+            <button onClick={() => navigate('/app')} className="btn-gold w-full">Ir para o painel</button>
+          </div>
         )}
       </div>
     </div>
