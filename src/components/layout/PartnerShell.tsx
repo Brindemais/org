@@ -1,6 +1,7 @@
 import { LayoutDashboard, PackageCheck, Boxes, Gift, Percent, CalendarCheck, Bell, History, Store, Megaphone } from 'lucide-react'
 import { DashboardShell, type DashNavItem } from './DashboardShell'
 import { useAuth } from '../../contexts/AuthContext'
+import { PartnerFeeGate } from '../partner/PartnerFeeGate'
 
 const NAV: DashNavItem[] = [
   { to: '/parceiro', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -17,6 +18,16 @@ const NAV: DashNavItem[] = [
 
 export function PartnerShell() {
   const { partner } = useAuth()
+
+  // Only new-signup partners carry requires_fee (see 0035) — existing
+  // approved partners never see this, and it lifts on its own once
+  // is_advertiser flips (confirm_payment, admin-confirmed like every
+  // other payment on the platform).
+  const isAdvertiserActive = !!partner?.is_advertiser && (!partner.advertiser_expires_at || new Date(partner.advertiser_expires_at) > new Date())
+  if (partner?.requires_fee && !isAdvertiserActive) {
+    return <PartnerFeeGate />
+  }
+
   return (
     <DashboardShell
       navItems={NAV}

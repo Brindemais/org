@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useWallet } from '../../hooks/useWallet'
 import { formatBRL } from '../../lib/format'
 import { DashboardThemeProvider, useDashboardTheme } from '../../contexts/DashboardThemeContext'
+import { SubscriptionPaywall } from '../subscriber/SubscriptionPaywall'
 
 // Capped at 5 items — the bottom tab bar is a phone-width strip, it can't
 // fit more without shrinking labels into illegibility. "Indique" and other
@@ -48,9 +49,15 @@ export function SubscriberShell() {
 }
 
 function SubscriberShellInner() {
-  const { profile, signOut } = useAuth()
+  const { profile, hasActiveSubscription, signOut } = useAuth()
   const { balance } = useWallet()
   const { theme, toggleTheme } = useDashboardTheme()
+
+  // hasActiveSubscription is null while AuthContext is still checking, or
+  // for non-subscriber roles — only block once we actually know it's false.
+  if (hasActiveSubscription === false) {
+    return <SubscriptionPaywall />
+  }
 
   return (
     <div className="theme-scope min-h-dvh bg-ink-950 lg:flex" data-theme={theme}>
