@@ -8,6 +8,8 @@ interface AuthContextValue {
   session: Session | null
   profile: Profile | null
   partner: Partner | null
+  // null while still checking; only meaningful once profile.role === 'subscriber'
+  hasActiveSubscription: boolean | null
   loading: boolean
   refreshProfile: () => Promise<void>
   signOut: () => Promise<void>
@@ -20,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [partner, setPartner] = useState<Partner | null>(null)
+  const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(null)
   const [loading, setLoading] = useState(true)
 
   const loadProfile = useCallback(async (uid: string) => {
@@ -38,6 +41,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } else {
       setPartner(null)
+    }
+
+    // Gates access to the subscriber dashboard (SubscriberShell) — a
+    // brand-new signup or a lapsed renewal both land here as false until
+    // a payment is confirmed, matching every other payment on the
+    // platform (manually confirmed by the team, checked again on next load).
+    if (p && p.role === 'subscriber') {
+      const { data: subs } = await supabase.from('subscriptions').select('status, expires_at').eq('subscriber_id', uid)
+      const active = (subs ?? []).some((s) => s.status === 'active' && (!s.expires_at || new Date(s.expires_at) > new Date()))
+      setHasActiveSubscription(active)
+    } else {
+      setHasActiveSubscription(null)
     }
   }, [])
 
@@ -74,10 +89,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
     setProfile(null)
     setPartner(null)
+    setHasActiveSubscription(null)
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, partner, loading, refreshProfile, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, partner, hasActiveSubscription, loading, refreshProfile, signOut }}>
       {children}
     </AuthContext.Provider>
   )
