@@ -217,6 +217,8 @@ export default function AdminPartners() {
               </div>
               <div className="flex items-center gap-2">
                 <StatusBadge status={p.status} />
+                {p.is_advertiser && <span className="pill bg-gold-400/15 text-gold-300">Anunciante</span>}
+                {p.requires_fee && !p.is_advertiser && <span className="pill bg-white/10 text-white/40">Taxa pendente</span>}
                 {editingId !== p.id && (
                   <button onClick={() => startEdit(p)} className="text-xs text-gold-400 font-medium">Editar</button>
                 )}

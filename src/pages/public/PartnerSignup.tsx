@@ -39,6 +39,7 @@ export default function PartnerSignup() {
       city: city || undefined,
       neighborhood: neighborhood || undefined,
       address: address || undefined,
+      requires_fee: true,
     })
     setLoading(false)
     if (insertError) {
@@ -79,6 +80,9 @@ export default function PartnerSignup() {
             <h1 className="font-display text-xl font-semibold text-ink-950">Quero ser parceiro</h1>
             <p className="text-sm text-black/50 mt-1">
               Preencha os dados do seu estabelecimento. Nossa equipe entra em contato para concluir o credenciamento.
+            </p>
+            <p className="text-xs text-black/40 mt-2 bg-gold-400/10 text-gold-700 rounded-lg px-3 py-2">
+              Taxa de anunciante: R$ 149,90/mês, mesmo valor da assinatura Brinde Mais. Ela libera sua área de anunciante no painel do parceiro.
             </p>
           </div>
 

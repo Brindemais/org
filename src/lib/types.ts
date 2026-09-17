@@ -54,6 +54,9 @@ export interface Partner {
   created_at: string
   approved_at: string | null
   invited_at: string | null
+  requires_fee: boolean
+  is_advertiser: boolean
+  advertiser_expires_at: string | null
 }
 
 export interface Subscription {

@@ -42,6 +42,7 @@ const PartnerPickups = lazy(() => import('./pages/partner/Pickups'))
 const PartnerStock = lazy(() => import('./pages/partner/Stock'))
 const PartnerProducts = lazy(() => import('./pages/partner/Products'))
 const PartnerPromotions = lazy(() => import('./pages/partner/Promotions'))
+const PartnerAdvertiser = lazy(() => import('./pages/partner/Advertiser'))
 const PartnerReservations = lazy(() => import('./pages/partner/Reservations'))
 const PartnerNotifications = lazy(() => import('./pages/partner/Notifications'))
 const PartnerHistory = lazy(() => import('./pages/partner/History'))
@@ -120,6 +121,7 @@ export default function App() {
           <Route path="estoque" element={<PartnerStock />} />
           <Route path="brindes" element={<PartnerProducts />} />
           <Route path="promocoes" element={<PartnerPromotions />} />
+          <Route path="anunciante" element={<PartnerAdvertiser />} />
           <Route path="reservas" element={<PartnerReservations />} />
           <Route path="notificacoes" element={<PartnerNotifications />} />
           <Route path="historico" element={<PartnerHistory />} />
