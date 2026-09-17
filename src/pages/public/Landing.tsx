@@ -46,7 +46,7 @@ const BENEFITS = [
   { icon: Percent, title: 'Descontos exclusivos', description: 'Vantagens em bares, restaurantes, adegas e distribuidoras parceiras.' },
   { icon: Wallet, title: 'Cashback e créditos', description: 'Parte do seu consumo na rede volta para você em créditos.' },
   { icon: ShieldCheck, title: 'Promoções especiais', description: 'Ofertas por tempo limitado só para assinantes ativos.' },
-  { icon: Users2, title: 'Indique e ganhe', description: 'Bonificações por indicação em até 7 níveis da sua rede.' },
+  { icon: Users2, title: 'Indique e ganhe', description: 'Bonificações por indicação em até 4 níveis da sua rede.' },
   { icon: MapPin, title: 'Parceiros próximos', description: 'Encontre estabelecimentos por cidade, bairro ou distância.' },
   { icon: History, title: 'Carteira e extrato', description: 'Acompanhe saldo, origem dos créditos e solicite saques.' },
 ]
@@ -61,7 +61,7 @@ const FAQ = [
   { q: 'Outra pessoa pode retirar por mim?', a: 'Sim, é possível cadastrar uma pessoa autorizada para retirar o brinde em seu lugar.' },
   { q: 'Como funcionam os descontos?', a: 'Assinantes ativos têm acesso a preços e promoções exclusivas nos estabelecimentos parceiros participantes.' },
   { q: 'Como funciona o cashback?', a: 'Parte do valor de determinadas transações é convertida em crédito na sua carteira, conforme as regras vigentes da plataforma.' },
-  { q: 'Como funcionam as indicações?', a: 'Você compartilha seu link exclusivo; quando indicados assinam e o pagamento é confirmado, você recebe bonificações em até 7 níveis da sua rede.' },
+  { q: 'Como funcionam as indicações?', a: 'Você compartilha seu link exclusivo; quando indicados assinam e o pagamento é confirmado, você recebe bonificações em até 4 níveis da sua rede.' },
   { q: 'Posso usar meu saldo na plataforma?', a: 'Sim, o saldo disponível na sua carteira pode ser usado dentro da plataforma, conforme as regras de cada funcionalidade.' },
   { q: 'Como solicitar um saque?', a: 'Pela sua carteira, informando a chave Pix. A solicitação passa por validação antes do pagamento.' },
   { q: 'Como cancelar a assinatura?', a: 'O cancelamento pode ser solicitado a qualquer momento na área do assinante, na tela de Assinatura.' },
@@ -410,7 +410,7 @@ export default function Landing() {
             </div>
 
             <p className="text-xs text-white/40 max-w-md">
-              Ganhe bonificações por indicação em até 7 níveis da sua rede. Os créditos dependem da confirmação do
+              Ganhe bonificações por indicação em até 4 níveis da sua rede. Os créditos dependem da confirmação do
               pagamento da assinatura de cada indicado. Não divulgamos dados pessoais de pessoas indicadas.
             </p>
           </div>

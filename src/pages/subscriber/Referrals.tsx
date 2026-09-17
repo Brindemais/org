@@ -81,7 +81,7 @@ export default function SubscriberReferrals() {
       <h1 className="font-display text-xl font-semibold">Indique aqui</h1>
 
       <div className="card space-y-3">
-        <p className="text-sm text-white/60">Compartilhe seu link exclusivo e ganhe 10% sobre a assinatura de quem você indicar, mais bonificação em até 7 níveis da sua rede.</p>
+        <p className="text-sm text-white/60">Compartilhe seu link exclusivo e ganhe 10% sobre a assinatura de quem você indicar, mais bonificação em até 4 níveis da sua rede.</p>
         <div className="rounded-lg bg-ink-950 border border-ink-800 px-3 py-2.5 text-xs text-gold-300 break-all">{link}</div>
         <div className="flex gap-2">
           <button onClick={copyLink} className="btn-dark flex-1 !py-2.5 text-sm gap-2"><Copy size={14} /> {copied ? 'Copiado!' : 'Copiar link'}</button>
@@ -112,9 +112,9 @@ export default function SubscriberReferrals() {
       )}
 
       <div>
-        <p className="font-semibold mb-3 flex items-center gap-1.5"><Users size={16} className="text-gold-400" /> Sua árvore de indicações (7 níveis)</p>
+        <p className="font-semibold mb-3 flex items-center gap-1.5"><Users size={16} className="text-gold-400" /> Sua árvore de indicações (4 níveis)</p>
         <div className="space-y-2">
-          {Array.from({ length: 7 }, (_, i) => i + 1).map((lvl) => {
+          {Array.from({ length: 4 }, (_, i) => i + 1).map((lvl) => {
             const people = byLevel[lvl] ?? []
             const active = people.filter((p) => p.has_active_subscription).length
             const inactive = people.length - active

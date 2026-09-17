@@ -19,7 +19,7 @@ export default function SubscriberWithdraw() {
     e.preventDefault()
     setError(null)
     const numAmount = Number(amount.replace(',', '.'))
-    if (numAmount < 100) return setError('O valor mínimo para saque é R$ 100,00.')
+    if (numAmount < 50) return setError('O valor mínimo para saque é R$ 50,00.')
     if (numAmount > available) return setError('Saldo disponível insuficiente para este saque.')
     if (!pixKey.trim()) return setError('Informe uma chave Pix válida.')
 
@@ -34,7 +34,7 @@ export default function SubscriberWithdraw() {
       const map: Record<string, string> = {
         INSUFFICIENT_BALANCE: 'Saldo insuficiente.',
         MONTHLY_LIMIT_EXCEEDED: 'Limite de R$ 1.000,00 em saques por 30 dias atingido. Tente novamente mais adiante.',
-        MINIMUM_WITHDRAWAL_100: 'O valor mínimo para saque é R$ 100,00.',
+        MINIMUM_WITHDRAWAL_50: 'O valor mínimo para saque é R$ 50,00.',
         ACCOUNT_SUSPENDED: 'Sua conta está suspensa. Fale com o suporte.',
       }
       const code = Object.keys(map).find((k) => rpcError.message.includes(k))
@@ -65,7 +65,7 @@ export default function SubscriberWithdraw() {
       <form onSubmit={handleSubmit} className="card space-y-4">
         <div>
           <label className="label">Valor do saque</label>
-          <input className="input" required inputMode="decimal" placeholder="100,00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <input className="input" required inputMode="decimal" placeholder="50,00" value={amount} onChange={(e) => setAmount(e.target.value)} />
         </div>
         <div>
           <label className="label">Chave Pix</label>
@@ -74,8 +74,8 @@ export default function SubscriberWithdraw() {
         {error && <p className="text-sm text-red-400">{error}</p>}
         <button type="submit" disabled={loading} className="btn-gold w-full">{loading ? 'Enviando...' : 'Solicitar saque'}</button>
         <p className="text-xs text-white/40 text-center">
-          Saques passam por análise manual de segurança antes do pagamento. Bonificações ficam disponíveis para saque
-          7 dias após serem creditadas, e o limite é de R$ 1.000,00 a cada 30 dias.
+          Saques passam por análise manual de segurança antes do pagamento. Bônus de assinatura ficam disponíveis na hora;
+          bônus de produto/consumo ficam disponíveis 30 dias após serem creditados. Limite de R$ 1.000,00 a cada 30 dias.
         </p>
       </form>
     </div>

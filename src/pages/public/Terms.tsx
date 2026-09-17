@@ -41,7 +41,7 @@ export default function Terms() {
 
           <section>
             <h2 className="font-display text-lg font-semibold text-ink-950 mb-2">5. Programa de indicação e bonificação</h2>
-            <p>Assinantes podem indicar novos assinantes por meio de link ou código pessoal de indicação. Bonificações são creditadas na carteira digital do indicador conforme a política vigente de percentuais por nível (até 7 níveis de profundidade) sobre o valor das assinaturas, respeitadas as regras de elegibilidade e possíveis limites antifraude.</p>
+            <p>Assinantes podem indicar novos assinantes por meio de link ou código pessoal de indicação. Bonificações são creditadas na carteira digital do indicador conforme a política vigente de percentuais por nível (até 4 níveis de profundidade) sobre o valor das assinaturas, respeitadas as regras de elegibilidade e possíveis limites antifraude.</p>
           </section>
 
           <section>

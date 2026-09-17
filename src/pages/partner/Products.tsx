@@ -8,10 +8,10 @@ import { ImageUpload } from '../../components/ui/ImageUpload'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 
-// Comissionamento da rede de consumo é sempre 1% por nível em 7 níveis
-// (ver award_referral_bonuses no banco) — 7% fixo, não configurável por
+// Comissionamento da rede de consumo é sempre 1% por nível em 4 níveis
+// (ver award_referral_bonuses no banco) — 4% fixo, não configurável por
 // produto.
-const NETWORK_COMMISSION_PCT = 7
+const NETWORK_COMMISSION_PCT = 4
 
 const emptyForm = { name: '', description: '', normal_price: '', discount_pct: '', subscriber_discount_pct: '', image_url: '' }
 
@@ -102,7 +102,7 @@ export default function PartnerProducts() {
 
         <div className="sm:col-span-2 rounded-lg bg-ink-950 border border-ink-800 p-3 space-y-1.5 text-sm">
           <div className="flex items-center justify-between"><span className="text-white/50">Valor de venda para o assinante</span><span className="font-semibold">{formatBRL(subscriberPrice)}</span></div>
-          <div className="flex items-center justify-between"><span className="text-white/50">Comissionamento rede de consumo (7 níveis, 1% cada)</span><span className="font-semibold text-gold-400">{usesPricingRule ? formatBRL(commissionValue) : '—'}</span></div>
+          <div className="flex items-center justify-between"><span className="text-white/50">Comissionamento rede de consumo (4 níveis, 1% cada)</span><span className="font-semibold text-gold-400">{usesPricingRule ? formatBRL(commissionValue) : '—'}</span></div>
           <div className="flex items-center justify-between"><span className="text-white/50">Lucro líquido Brinde Mais</span><span className={`font-semibold ${poolInvalid ? 'text-red-400' : ''}`}>{usesPricingRule ? `${netProfitPct.toFixed(2)}% · ${formatBRL(netProfitValue)}` : '—'}</span></div>
           {!usesPricingRule && <p className="text-xs text-white/30">Sem desconto Brinde Mais definido: o assinante paga o valor cheio e este brinde não gera comissão de consumo na retirada.</p>}
         </div>
