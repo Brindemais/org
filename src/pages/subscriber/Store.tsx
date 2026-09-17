@@ -20,7 +20,7 @@ export default function SubscriberStore() {
   const [category, setCategory] = useState('')
 
   useEffect(() => {
-    supabase.from('products_public').select('*').eq('store_visible', true).then(({ data }) => { setProducts((data as ProductRow[]) ?? []); setLoading(false) })
+    supabase.rpc('list_public_products').select('*').eq('store_visible', true).then(({ data }) => { setProducts((data as ProductRow[]) ?? []); setLoading(false) })
   }, [])
 
   function addToCart(id: string) {
