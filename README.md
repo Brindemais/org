@@ -43,9 +43,16 @@ para as contas reais que hoje existem em produção. Defina/redefina as senhas d
 contas de seed diretamente no painel do Supabase Auth (ou via `auth.admin` API) e
 guarde-as num gerenciador de senhas da equipe, não em arquivos versionados.
 
-## Pagamento Pix (MVP)
+## Pagamento Pix (Asaas)
 
-O gateway de pagamento Pix está marcado como *pendente de definição* na especificação de produto. Nesta primeira versão, o Pix é simulado na tela do assinante e a confirmação do pagamento é feita manualmente pela administração em `/admin/pagamentos`, seguindo exatamente o fluxo de estados (pendente → confirmado → assinatura ativa → bonificação de indicação) que será usado quando um gateway real (Mercado Pago, Efí, Asaas etc.) for integrado.
+O Pix é processado de verdade pela [Asaas](https://www.asaas.com/): a Edge Function `asaas-create-pix-charge` cria a cobrança e devolve o QR code real (chamada pelo cliente ao gerar qualquer pagamento — assinatura, taxa de anunciante); a Edge Function `asaas-webhook` recebe a confirmação da Asaas e chama `confirm_payment()`, a mesma função que a tela `/admin/pagamentos` usa pra confirmar manualmente (fica como plano B caso o webhook falhe ou atrase).
+
+Secrets necessários em *Project Settings → Edge Functions → Secrets*:
+- `ASAAS_API_KEY` — chave de API da conta Asaas (sandbox ou produção)
+- `ASAAS_ENV` — `sandbox` (padrão) ou `production`, escolhe a URL base da API
+- `ASAAS_WEBHOOK_TOKEN` — token compartilhado, também configurado no painel da Asaas em Integrações → Webhooks como "Token de autenticação"
+
+Webhook a cadastrar na Asaas: `https://<project-ref>.supabase.co/functions/v1/asaas-webhook`, eventos `PAYMENT_RECEIVED` e `PAYMENT_CONFIRMED`.
 
 ## Decisões e pendências herdadas da especificação
 
