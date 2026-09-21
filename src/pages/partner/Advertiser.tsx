@@ -6,7 +6,7 @@ import { formatBRL, formatDateTime } from '../../lib/format'
 
 const FEE_AMOUNT = 149.9
 
-interface PendingPayment { id: string; status: string; pix_code: string | null; created_at: string }
+interface PendingPayment { id: string; status: string; pix_code: string | null; pix_qr_code: string | null; created_at: string }
 
 export default function PartnerAdvertiser() {
   const { partner, profile } = useAuth()
@@ -19,7 +19,7 @@ export default function PartnerAdvertiser() {
 
   useEffect(() => {
     if (!partner) return
-    supabase.from('payments').select('id, status, pix_code, created_at').eq('partner_id', partner.id).eq('type', 'partner_fee').eq('status', 'pending')
+    supabase.from('payments').select('id, status, pix_code, pix_qr_code, created_at').eq('partner_id', partner.id).eq('type', 'partner_fee').eq('status', 'pending')
       .order('created_at', { ascending: false }).limit(1).maybeSingle()
       .then(({ data }) => setPending(data as PendingPayment | null))
     supabase.from('products').select('id', { count: 'exact', head: true }).eq('partner_id', partner.id).eq('approved', true)
@@ -32,20 +32,24 @@ export default function PartnerAdvertiser() {
     if (!partner || !profile) return
     setLoading(true)
     setError(null)
-    const fakePix = `00020126360014BR.GOV.BCB.PIX0114${partner.id.slice(0, 14)}5204000053039865406${FEE_AMOUNT.toFixed(2)}5802BR5913BRINDEMAIS6009RIOJANEIRO62070503***6304${Math.random().toString(36).slice(2, 6).toUpperCase()}`
     const { data, error: insertError } = await supabase.from('payments').insert({
       subscriber_id: profile.id,
       partner_id: partner.id,
       amount: FEE_AMOUNT,
       type: 'partner_fee',
-      pix_code: fakePix,
-    }).select('id, status, pix_code, created_at').single()
-    setLoading(false)
+    }).select('id, status, pix_code, pix_qr_code, created_at').single()
     if (insertError || !data) {
+      setLoading(false)
       setError('Não foi possível gerar o pagamento. Você precisa ter uma assinatura Brinde Mais ativa para pagar a taxa de anunciante.')
       return
     }
-    setPending(data as PendingPayment)
+    const { data: charge, error: chargeError } = await supabase.functions.invoke('asaas-create-pix-charge', { body: { payment_id: data.id } })
+    setLoading(false)
+    if (chargeError || !charge?.pix_code) {
+      setError('Não foi possível gerar o Pix. Tente novamente.')
+      return
+    }
+    setPending({ ...data, pix_code: charge.pix_code, pix_qr_code: charge.pix_qr_code ?? null } as PendingPayment)
   }
 
   if (!partner) return null
@@ -82,7 +86,12 @@ export default function PartnerAdvertiser() {
       ) : pending ? (
         <div className="card space-y-3">
           <p className="flex items-center gap-2 text-sm font-semibold"><Clock size={16} className="text-gold-400" /> Pagamento em análise</p>
-          <p className="text-xs text-white/50">Pague o Pix abaixo. A equipe Brinde Mais confirma manualmente e sua área de anunciante libera na hora.</p>
+          <p className="text-xs text-white/50">Pague o Pix abaixo. A confirmação é automática assim que a Asaas identificar o pagamento, e sua área de anunciante libera na hora.</p>
+          {pending.pix_qr_code && (
+            <div className="w-36 h-36 mx-auto rounded-xl bg-white p-2 flex items-center justify-center overflow-hidden">
+              <img src={`data:image/png;base64,${pending.pix_qr_code}`} alt="QR Code Pix" className="w-full h-full object-contain" />
+            </div>
+          )}
           <div className="rounded-lg bg-ink-950 border border-ink-800 px-3 py-2.5 text-xs text-gold-300 break-all font-mono">{pending.pix_code}</div>
           <p className="text-xs text-white/30">Solicitado em {formatDateTime(pending.created_at)}</p>
         </div>

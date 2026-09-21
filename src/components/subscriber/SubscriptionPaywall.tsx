@@ -7,7 +7,7 @@ import { PLAN_PRICES, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../
 import { LogoBadge } from '../layout/Logo'
 import type { SubscriptionPlan } from '../../lib/types'
 
-interface PendingPayment { id: string; pix_code: string | null; created_at: string; plan: SubscriptionPlan | null; amount: number }
+interface PendingPayment { id: string; pix_code: string | null; pix_qr_code: string | null; created_at: string; plan: SubscriptionPlan | null; amount: number }
 
 // Shown instead of the whole subscriber dashboard whenever the signed-in
 // account has no active, unexpired subscription — a brand-new signup that
@@ -26,7 +26,7 @@ export function SubscriptionPaywall() {
 
   useEffect(() => {
     if (!user) return
-    supabase.from('payments').select('id, pix_code, created_at, plan, amount').eq('subscriber_id', user.id).eq('type', 'subscription').eq('status', 'pending')
+    supabase.from('payments').select('id, pix_code, pix_qr_code, created_at, plan, amount').eq('subscriber_id', user.id).eq('type', 'subscription').eq('status', 'pending')
       .order('created_at', { ascending: false }).limit(1).maybeSingle()
       .then(({ data }) => setPending(data as PendingPayment | null))
   }, [user])
@@ -36,13 +36,18 @@ export function SubscriptionPaywall() {
     setLoading(true)
     setError(null)
     const amount = PLAN_PRICES[plan]
-    const fakePix = `00020126360014BR.GOV.BCB.PIX0114${user.id.slice(0, 14)}5204000053039865406${amount.toFixed(2)}5802BR5913BRINDEMAIS6009RIOJANEIRO62070503***6304${Math.random().toString(36).slice(2, 6).toUpperCase()}`
     const { data, error: insertError } = await supabase.from('payments').insert({
-      subscriber_id: user.id, amount, plan, type: 'subscription', pix_code: fakePix,
-    }).select('id, pix_code, created_at, plan, amount').single()
+      subscriber_id: user.id, amount, plan, type: 'subscription',
+    }).select('id, pix_code, pix_qr_code, created_at, plan, amount').single()
+    if (insertError || !data) {
+      setLoading(false)
+      setError('Não foi possível gerar o Pix. Tente novamente.')
+      return
+    }
+    const { data: charge, error: chargeError } = await supabase.functions.invoke('asaas-create-pix-charge', { body: { payment_id: data.id } })
     setLoading(false)
-    if (insertError || !data) { setError('Não foi possível gerar o Pix. Tente novamente.'); return }
-    setPending(data as PendingPayment)
+    if (chargeError || !charge?.pix_code) { setError('Não foi possível gerar o Pix. Tente novamente.'); return }
+    setPending({ ...data, pix_code: charge.pix_code, pix_qr_code: charge.pix_qr_code ?? null } as PendingPayment)
   }
 
   function copyPix() {
@@ -69,15 +74,19 @@ export function SubscriptionPaywall() {
                 <h1 className="font-display text-xl font-semibold text-ink-950">Pagamento via Pix</h1>
                 <p className="text-sm text-black/50 mt-1">Escaneie ou copie o código abaixo para pagar {formatBRL(pending.amount)}.</p>
               </div>
-              <div className="w-40 h-40 mx-auto rounded-xl bg-white border border-black/10 p-3 flex items-center justify-center">
-                <div className="w-full h-full bg-[repeating-linear-gradient(45deg,#111_0,#111_4px,#fff_4px,#fff_8px)] opacity-80 rounded" />
+              <div className="w-40 h-40 mx-auto rounded-xl bg-white border border-black/10 p-3 flex items-center justify-center overflow-hidden">
+                {pending.pix_qr_code ? (
+                  <img src={`data:image/png;base64,${pending.pix_qr_code}`} alt="QR Code Pix" className="w-full h-full object-contain" />
+                ) : (
+                  <div className="w-full h-full bg-[repeating-linear-gradient(45deg,#111_0,#111_4px,#fff_4px,#fff_8px)] opacity-80 rounded" />
+                )}
               </div>
               <button onClick={copyPix} className="btn-dark-light w-full !py-2.5 text-sm gap-2">
                 <Copy size={14} /> {copied ? 'Código copiado!' : 'Copiar código Pix'}
               </button>
               <div className="rounded-lg bg-black/5 border border-black/10 p-3 text-[10px] text-black/40 break-all">{pending.pix_code}</div>
               <p className="text-xs text-black/40 text-center">
-                A confirmação é manual pela equipe Brinde Mais, normalmente em poucos minutos. Seu painel libera sozinho assim que confirmar.
+                A confirmação é automática assim que a Asaas identificar o pagamento, normalmente em poucos segundos.
               </p>
               <button onClick={checkStatus} disabled={checking} className="btn-gold w-full gap-2">
                 <RefreshCw size={14} className={checking ? 'animate-spin' : ''} /> {checking ? 'Verificando...' : 'Já paguei, verificar'}

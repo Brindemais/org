@@ -45,6 +45,7 @@ export default function Signup() {
 
   const [plan, setPlan] = useState<SubscriptionPlan>('monthly')
   const [pixCode, setPixCode] = useState('')
+  const [pixQrCode, setPixQrCode] = useState('')
   const [copied, setCopied] = useState(false)
 
   async function handleStep1(e: FormEvent) {
@@ -115,17 +116,26 @@ export default function Signup() {
     if (!uid) { setLoading(false); return }
 
     const amount = PLAN_PRICES[plan]
-    const fakePix = `00020126360014BR.GOV.BCB.PIX0114${uid.slice(0, 14)}5204000053039865406${amount.toFixed(2)}5802BR5913BRINDEMAIS6009RIOJANEIRO62070503***6304${Math.random().toString(36).slice(2, 6).toUpperCase()}`
-    const { error: payErr } = await supabase.from('payments').insert({
+    const { data: payment, error: payErr } = await supabase.from('payments').insert({
       subscriber_id: uid,
       amount,
       plan,
       type: 'subscription',
-      pix_code: fakePix,
-    })
+    }).select('id').single()
+    if (payErr || !payment) {
+      setLoading(false)
+      setError('Não foi possível gerar o Pix. Tente novamente.')
+      return
+    }
+
+    const { data: charge, error: chargeError } = await supabase.functions.invoke('asaas-create-pix-charge', { body: { payment_id: payment.id } })
     setLoading(false)
-    if (payErr) { setError('Não foi possível gerar o Pix. Tente novamente.'); return }
-    setPixCode(fakePix)
+    if (chargeError || !charge?.pix_code) {
+      setError('Não foi possível gerar o Pix. Tente novamente em instantes.')
+      return
+    }
+    setPixCode(charge.pix_code)
+    setPixQrCode(charge.pix_qr_code ?? '')
     setStep(4)
   }
 
@@ -267,8 +277,12 @@ export default function Signup() {
         {step === 4 && (
           <div className="card-light space-y-5 text-center">
             <h1 className="font-display text-xl font-semibold text-ink-950">Pagamento via Pix</h1>
-            <div className="w-44 h-44 mx-auto rounded-xl bg-white border border-black/10 p-3 flex items-center justify-center">
-              <div className="w-full h-full bg-[repeating-linear-gradient(45deg,#111_0,#111_4px,#fff_4px,#fff_8px)] opacity-80 rounded" />
+            <div className="w-44 h-44 mx-auto rounded-xl bg-white border border-black/10 p-3 flex items-center justify-center overflow-hidden">
+              {pixQrCode ? (
+                <img src={`data:image/png;base64,${pixQrCode}`} alt="QR Code Pix" className="w-full h-full object-contain" />
+              ) : (
+                <div className="w-full h-full bg-[repeating-linear-gradient(45deg,#111_0,#111_4px,#fff_4px,#fff_8px)] opacity-80 rounded" />
+              )}
             </div>
             <p className="text-sm text-black/50">Escaneie o QR Code ou copie o código Pix abaixo para pagar {formatBRL(PLAN_PRICES[plan])}.</p>
             <button onClick={copyPix} className="btn-dark-light w-full !py-2.5 text-sm gap-2">
@@ -276,8 +290,8 @@ export default function Signup() {
             </button>
             <div className="rounded-lg bg-black/5 border border-black/10 p-3 text-[10px] text-black/40 break-all">{pixCode}</div>
             <p className="text-xs text-black/40">
-              A confirmação é manual pela equipe Brinde Mais, normalmente em poucos minutos. Seu painel libera sozinho
-              assim que o pagamento for confirmado — não precisa voltar aqui.
+              A confirmação é automática assim que a Asaas identificar o pagamento, normalmente em poucos segundos. Seu
+              painel libera sozinho — não precisa voltar aqui.
             </p>
             <button onClick={() => navigate('/app')} className="btn-gold w-full">Ir para o painel</button>
           </div>
