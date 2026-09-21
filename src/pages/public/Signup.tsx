@@ -48,6 +48,28 @@ export default function Signup() {
   const [pixQrCode, setPixQrCode] = useState('')
   const [copied, setCopied] = useState(false)
 
+  // complete_signup só pode ser chamada com uma sessão de verdade (ela é
+  // SECURITY DEFINER mas authenticated-only — anon não tem EXECUTE nela de
+  // propósito). Enquanto a confirmação de e-mail estiver pendente não
+  // existe sessão nenhuma ainda, então isso só pode rodar depois que
+  // verifyOtp (ou o signUp direto, quando a confirmação está desligada)
+  // efetivamente estabelecer uma.
+  async function runCompleteSignup() {
+    const { error: rpcError } = await supabase.rpc('complete_signup', {
+      p_full_name: fullName,
+      p_cpf: cpf.replace(/\D/g, ''),
+      p_birth_date: birthDate,
+      p_phone: phone.replace(/\D/g, ''),
+      p_email: email,
+      p_referral_code: referralCode || null,
+    })
+    if (rpcError) {
+      setError(rpcError.message.includes('CPF_ALREADY_REGISTERED') ? 'Este CPF já possui cadastro na Brinde Mais.' : 'Erro ao concluir cadastro: ' + rpcError.message)
+      return false
+    }
+    return true
+  }
+
   async function handleStep1(e: FormEvent) {
     e.preventDefault()
     setError(null)
@@ -62,28 +84,23 @@ export default function Signup() {
       return
     }
 
-    const { error: rpcError } = await supabase.rpc('complete_signup', {
-      p_full_name: fullName,
-      p_cpf: cpf.replace(/\D/g, ''),
-      p_birth_date: birthDate,
-      p_phone: phone.replace(/\D/g, ''),
-      p_email: email,
-      p_referral_code: referralCode || null,
-    })
-    setLoading(false)
-    if (rpcError) {
-      setError(rpcError.message.includes('CPF_ALREADY_REGISTERED') ? 'Este CPF já possui cadastro na Brinde Mais.' : 'Erro ao concluir cadastro: ' + rpcError.message)
+    // data.session só vem preenchido quando o Supabase confirma o e-mail
+    // sozinho (ou seja, "Confirm email" está desligado em Authentication
+    // settings) — nesse caso já existe sessão válida, então dá pra
+    // concluir o cadastro agora e pular direto pra escolha de assinatura.
+    // Com a confirmação ativada, data.session vem null até o código ser
+    // verificado — concluir o cadastro aqui seria chamar a RPC sem sessão
+    // nenhuma (como anon, sem permissão nela de propósito), então só
+    // avança pro passo do código e deixa complete_signup pra depois dele.
+    if (data.session) {
+      const ok = await runCompleteSignup()
+      setLoading(false)
+      if (!ok) return
+      setStep(3)
       return
     }
-
-    // data.session já vem preenchido quando o Supabase confirma o e-mail
-    // sozinho (ou seja, "Confirm email" está desligado em Authentication
-    // settings) — pula direto pra escolha de assinatura em vez de travar
-    // numa tela pedindo um código que nunca foi enviado. No dia em que
-    // "Confirm email" for ativado no painel do Supabase, signUp passa a
-    // devolver session: null e este mesmo código passa a pedir o código
-    // automaticamente, sem precisar mexer em nada.
-    setStep(data.session ? 3 : 2)
+    setLoading(false)
+    setStep(2)
   }
 
   async function handleVerifyCode(e: FormEvent) {
@@ -91,11 +108,14 @@ export default function Signup() {
     setError(null)
     setLoading(true)
     const { error: verifyError } = await supabase.auth.verifyOtp({ email, token: code.trim(), type: 'signup' })
-    setLoading(false)
     if (verifyError) {
+      setLoading(false)
       setError('Código incorreto ou expirado. Confira o e-mail ou peça um novo código.')
       return
     }
+    const ok = await runCompleteSignup()
+    setLoading(false)
+    if (!ok) return
     setStep(3)
   }
 
