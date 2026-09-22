@@ -47,6 +47,16 @@ export function maskCEP(v: string): string {
   return digits.replace(/(\d{5})(\d)/, '$1-$2')
 }
 
+export function maskCardNumber(v: string): string {
+  const digits = v.replace(/\D/g, '').slice(0, 16)
+  return digits.replace(/(\d{4})(?=\d)/g, '$1 ')
+}
+
+export function maskCardExpiry(v: string): string {
+  const digits = v.replace(/\D/g, '').slice(0, 4)
+  return digits.replace(/(\d{2})(\d)/, '$1/$2')
+}
+
 export function initials(name: string | null | undefined): string {
   if (!name) return '?'
   return name.trim().split(/\s+/).slice(0, 2).map((n) => n[0]).join('').toUpperCase()

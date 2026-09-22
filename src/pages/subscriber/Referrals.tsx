@@ -37,6 +37,7 @@ export default function SubscriberReferrals() {
       .from('bonuses')
       .select('level, amount')
       .eq('beneficiary_id', profile.id)
+      .eq('status', 'confirmed')
       .then(({ data }) => {
         const totals: Record<number, number> = {}
         for (const b of data ?? []) totals[b.level] = (totals[b.level] ?? 0) + Number(b.amount)

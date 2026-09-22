@@ -75,7 +75,7 @@ export default function SubscriberHome() {
     if (!profile) return
     supabase.from('referrals').select('id', { count: 'exact', head: true }).eq('referrer_id', profile.id)
       .then(({ count }) => setReferralCount(count ?? 0))
-    supabase.from('bonuses').select('amount').eq('beneficiary_id', profile.id)
+    supabase.from('bonuses').select('amount').eq('beneficiary_id', profile.id).eq('status', 'confirmed')
       .then(({ data }) => setReferralEarned((data ?? []).reduce((s, b: any) => s + Number(b.amount), 0)))
   }, [profile])
 
