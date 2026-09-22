@@ -36,9 +36,25 @@ export function SubscriptionPaywall() {
 
   useEffect(() => {
     if (!user) return
-    supabase.from('payments').select('id, pix_code, pix_qr_code, created_at, plan, amount').eq('subscriber_id', user.id).eq('type', 'subscription').eq('status', 'pending')
+    supabase.from('payments').select('id, pix_code, pix_qr_code, created_at, plan, amount')
+      .eq('subscriber_id', user.id).eq('type', 'subscription').eq('status', 'pending').eq('payment_method', 'pix')
       .order('created_at', { ascending: false }).limit(1).maybeSingle()
-      .then(({ data }) => setPending(data as PendingPayment | null))
+      .then(async ({ data }) => {
+        if (!data) return
+        // Um Pix criado numa sessão anterior pode ter ficado sem código
+        // (ex.: a Edge Function falhou por chave da Asaas inválida na
+        // hora) — em vez de mostrar a tela vazia pra sempre, tenta gerar
+        // de novo. asaas-create-pix-charge é idempotente: se já existir
+        // um código, só devolve ele.
+        if (!data.pix_code) {
+          const { data: charge } = await supabase.functions.invoke('asaas-create-pix-charge', { body: { payment_id: data.id } })
+          if (charge?.pix_code) {
+            setPending({ ...data, pix_code: charge.pix_code, pix_qr_code: charge.pix_qr_code ?? null } as PendingPayment)
+            return
+          }
+        }
+        setPending(data as PendingPayment | null)
+      })
   }, [user])
 
   async function activate() {
