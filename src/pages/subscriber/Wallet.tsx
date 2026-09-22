@@ -30,7 +30,7 @@ export default function SubscriberWallet() {
 
   useEffect(() => {
     if (!profile) return
-    supabase.from('bonuses').select('amount').eq('beneficiary_id', profile.id)
+    supabase.from('bonuses').select('amount').eq('beneficiary_id', profile.id).eq('status', 'confirmed')
       .then(({ data }) => setReferralEarned((data ?? []).reduce((s, b: any) => s + Number(b.amount), 0)))
   }, [profile])
 

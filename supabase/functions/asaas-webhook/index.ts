@@ -19,6 +19,13 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // since that's what card charges use and costs nothing to also accept.
 const CONFIRMING_EVENTS = new Set(["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED"]);
 
+// Cartão pode ser contestado/estornado depois de já ter liberado acesso —
+// CHARGEBACK_REQUESTED já corta o acesso no primeiro sinal de disputa
+// (controle de risco), sem esperar a Asaas fechar o caso. REFUNDED cobre
+// tanto um estorno de cartão que a Asaas decidiu a favor do titular quanto
+// um reembolso manual feito direto no painel da Asaas.
+const CHARGEBACK_EVENTS = new Set(["PAYMENT_CHARGEBACK_REQUESTED", "PAYMENT_CHARGEBACK_DISPUTE", "PAYMENT_REFUNDED"]);
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
@@ -38,9 +45,11 @@ Deno.serve(async (req) => {
   const asaasPaymentId = body.payment?.id;
   if (!event || !asaasPaymentId) return new Response("Missing event/payment.id", { status: 400 });
 
-  // Ack anything we don't act on (status updates, PIX refunds, etc.) so
-  // Asaas doesn't keep retrying a webhook we were never going to use.
-  if (!CONFIRMING_EVENTS.has(event)) return new Response("Ignored", { status: 200 });
+  // Ack anything we don't act on (status updates, boleto generated, etc.)
+  // so Asaas doesn't keep retrying a webhook we were never going to use.
+  if (!CONFIRMING_EVENTS.has(event) && !CHARGEBACK_EVENTS.has(event)) {
+    return new Response("Ignored", { status: 200 });
+  }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
@@ -55,6 +64,15 @@ Deno.serve(async (req) => {
     // make a matching row appear.
     console.warn("asaas-webhook: no local payment for", asaasPaymentId);
     return new Response("No matching payment", { status: 200 });
+  }
+
+  if (CHARGEBACK_EVENTS.has(event)) {
+    const { error } = await admin.rpc("mark_payment_chargeback", { p_payment_id: payment.id });
+    if (error) {
+      console.error("asaas-webhook: mark_payment_chargeback failed", error);
+      return new Response("Failed to process chargeback", { status: 500 });
+    }
+    return new Response("OK", { status: 200 });
   }
 
   if (payment.status !== "pending") {
