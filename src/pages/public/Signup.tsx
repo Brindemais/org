@@ -421,6 +421,9 @@ export default function Signup() {
               painel libera sozinho — não precisa voltar aqui.
             </p>
             <button onClick={() => navigate('/app')} className="btn-gold w-full">Ir para o painel</button>
+            <button type="button" onClick={() => setStep(3)} className="text-xs text-black/40 w-full text-center">
+              Voltar e escolher outro plano
+            </button>
           </div>
         )}
       </div>

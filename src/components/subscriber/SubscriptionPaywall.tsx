@@ -134,6 +134,9 @@ export function SubscriptionPaywall() {
               <button onClick={checkStatus} disabled={checking} className="btn-gold w-full gap-2">
                 <RefreshCw size={14} className={checking ? 'animate-spin' : ''} /> {checking ? 'Verificando...' : 'Já paguei, verificar'}
               </button>
+              <button onClick={() => setPending(null)} className="text-xs text-black/40 w-full text-center pt-1">
+                Voltar e escolher outro plano
+              </button>
             </>
           ) : (
             <>
