@@ -71,11 +71,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    // RequireRole treats "user but no profile yet" as logged-out and bounces
+    // back to the login screen — fine right after a hard reload (loading
+    // above covers it), but a login itself fires this listener too, and its
+    // loadProfile() is a separate in-flight fetch loading never tracked.
+    // Without gating on it here, the freshly-authenticated user could render
+    // through RequireRole with profile still null and get bounced straight
+    // back to the form they just submitted, no error, session already valid
+    // underneath — they'd just see their own login page again and re-enter
+    // everything, thinking nothing happened.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession)
       setUser(newSession?.user ?? null)
       if (newSession?.user) {
-        loadProfile(newSession.user.id)
+        // Only SIGNED_IN needs the gate — TOKEN_REFRESHED fires routinely
+        // in the background on an already-open session (hourly, or on tab
+        // refocus) and would otherwise flash the full-screen spinner over
+        // whatever the person is doing every time it does.
+        if (event === 'SIGNED_IN') {
+          setLoading(true)
+          loadProfile(newSession.user.id).finally(() => setLoading(false))
+        } else {
+          loadProfile(newSession.user.id)
+        }
       } else {
         setProfile(null)
         setPartner(null)
