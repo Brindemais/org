@@ -4,9 +4,11 @@ import type { SubscriptionPlan } from './types'
 // `validate_subscription_payment` trigger (0020_subscription_plans.sql) —
 // that trigger is the real source of truth; this is only for display and
 // for building the Pix payment the client submits.
+// TEMPORÁRIO — teste real em produção com valor de R$ 1. Reverter pros
+// valores reais (monthly: 149.9, annual: 1439.04) depois do teste.
 export const PLAN_PRICES: Record<SubscriptionPlan, number> = {
-  monthly: 149.9,
-  annual: 1439.04,
+  monthly: 1,
+  annual: 1,
 }
 
 export const PLAN_LABELS: Record<SubscriptionPlan, string> = {
