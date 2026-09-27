@@ -4,12 +4,9 @@ import type { SubscriptionPlan } from './types'
 // `validate_subscription_payment` trigger (0020_subscription_plans.sql) —
 // that trigger is the real source of truth; this is only for display and
 // for building the Pix payment the client submits.
-// TEMPORÁRIO — teste real em produção. R$ 1 é rejeitado pela Asaas (valor
-// mínimo de cobrança é R$ 5,00), por isso R$ 5. Reverter pros valores
-// reais (monthly: 149.9, annual: 1439.04) depois do teste.
 export const PLAN_PRICES: Record<SubscriptionPlan, number> = {
-  monthly: 5,
-  annual: 5,
+  monthly: 149.9,
+  annual: 1439.04,
 }
 
 export const PLAN_LABELS: Record<SubscriptionPlan, string> = {
