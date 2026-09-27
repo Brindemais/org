@@ -237,7 +237,7 @@ export default function Landing() {
       {/* ============ 4.4 BENEFÍCIOS PRINCIPAIS ============ */}
       <section id="beneficios" className="border-t border-black/10 py-16 bg-surface-subtle">
         <ResponsiveContainer>
-          <SectionTitle eyebrow="A comunidade completa" title="Benefícios principais" description="Uma comunidade nacional de consumo inteligente: economia, fidelização e recompensas em toda a rede de parceiros." />
+          <SectionTitle eyebrow="Tudo incluso na assinatura" title="Benefícios principais" description="Descontos, cashback, indicação e muito mais — sem letra miúda." />
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {BENEFITS.map((b, i) => (
               <BenefitCard key={b.title} {...b} delay={i * 60} onLearnMore={goToSignup} />
@@ -268,12 +268,11 @@ export default function Landing() {
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-gold-600 mb-2">Não é só um copo</p>
             <h3 className="font-display text-2xl font-semibold text-ink-950 mb-4">
-              Uma comunidade completa de consumo inteligente, economia e recompensas
+              O brinde é só o começo
             </h3>
             <p className="text-black/55 leading-relaxed mb-4">
               O primeiro brinde é uma taça temática personalizada, mas a assinatura Brinde Mais vai muito além: descontos
-              exclusivos, cashback, bonificações por indicação e por consumo na rede, carteira interna e acesso a uma
-              comunidade nacional de consumo inteligente.
+              exclusivos, cashback, bonificações por indicação e por consumo na rede, e uma carteira interna pra acompanhar tudo.
             </p>
             <ul className="space-y-2 text-sm text-black/65">
               {['O modelo do brinde pode variar de acordo com o parceiro escolhido', 'Retirada disponível apenas em pontos com estoque', 'Novos brindes e parceiros são adicionados ao longo do tempo'].map((t) => (
@@ -511,25 +510,12 @@ export default function Landing() {
               <div className="flex items-center gap-3 mb-4">
                 <Logo size="sm" />
               </div>
-              <h3 className="font-display text-xl sm:text-2xl font-semibold mb-5 max-w-md">
-                Faça parte da maior comunidade de consumo inteligente do Brasil.
+              <h3 className="font-display text-xl sm:text-2xl font-semibold mb-3 max-w-md">
+                Pronto pra economizar de verdade?
               </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                {[
-                  { icon: Percent, label: 'Descontos exclusivos' },
-                  { icon: Wallet, label: 'Cashback e créditos' },
-                  { icon: Users2, label: 'Indique e ganhe mais benefícios' },
-                  { icon: MapPin, label: 'Parceiros próximos' },
-                  { icon: History, label: 'Carteira interna' },
-                ].map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex flex-col items-start gap-2">
-                    <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
-                      <Icon size={16} className="text-gold-400" />
-                    </div>
-                    <p className="text-xs text-white/60 leading-snug">{label}</p>
-                  </div>
-                ))}
-              </div>
+              <p className="text-white/60 text-sm max-w-sm">
+                Cadastro em poucos minutos, ativação via Pix e acesso liberado na hora.
+              </p>
             </div>
             <div className="w-full lg:w-auto shrink-0 bg-white/5 border border-white/10 rounded-xl2 p-6 text-center">
               <p className="text-xs text-white/50 mb-1">Assine agora a partir de</p>
@@ -557,8 +543,8 @@ export default function Landing() {
           <div className="lg:col-span-2">
             <Logo size="sm" />
             <p className="text-white/40 mt-3 text-xs leading-relaxed max-w-xs">
-              Mais amigos, mais benefícios, mais motivos para brindar. Comunidade de consumo inteligente que conecta
-              consumidores e estabelecimentos parceiros.
+              Mais amigos, mais benefícios, mais motivos para brindar. Conectamos assinantes e estabelecimentos parceiros
+              em toda a rede.
             </p>
             <div className="flex gap-3 text-white/50 mt-4">
               <a href="#" aria-label="Instagram" className="hover:text-gold-400"><Instagram size={18} /></a>
