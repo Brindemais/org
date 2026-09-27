@@ -84,7 +84,7 @@ export default function AdminManualActivation() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="font-display text-2xl font-semibold flex items-center gap-2"><KeyRound size={22} className="text-gold-400" /> Ativação manual</h1>
-        <p className="text-white/50 text-sm">Ative assinatura de assinante ou status de anunciante de parceiro sem passar pela Asaas — sempre com um motivo registrado.</p>
+        <p className="text-white/50 text-sm">Ative assinatura de assinante ou status de anunciante de parceiro sem passar pela Asaas, sempre com um motivo registrado.</p>
       </div>
 
       <form onSubmit={runSearch} className="card space-y-3">

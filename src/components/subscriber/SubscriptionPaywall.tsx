@@ -158,7 +158,7 @@ export function SubscriptionPaywall() {
             <>
               <div className="text-center">
                 <h1 className="font-display text-xl font-semibold text-ink-950">Ative sua assinatura</h1>
-                <p className="text-sm text-black/50 mt-1">Sua conta já existe — falta só escolher o plano e pagar para liberar o painel.</p>
+                <p className="text-sm text-black/50 mt-1">Sua conta já existe, falta só escolher o plano e pagar para liberar o painel.</p>
               </div>
               <div className="grid grid-cols-1 gap-3">
                 <button
