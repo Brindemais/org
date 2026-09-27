@@ -13,6 +13,11 @@ const ASAAS_API_KEY = Deno.env.get("ASAAS_API_KEY")!;
 const ASAAS_ENV = Deno.env.get("ASAAS_ENV") ?? "sandbox";
 const ASAAS_BASE = ASAAS_ENV === "production" ? "https://api.asaas.com/v3" : "https://api-sandbox.asaas.com/v3";
 
+// Sandbox e produção são contas Asaas separadas — customer_id e token de
+// cartão de uma não valem nada na outra (ver migração 0039/0040).
+const CUSTOMER_ID_COLUMN = ASAAS_ENV === "production" ? "asaas_customer_id_production" : "asaas_customer_id_sandbox";
+const CARD_TOKEN_COLUMN = ASAAS_ENV === "production" ? "asaas_card_token_production" : "asaas_card_token_sandbox";
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -78,12 +83,12 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await admin
       .from("profiles")
-      .select("id, full_name, cpf, email, phone, cep, asaas_customer_id")
+      .select(`id, full_name, cpf, email, phone, cep, ${CUSTOMER_ID_COLUMN}`)
       .eq("id", payment.subscriber_id)
       .maybeSingle();
     if (!profile) return json({ error: "PROFILE_NOT_FOUND" }, 404);
 
-    let customerId = profile.asaas_customer_id as string | null;
+    let customerId = (profile as Record<string, string | null>)[CUSTOMER_ID_COLUMN];
     if (!customerId) {
       const customer = await asaasFetch("/customers", {
         method: "POST",
@@ -96,7 +101,7 @@ Deno.serve(async (req) => {
         }),
       });
       customerId = customer.id;
-      await admin.from("profiles").update({ asaas_customer_id: customerId }).eq("id", profile.id);
+      await admin.from("profiles").update({ [CUSTOMER_ID_COLUMN]: customerId }).eq("id", profile.id);
     }
 
     let tokenized;
@@ -127,7 +132,7 @@ Deno.serve(async (req) => {
     }
 
     await admin.from("profiles").update({
-      asaas_card_token: tokenized.creditCardToken,
+      [CARD_TOKEN_COLUMN]: tokenized.creditCardToken,
       asaas_card_last4: tokenized.creditCardNumber,
       asaas_card_brand: tokenized.creditCardBrand,
     }).eq("id", profile.id);

@@ -12,6 +12,13 @@ const ASAAS_API_KEY = Deno.env.get("ASAAS_API_KEY")!;
 const ASAAS_ENV = Deno.env.get("ASAAS_ENV") ?? "sandbox";
 const ASAAS_BASE = ASAAS_ENV === "production" ? "https://api.asaas.com/v3" : "https://api-sandbox.asaas.com/v3";
 
+// Sandbox e produção são contas Asaas completamente separadas — um
+// customer_id de uma não existe na outra. Guardado em coluna própria por
+// ambiente pra nunca reenviar um ID de sandbox pra API de produção (ou
+// vice-versa) só porque ASAAS_ENV mudou depois que a pessoa já tinha
+// testado no outro ambiente.
+const CUSTOMER_ID_COLUMN = ASAAS_ENV === "production" ? "asaas_customer_id_production" : "asaas_customer_id_sandbox";
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -72,12 +79,12 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await admin
       .from("profiles")
-      .select("id, full_name, cpf, email, phone, asaas_customer_id")
+      .select(`id, full_name, cpf, email, phone, ${CUSTOMER_ID_COLUMN}`)
       .eq("id", payment.subscriber_id)
       .maybeSingle();
     if (!profile) return json({ error: "PROFILE_NOT_FOUND" }, 404);
 
-    let customerId = profile.asaas_customer_id as string | null;
+    let customerId = (profile as Record<string, string | null>)[CUSTOMER_ID_COLUMN];
     if (!customerId) {
       const customer = await asaasFetch("/customers", {
         method: "POST",
@@ -90,7 +97,7 @@ Deno.serve(async (req) => {
         }),
       });
       customerId = customer.id;
-      await admin.from("profiles").update({ asaas_customer_id: customerId }).eq("id", profile.id);
+      await admin.from("profiles").update({ [CUSTOMER_ID_COLUMN]: customerId }).eq("id", profile.id);
     }
 
     const dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
