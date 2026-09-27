@@ -42,13 +42,34 @@ const STEPS = [
 ]
 
 const BENEFITS = [
-  { icon: Gift, title: 'Brinde mensal', description: 'Todo mês, um brinde à sua escolha em um parceiro com estoque disponível.' },
-  { icon: Percent, title: 'Descontos exclusivos', description: 'Vantagens em bares, restaurantes, adegas e distribuidoras parceiras.' },
-  { icon: Wallet, title: 'Cashback e créditos', description: 'Parte do seu consumo na rede volta para você em créditos.' },
-  { icon: ShieldCheck, title: 'Promoções especiais', description: 'Ofertas por tempo limitado só para assinantes ativos.' },
-  { icon: Users2, title: 'Indique e ganhe', description: 'Bonificações por indicação em até 4 níveis da sua rede.' },
-  { icon: MapPin, title: 'Parceiros próximos', description: 'Encontre estabelecimentos por cidade, bairro ou distância.' },
-  { icon: History, title: 'Carteira e extrato', description: 'Acompanhe saldo, origem dos créditos e solicite saques.' },
+  {
+    icon: Gift, title: 'Brinde mensal', description: 'Todo mês, um brinde à sua escolha em um parceiro com estoque disponível.',
+    details: 'Com a assinatura ativa, você escolhe um parceiro próximo que tenha estoque disponível e retira seu brinde do mês dentro do prazo do ciclo. O modelo do brinde pode variar conforme o parceiro escolhido, e novos brindes são adicionados com o tempo.',
+  },
+  {
+    icon: Percent, title: 'Descontos exclusivos', description: 'Vantagens em bares, restaurantes, adegas e distribuidoras parceiras.',
+    details: 'Assinantes ativos pagam preços diferenciados em toda a rede de parceiros participantes — bares, restaurantes, adegas e distribuidoras. Os descontos variam por estabelecimento e ficam visíveis na página de cada parceiro.',
+  },
+  {
+    icon: Wallet, title: 'Cashback e créditos', description: 'Parte do seu consumo na rede volta para você em créditos.',
+    details: 'Uma parte do valor de determinadas transações na rede é convertida em crédito, depositado direto na sua carteira digital. O saldo pode ser acompanhado a qualquer momento e sacado via chave Pix, seguindo as regras de saque da plataforma.',
+  },
+  {
+    icon: ShieldCheck, title: 'Promoções especiais', description: 'Ofertas por tempo limitado só para assinantes ativos.',
+    details: 'Parceiros publicam promoções com prazo de validade e condições próprias, visíveis apenas para quem está com a assinatura em dia. Novas ofertas aparecem com frequência na seção de promoções.',
+  },
+  {
+    icon: Users2, title: 'Indique e ganhe', description: 'Bonificações por indicação em até 4 níveis da sua rede.',
+    details: 'Compartilhe seu link exclusivo: quando uma pessoa indicada assina e o pagamento é confirmado, você recebe bonificação — e a rede se estende até 4 níveis de profundidade a partir de você, cada nível com seu próprio percentual.',
+  },
+  {
+    icon: MapPin, title: 'Parceiros próximos', description: 'Encontre estabelecimentos por cidade, bairro ou distância.',
+    details: 'Busque parceiros por cidade, bairro ou nome direto na plataforma e veja quais têm estoque disponível para retirada agora, sem precisar sair perguntando de estabelecimento em estabelecimento.',
+  },
+  {
+    icon: History, title: 'Carteira e extrato', description: 'Acompanhe saldo, origem dos créditos e solicite saques.',
+    details: 'Todo crédito — cashback, bonificação por indicação ou por consumo na rede — fica registrado no seu extrato, com a origem de cada valor. Saques são solicitados pela própria carteira, informando sua chave Pix.',
+  },
 ]
 
 const FAQ = [
@@ -240,7 +261,7 @@ export default function Landing() {
           <SectionTitle eyebrow="Tudo incluso na assinatura" title="Benefícios principais" description="Descontos, cashback, indicação e muito mais — sem letra miúda." />
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {BENEFITS.map((b, i) => (
-              <BenefitCard key={b.title} {...b} delay={i * 60} onLearnMore={goToSignup} />
+              <BenefitCard key={b.title} {...b} delay={i * 60} />
             ))}
           </div>
         </ResponsiveContainer>
