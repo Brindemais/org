@@ -56,7 +56,7 @@ export default function AdminPayments() {
         <table className="w-full text-sm min-w-[720px]">
           <thead>
             <tr className="text-left text-white/40 text-xs uppercase">
-              <th className="pb-3">Assinante</th><th className="pb-3">Tipo</th><th className="pb-3">Valor</th><th className="pb-3">Status</th><th className="pb-3">Data</th><th className="pb-3">Ação</th>
+              <th className="pb-3">Assinante</th><th className="pb-3">Tipo</th><th className="pb-3">Valor</th><th className="pb-3">Origem</th><th className="pb-3">Status</th><th className="pb-3">Data</th><th className="pb-3">Ação</th>
             </tr>
           </thead>
           <tbody>
@@ -71,6 +71,16 @@ export default function AdminPayments() {
                   {p.type === 'subscription' && p.plan && <span className="text-white/30"> · {p.plan === 'annual' ? 'anual' : 'mensal'}</span>}
                 </td>
                 <td className="py-3 font-semibold">{formatBRL(p.amount)}</td>
+                <td className="py-3">
+                  {p.payment_method === 'manual' ? (
+                    <span className="pill bg-amber-500/15 text-amber-400">Manual</span>
+                  ) : p.payment_method === 'credit_card' ? (
+                    <span className="text-white/50 text-xs">Cartão</span>
+                  ) : (
+                    <span className="text-white/50 text-xs">Pix</span>
+                  )}
+                  {p.notes && <p className="text-[11px] text-white/30 mt-1 max-w-[200px]">{p.notes}</p>}
+                </td>
                 <td className="py-3"><StatusBadge status={p.status} /></td>
                 <td className="py-3 text-white/50">{formatDateTime(p.created_at)}</td>
                 <td className="py-3">
@@ -84,7 +94,7 @@ export default function AdminPayments() {
                 </td>
               </tr>
             ))}
-            {!payments.length && <tr><td colSpan={6}><EmptyState dark icon={Receipt} title="Nenhum pagamento encontrado" className="py-8" /></td></tr>}
+            {!payments.length && <tr><td colSpan={7}><EmptyState dark icon={Receipt} title="Nenhum pagamento encontrado" className="py-8" /></td></tr>}
           </tbody>
         </table>
       </div>
