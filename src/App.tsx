@@ -50,6 +50,7 @@ const PartnerProfile = lazy(() => import('./pages/partner/Profile'))
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
 const AdminSubscribers = lazy(() => import('./pages/admin/Subscribers'))
+const AdminManualActivation = lazy(() => import('./pages/admin/ManualActivation'))
 const AdminReferrals = lazy(() => import('./pages/admin/Referrals'))
 const AdminPartners = lazy(() => import('./pages/admin/Partners'))
 const AdminPayments = lazy(() => import('./pages/admin/Payments'))
@@ -138,6 +139,7 @@ export default function App() {
         >
           <Route index element={<AdminDashboard />} />
           <Route path="assinantes" element={<AdminSubscribers />} />
+          <Route path="ativacao-manual" element={<AdminManualActivation />} />
           <Route path="indicacoes" element={<AdminReferrals />} />
           <Route path="parceiros" element={<AdminPartners />} />
           <Route path="pagamentos" element={<AdminPayments />} />
