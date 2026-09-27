@@ -172,7 +172,7 @@ export default function Landing() {
           <div className="relative mt-4 lg:mt-0">
             <img
               src="/images/hero-glass-wallet.webp"
-              alt="Taça de cerveja Brinde Mais sobre base dourada, ao lado de um cartão com o saldo disponível"
+              alt="Carteira digital Brinde Mais com saldo disponível, ao lado do brinde do mês"
               width={1100}
               height={733}
               loading="eager"
@@ -237,7 +237,7 @@ export default function Landing() {
       {/* ============ 4.4 BENEFÍCIOS PRINCIPAIS ============ */}
       <section id="beneficios" className="border-t border-black/10 py-16 bg-surface-subtle">
         <ResponsiveContainer>
-          <SectionTitle eyebrow="A comunidade completa" title="Benefícios principais" description="O copo faz parte de uma comunidade completa de consumo inteligente, economia, fidelização e recompensas." />
+          <SectionTitle eyebrow="A comunidade completa" title="Benefícios principais" description="Uma comunidade nacional de consumo inteligente: economia, fidelização e recompensas em toda a rede de parceiros." />
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {BENEFITS.map((b, i) => (
               <BenefitCard key={b.title} {...b} delay={i * 60} onLearnMore={goToSignup} />
