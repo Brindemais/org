@@ -6,7 +6,6 @@ import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { downloadCSV } from '../../lib/csv'
-import type { SubscriptionPlan } from '../../lib/types'
 
 interface Row { id: string; full_name: string; cpf: string | null; email: string | null; created_at: string; sub_status: string | null; sub_expires_at: string | null; balance: number; active: boolean }
 
@@ -15,10 +14,6 @@ export default function AdminSubscribers() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
-  const [activating, setActivating] = useState<string | null>(null)
-  const [activatePlan, setActivatePlan] = useState<SubscriptionPlan>('monthly')
-  const [activateNote, setActivateNote] = useState('')
-  const [activateError, setActivateError] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
@@ -43,32 +38,6 @@ export default function AdminSubscribers() {
     setBusy(null)
     if (error) return
     setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, active: !x.active } : x)))
-  }
-
-  function openActivate(id: string) {
-    setActivating(id)
-    setActivatePlan('monthly')
-    setActivateNote('')
-    setActivateError(null)
-  }
-
-  async function confirmActivate(id: string) {
-    if (!activateNote.trim()) {
-      setActivateError('Descreva o motivo (ex.: pagamento combinado por WhatsApp, cortesia, migração).')
-      return
-    }
-    setBusy(id)
-    setActivateError(null)
-    const { error } = await supabase.rpc('admin_activate_subscription_manually', {
-      p_subscriber_id: id, p_plan: activatePlan, p_note: activateNote.trim(),
-    })
-    setBusy(null)
-    if (error) {
-      setActivateError('Não foi possível ativar. Tente novamente.')
-      return
-    }
-    setActivating(null)
-    load()
   }
 
   function isExpired(r: Row) {
@@ -132,47 +101,13 @@ export default function AdminSubscribers() {
                 <td className="py-3">
                   <span className={`pill ${r.active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>{r.active ? 'Ativa' : 'Suspensa'}</span>
                 </td>
-                <td className="py-3 flex gap-2">
+                <td className="py-3">
                   <button onClick={() => toggleActive(r)} disabled={busy === r.id} className="btn-ghost !py-1.5 !px-3 text-xs">
                     {busy === r.id ? '...' : r.active ? 'Suspender' : 'Reativar'}
-                  </button>
-                  <button onClick={() => openActivate(r.id)} className="btn-ghost !py-1.5 !px-3 text-xs">
-                    Ativar assinatura
                   </button>
                 </td>
               </tr>
             ))}
-            {activating && filtered.some((r) => r.id === activating) && (
-              <tr className="border-t border-ink-800 bg-ink-900/50">
-                <td colSpan={8} className="py-4">
-                  <div className="flex flex-wrap items-start gap-3 max-w-2xl">
-                    <div>
-                      <label className="text-xs text-white/40 block mb-1">Plano</label>
-                      <select className="input !py-2 !w-32" value={activatePlan} onChange={(e) => setActivatePlan(e.target.value as SubscriptionPlan)}>
-                        <option value="monthly">Mensal</option>
-                        <option value="annual">Anual</option>
-                      </select>
-                    </div>
-                    <div className="flex-1 min-w-[220px]">
-                      <label className="text-xs text-white/40 block mb-1">Motivo (aparece marcado como manual nos pagamentos)</label>
-                      <input
-                        className="input !py-2 w-full"
-                        placeholder="Ex.: pagamento combinado por WhatsApp"
-                        value={activateNote}
-                        onChange={(e) => setActivateNote(e.target.value)}
-                      />
-                    </div>
-                    <div className="flex gap-2 pt-5">
-                      <button onClick={() => confirmActivate(activating)} disabled={busy === activating} className="btn-gold !py-2 !px-3 text-xs">
-                        {busy === activating ? 'Ativando...' : 'Confirmar ativação'}
-                      </button>
-                      <button onClick={() => setActivating(null)} className="btn-ghost !py-2 !px-3 text-xs">Cancelar</button>
-                    </div>
-                  </div>
-                  {activateError && <p className="text-xs text-red-400 mt-2">{activateError}</p>}
-                </td>
-              </tr>
-            )}
             {loading && <tr><td colSpan={8}><LoadingState dark label="Carregando assinantes..." className="py-8" /></td></tr>}
             {!loading && !filtered.length && <tr><td colSpan={8}><EmptyState dark icon={Users} title="Nenhum assinante encontrado" className="py-8" /></td></tr>}
           </tbody>
