@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { fetchOwnRole } from '../../lib/auth'
 import { LogoBadge } from '../../components/layout/Logo'
@@ -46,7 +47,10 @@ export default function AdminLogin() {
               <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@brindemais.com.br" />
             </div>
             <div>
-              <label className="label">Senha</label>
+              <div className="flex items-center justify-between">
+                <label className="label">Senha</label>
+                <Link to="/esqueci-senha" className="text-xs text-gold-400 font-medium">Esqueci minha senha</Link>
+              </div>
               <input className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
             </div>
             {error && <p className="text-sm text-red-400">{error}</p>}
