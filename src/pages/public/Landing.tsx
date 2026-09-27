@@ -48,7 +48,7 @@ const BENEFITS = [
   },
   {
     icon: Percent, title: 'Descontos exclusivos', description: 'Vantagens em bares, restaurantes, adegas e distribuidoras parceiras.',
-    details: 'Assinantes ativos pagam preços diferenciados em toda a rede de parceiros participantes — bares, restaurantes, adegas e distribuidoras. Os descontos variam por estabelecimento e ficam visíveis na página de cada parceiro.',
+    details: 'Assinantes ativos pagam preços diferenciados em toda a rede de parceiros participantes: bares, restaurantes, adegas e distribuidoras. Os descontos variam por estabelecimento e ficam visíveis na página de cada parceiro.',
   },
   {
     icon: Wallet, title: 'Cashback e créditos', description: 'Parte do seu consumo na rede volta para você em créditos.',
@@ -60,7 +60,7 @@ const BENEFITS = [
   },
   {
     icon: Users2, title: 'Indique e ganhe', description: 'Bonificações por indicação em até 4 níveis da sua rede.',
-    details: 'Compartilhe seu link exclusivo: quando uma pessoa indicada assina e o pagamento é confirmado, você recebe bonificação — e a rede se estende até 4 níveis de profundidade a partir de você, cada nível com seu próprio percentual.',
+    details: 'Compartilhe seu link exclusivo: quando uma pessoa indicada assina e o pagamento é confirmado, você recebe bonificação, e a rede se estende até 4 níveis de profundidade a partir de você, cada nível com seu próprio percentual.',
   },
   {
     icon: MapPin, title: 'Parceiros próximos', description: 'Encontre estabelecimentos por cidade, bairro ou distância.',
@@ -68,7 +68,7 @@ const BENEFITS = [
   },
   {
     icon: History, title: 'Carteira e extrato', description: 'Acompanhe saldo, origem dos créditos e solicite saques.',
-    details: 'Todo crédito — cashback, bonificação por indicação ou por consumo na rede — fica registrado no seu extrato, com a origem de cada valor. Saques são solicitados pela própria carteira, informando sua chave Pix.',
+    details: 'Todo crédito (cashback, bonificação por indicação ou por consumo na rede) fica registrado no seu extrato, com a origem de cada valor. Saques são solicitados pela própria carteira, informando sua chave Pix.',
   },
 ]
 
@@ -258,7 +258,7 @@ export default function Landing() {
       {/* ============ 4.4 BENEFÍCIOS PRINCIPAIS ============ */}
       <section id="beneficios" className="border-t border-black/10 py-16 bg-surface-subtle">
         <ResponsiveContainer>
-          <SectionTitle eyebrow="Tudo incluso na assinatura" title="Benefícios principais" description="Descontos, cashback, indicação e muito mais — sem letra miúda." />
+          <SectionTitle eyebrow="Tudo incluso na assinatura" title="Benefícios principais" description="Descontos, cashback, indicação e muito mais, sem letra miúda." />
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {BENEFITS.map((b, i) => (
               <BenefitCard key={b.title} {...b} delay={i * 60} />

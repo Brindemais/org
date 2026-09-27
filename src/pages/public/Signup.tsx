@@ -391,7 +391,7 @@ export default function Signup() {
                     <input className="input-light" required inputMode="numeric" value={cardAddressNumber} onChange={(e) => setCardAddressNumber(e.target.value.replace(/\D/g, ''))} placeholder="123" />
                   </div>
                 </div>
-                <p className="text-[11px] text-black/40">Cobrança única de {formatBRL(PLAN_PRICES.annual)}. Número e CVV vão direto e criptografados até a operadora do cartão — não ficam salvos aqui.</p>
+                <p className="text-[11px] text-black/40">Cobrança única de {formatBRL(PLAN_PRICES.annual)}. Número e CVV vão direto e criptografados até a operadora do cartão, não ficam salvos aqui.</p>
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 <button type="submit" disabled={loading} className="btn-gold w-full">
                   {loading ? 'Processando pagamento...' : `Pagar ${formatBRL(PLAN_PRICES.annual)} no cartão`}
@@ -418,7 +418,7 @@ export default function Signup() {
             <div className="rounded-lg bg-black/5 border border-black/10 p-3 text-[10px] text-black/40 break-all">{pixCode}</div>
             <p className="text-xs text-black/40">
               A confirmação é automática assim que a Asaas identificar o pagamento, normalmente em poucos segundos. Seu
-              painel libera sozinho — não precisa voltar aqui.
+              painel libera sozinho, não precisa voltar aqui.
             </p>
             <button onClick={() => navigate('/app')} className="btn-gold w-full">Ir para o painel</button>
             <button type="button" onClick={() => setStep(3)} className="text-xs text-black/40 w-full text-center">
