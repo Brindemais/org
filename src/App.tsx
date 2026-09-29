@@ -13,6 +13,7 @@ import LoginChooser from './pages/public/LoginChooser'
 import SubscriberLogin from './pages/public/SubscriberLogin'
 import PartnerLogin from './pages/public/PartnerLogin'
 import Signup from './pages/public/Signup'
+import PartnerLanding from './pages/public/PartnerLanding'
 import PartnerSignup from './pages/public/PartnerSignup'
 import PartnerActivate from './pages/public/PartnerActivate'
 import NotFound from './pages/public/NotFound'
@@ -79,7 +80,8 @@ export default function App() {
         <Route path="/entrar/assinante" element={<SubscriberLogin />} />
         <Route path="/entrar/parceiro" element={<PartnerLogin />} />
         <Route path="/cadastro" element={<Signup />} />
-        <Route path="/seja-parceiro" element={<PartnerSignup />} />
+        <Route path="/seja-parceiro" element={<PartnerLanding />} />
+        <Route path="/seja-parceiro/cadastro" element={<PartnerSignup />} />
         <Route path="/parceiro/ativar" element={<PartnerActivate />} />
         <Route path="/esqueci-senha" element={<ForgotPassword />} />
         <Route path="/redefinir-senha" element={<ResetPassword />} />
