@@ -8,7 +8,6 @@ import { ImageUpload } from '../../components/ui/ImageUpload'
 interface PartnerStockRow { partner_id: string; product_id: string; quantity: number; partner: { trade_name: string } | null; product: { name: string } | null }
 
 const emptyEditProduct = { name: '', description: '', image_url: '', normal_price: '', subscriber_price: '' }
-const emptyPartnerGift = { partner_id: '', name: '', description: '', image_url: '', normal_price: '' }
 
 export default function AdminStock() {
   const [products, setProducts] = useState<ProductRow[]>([])
@@ -17,9 +16,6 @@ export default function AdminStock() {
   const [partnerStock, setPartnerStock] = useState<PartnerStockRow[]>([])
   const [partners, setPartners] = useState<Partner[]>([])
   const [newProduct, setNewProduct] = useState({ name: '', description: '', image_url: '', normal_price: '', subscriber_price: '' })
-  const [partnerGift, setPartnerGift] = useState(emptyPartnerGift)
-  const [savingPartnerGift, setSavingPartnerGift] = useState(false)
-  const [partnerGiftMsg, setPartnerGiftMsg] = useState('')
   const [entry, setEntry] = useState({ product_id: '', quantity: '' })
   const [transfer, setTransfer] = useState({ product_id: '', partner_id: '', quantity: '' })
   const [msg, setMsg] = useState('')
@@ -77,29 +73,6 @@ export default function AdminStock() {
       approved: true,
     })
     setNewProduct({ name: '', description: '', image_url: '', normal_price: '', subscriber_price: '' })
-    load()
-  }
-
-  async function createPartnerGift(e: FormEvent) {
-    e.preventDefault()
-    if (!partnerGift.partner_id) return
-    setSavingPartnerGift(true)
-    setPartnerGiftMsg('')
-    const price = Number(partnerGift.normal_price || 0)
-    const { error } = await supabase.from('products').insert({
-      partner_id: partnerGift.partner_id,
-      name: partnerGift.name,
-      description: partnerGift.description || null,
-      image_url: partnerGift.image_url || null,
-      normal_price: price,
-      subscriber_price: price,
-      is_gift: true,
-      approved: true,
-    })
-    setSavingPartnerGift(false)
-    if (error) { setPartnerGiftMsg('Não foi possível cadastrar o brinde.'); return }
-    setPartnerGift(emptyPartnerGift)
-    setPartnerGiftMsg('Brinde cadastrado e já aprovado! O parceiro precisa entrar em "Estoque" no painel dele e adicionar a quantidade disponível.')
     load()
   }
 
@@ -184,25 +157,6 @@ export default function AdminStock() {
           {!pendingProducts.length && <EmptyState dark icon={PackageCheck} title="Nenhum item pendente de aprovação" className="py-4" />}
         </div>
       </div>
-
-      <form onSubmit={createPartnerGift} className="card grid sm:grid-cols-2 gap-3">
-        <div className="sm:col-span-2">
-          <p className="font-semibold text-sm">Cadastrar brinde para um parceiro</p>
-          <p className="text-xs text-white/40 mt-0.5">Cadastre em nome do parceiro (ex: pedido por telefone/WhatsApp). Entra já aprovado, sem passar pela fila de aprovação.</p>
-        </div>
-        <div className="sm:col-span-2">
-          <ImageUpload value={partnerGift.image_url || null} onChange={(url) => setPartnerGift({ ...partnerGift, image_url: url })} folder="products" label="Foto do brinde" hint="Tamanho recomendado: 800x450px (16:9), até 4MB." />
-        </div>
-        <select className="input sm:col-span-2" required value={partnerGift.partner_id} onChange={(e) => setPartnerGift({ ...partnerGift, partner_id: e.target.value })}>
-          <option value="">Parceiro...</option>
-          {partners.map((p) => <option key={p.id} value={p.id}>{p.trade_name}</option>)}
-        </select>
-        <input className="input" required placeholder="Nome do brinde" value={partnerGift.name} onChange={(e) => setPartnerGift({ ...partnerGift, name: e.target.value })} />
-        <input className="input" type="number" step="0.01" min="0" placeholder="Valor (R$)" value={partnerGift.normal_price} onChange={(e) => setPartnerGift({ ...partnerGift, normal_price: e.target.value })} />
-        <input className="input sm:col-span-2" placeholder="Descrição" value={partnerGift.description} onChange={(e) => setPartnerGift({ ...partnerGift, description: e.target.value })} />
-        <button type="submit" disabled={savingPartnerGift} className="btn-gold sm:col-span-2">{savingPartnerGift ? 'Salvando...' : 'Cadastrar brinde'}</button>
-        {partnerGiftMsg && <p className="text-xs text-gold-300 sm:col-span-2">{partnerGiftMsg}</p>}
-      </form>
 
       <div className="card overflow-x-auto">
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
