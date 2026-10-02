@@ -67,7 +67,7 @@ export default function PartnerProfile() {
 
       <div className="card space-y-2">
         <p className="font-semibold text-sm">Logotipo</p>
-        <ImageUpload value={logoUrl} onChange={saveLogo} folder="partner-logos" label="" circular />
+        <ImageUpload value={logoUrl} onChange={saveLogo} folder="partner-logos" label="" circular hint="Tamanho recomendado: 512x512px, formato quadrado, até 4MB." />
         {logoSaved && <p className="text-xs text-emerald-400">Logotipo atualizado!</p>}
       </div>
 
