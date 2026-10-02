@@ -31,6 +31,7 @@ function signupErrorMessage(message: string): string {
   if (message.includes('INVALID_EMAIL')) return 'Digite um e-mail válido.'
   if (message.includes('FULL_NAME_ALREADY_REGISTERED')) return 'Já existe um cadastro com esse nome completo.'
   if (message.includes('MINOR_NOT_ALLOWED')) return 'É necessário ser maior de 18 anos para se cadastrar.'
+  if (message.includes('PHONE_ALREADY_REGISTERED')) return 'Este celular já possui cadastro na Brinde Mais.'
   if (message.includes('INVALID_PHONE')) return 'Digite um celular válido, com DDD.'
   if (message.includes('REFERRAL_REQUIRED') || message.includes('REFERRER_NOT_FOUND')) return 'Código de indicação inválido ou não encontrado.'
   if (message.includes('REFERRAL_LOGIN_TAKEN')) return 'Seu link de indicação já está em uso, escolha outro.'

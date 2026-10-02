@@ -14,6 +14,7 @@ export default function SubscriberProfile() {
   const [form, setForm] = useState({ phone: '', cep: '', address: '', neighborhood: '', city: '', state: '', pix_key: '' })
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [authorized, setAuthorized] = useState<AuthorizedPerson[]>([])
   const [newAuth, setNewAuth] = useState({ full_name: '', cpf: '', phone: '', relationship: '' })
   const [confirmCancel, setConfirmCancel] = useState(false)
@@ -48,9 +49,14 @@ export default function SubscriberProfile() {
     e.preventDefault()
     if (!profile) return
     setSaving(true)
-    await supabase.from('profiles').update(form).eq('id', profile.id)
-    await refreshProfile()
+    setSaveError(null)
+    const { error } = await supabase.from('profiles').update({ ...form, phone: form.phone.replace(/\D/g, '') }).eq('id', profile.id)
     setSaving(false)
+    if (error) {
+      setSaveError(error.code === '23505' ? 'Este celular já está em uso por outra conta.' : 'Não foi possível salvar as alterações.')
+      return
+    }
+    await refreshProfile()
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -159,6 +165,7 @@ export default function SubscriberProfile() {
           <label className="label">Chave Pix (para saques)</label>
           <input className="input" value={form.pix_key} onChange={(e) => setForm({ ...form, pix_key: e.target.value })} />
         </div>
+        {saveError && <p className="text-sm text-red-400">{saveError}</p>}
         <button type="submit" disabled={saving} className="btn-gold w-full">{saving ? 'Salvando...' : saved ? 'Salvo!' : 'Salvar alterações'}</button>
       </form>
 
