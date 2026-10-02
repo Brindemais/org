@@ -22,19 +22,19 @@ const STYLES: Record<string, string> = {
   closed: 'bg-white/10 text-white/50',
 }
 
-const LABELS: Record<string, string> = {
+export const STATUS_LABELS: Record<string, string> = {
   active: 'Ativo', ativo: 'Ativo', approved: 'Aprovado', confirmed: 'Confirmado', paid: 'Pago',
   withdrawn: 'Retirado', ready: 'Disponível', reserved: 'Reservado', requested: 'Solicitado',
   pending: 'Pendente', pending_approval: 'Aguardando aprovação', analyzing: 'Em análise',
   interested: 'Interessado', pending_docs: 'Aguardando documentação', overdue: 'Vencido',
   cancelled: 'Cancelado', rejected: 'Recusado', failed: 'Falhou', suspended: 'Suspenso',
-  expired: 'Expirado', closed: 'Encerrado',
+  expired: 'Expirado', closed: 'Encerrado', draft: 'Rascunho',
 }
 
 export function StatusBadge({ status }: { status: string }) {
   return (
     <span className={`pill ${STYLES[status] ?? 'bg-white/10 text-white/60'}`}>
-      {LABELS[status] ?? status}
+      {STATUS_LABELS[status] ?? status}
     </span>
   )
 }

@@ -3,7 +3,7 @@ import { Download, Store, Search } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, PartnerStatus } from '../../lib/types'
 import { PARTNER_CATEGORIES } from '../../lib/types'
-import { StatusBadge } from '../../components/ui/StatusBadge'
+import { StatusBadge, STATUS_LABELS } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { ImageUpload } from '../../components/ui/ImageUpload'
 import { downloadCSV } from '../../lib/csv'
@@ -207,7 +207,7 @@ export default function AdminPartners() {
         </select>
         <select className="input !w-auto" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">Todos os status</option>
-          {STATUS_FLOW.map((s) => <option key={s} value={s}>{s}</option>)}
+          {STATUS_FLOW.map((s) => <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>)}
         </select>
       </div>
 
@@ -301,7 +301,7 @@ export default function AdminPartners() {
                   disabled={p.status === s || inviting === p.id || statusBusyId === p.id}
                   className={`pill text-xs ${p.status === s ? 'bg-gold-400/20 text-gold-300' : 'bg-ink-950 border border-ink-800 text-white/50 hover:text-white'}`}
                 >
-                  {s === 'approved' ? (inviting === p.id ? 'enviando convite...' : 'approved (envia convite)') : s}
+                  {s === 'approved' ? (inviting === p.id ? 'Enviando convite...' : 'Aprovado (envia convite)') : (STATUS_LABELS[s] ?? s)}
                 </button>
               ))}
             </div>
