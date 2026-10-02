@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Lock, Wine, Gift, ShieldCheck } from 'lucide-react'
+import { Lock, Gift, ShieldCheck } from 'lucide-react'
 
 interface GiftCardProps {
   name: string
@@ -12,7 +12,7 @@ interface GiftCardProps {
 
 export function GiftCard({ name, description, deadlineLabel, stockNote, image, onView }: GiftCardProps) {
   const features = [
-    { icon: Wine, title: name, desc: description },
+    { icon: Gift, title: name, desc: description },
     { icon: Gift, title: 'O modelo do brinde pode variar de acordo com o parceiro escolhido.' },
     { icon: ShieldCheck, title: `Prazo para retirada: ${deadlineLabel ?? 'até o fim do ciclo mensal'}`, desc: stockNote },
   ]

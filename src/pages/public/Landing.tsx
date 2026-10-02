@@ -18,7 +18,7 @@ import { PLAN_PRICES, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../
 type PublicPartner = Pick<Partner, 'id' | 'trade_name' | 'category' | 'neighborhood' | 'logo_url' | 'opening_hours'>
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { PublicHeader } from './PublicHeader'
-import { Logo } from '../../components/layout/Logo'
+import { Logo, LogoBadge } from '../../components/layout/Logo'
 import { BeerBottleArt } from '../../components/layout/Illustrations'
 import { ResponsiveContainer } from '../../components/ui/ResponsiveContainer'
 import { SectionTitle } from '../../components/ui/SectionTitle'
@@ -271,29 +271,26 @@ export default function Landing() {
       <section id="brinde" className="border-t border-black/10 py-16">
         <ResponsiveContainer className="grid lg:grid-cols-[1fr,1.3fr] gap-10 items-center">
           <GiftCard
-            name="Taça de Cerveja Premium Brinde Mais"
-            description="Copo temático personalizado com a marca Brinde Mais, o primeiro brinde da sua assinatura."
+            name="Brinde escolhido pelo parceiro"
+            description="Cada parceiro define o brinde que oferece aos assinantes, de acordo com o próprio estoque."
             deadlineLabel="até o fim do ciclo mensal"
             stockNote="O ponto de retirada escolhido precisa possuir estoque disponível."
             image={
-              <img
-                src="/images/gift-glass.webp"
-                alt="Taça de Cerveja Premium Brinde Mais"
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover object-top"
-              />
+              <div className="w-full h-full flex items-center justify-center">
+                <LogoBadge size={140} />
+              </div>
             }
             onView={goToSignup}
           />
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-gold-600 mb-2">Não é só um copo</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-gold-600 mb-2">Brinde renovado todo mês</p>
             <h3 className="font-display text-2xl font-semibold text-ink-950 mb-4">
               O brinde é só o começo
             </h3>
             <p className="text-black/55 leading-relaxed mb-4">
-              O primeiro brinde é uma taça temática personalizada, mas a assinatura Brinde Mais vai muito além: descontos
-              exclusivos, cashback, bonificações por indicação e por consumo na rede, e uma carteira interna pra acompanhar tudo.
+              Cada parceiro escolhe o brinde que oferece aos assinantes da sua região, e a assinatura Brinde Mais vai muito além
+              dele: descontos exclusivos, cashback, bonificações por indicação e por consumo na rede, e uma carteira interna pra
+              acompanhar tudo.
             </p>
             <ul className="space-y-2 text-sm text-black/65">
               {['O modelo do brinde pode variar de acordo com o parceiro escolhido', 'Retirada disponível apenas em pontos com estoque', 'Novos brindes e parceiros são adicionados ao longo do tempo'].map((t) => (
