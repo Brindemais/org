@@ -18,6 +18,7 @@ export default function AdminManualActivation() {
   const [selected, setSelected] = useState<Result | null>(null)
   const [plan, setPlan] = useState<SubscriptionPlan>('monthly')
   const [note, setNote] = useState('')
+  const [awardBonus, setAwardBonus] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
@@ -44,6 +45,7 @@ export default function AdminManualActivation() {
     setSelected(r)
     setPlan('monthly')
     setNote('')
+    setAwardBonus(true)
     setError(null)
     setDone(null)
     setConfirmForce(false)
@@ -60,7 +62,7 @@ export default function AdminManualActivation() {
 
     if (selected.role === 'subscriber') {
       const { error: rpcError } = await supabase.rpc('admin_activate_subscription_manually', {
-        p_subscriber_id: selected.id, p_plan: plan, p_note: note.trim(), p_force: force,
+        p_subscriber_id: selected.id, p_plan: plan, p_note: note.trim(), p_force: force, p_award_bonus: awardBonus,
       })
       setBusy(false)
       if (rpcError) {
@@ -84,7 +86,7 @@ export default function AdminManualActivation() {
       return
     }
     const { error: rpcError } = await supabase.rpc('admin_activate_advertiser_manually', {
-      p_partner_id: staff.partner_id, p_note: note.trim(),
+      p_partner_id: staff.partner_id, p_note: note.trim(), p_award_bonus: awardBonus,
     })
     setBusy(false)
     if (rpcError) { setError('Não foi possível ativar. Tente novamente.'); return }
@@ -151,6 +153,14 @@ export default function AdminManualActivation() {
             <label className="text-xs text-white/40 block mb-1">Motivo (aparece marcado como manual em /admin/pagamentos)</label>
             <input className="input w-full" placeholder="Ex.: pagamento combinado por WhatsApp" value={note} onChange={(e) => setNote(e.target.value)} />
           </div>
+
+          <label className="flex items-start gap-2.5 text-xs text-white/60">
+            <input type="checkbox" className="mt-0.5" checked={awardBonus} onChange={(e) => setAwardBonus(e.target.checked)} />
+            <span>
+              Confirmar que é um pagamento de verdade (libera bônus de indicação pra rede). Desmarque para cortesia ou
+              migração de conta antiga, onde não há receita de verdade por trás.
+            </span>
+          </label>
 
           {error && <p className="text-sm text-red-400">{error}</p>}
           {done && <p className="text-sm text-emerald-400">{done}</p>}
