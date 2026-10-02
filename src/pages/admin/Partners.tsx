@@ -165,6 +165,33 @@ export default function AdminPartners() {
     load()
   }
 
+  async function resendInvite(partner: Partner) {
+    if (statusBusyId || inviting) return
+    if (!partner.email) {
+      setInviteMsg((m) => ({ ...m, [partner.id]: 'Este parceiro não tem e-mail cadastrado. Adicione um e-mail antes de reenviar.' }))
+      return
+    }
+    setInviting(partner.id)
+    const { data: sessionData } = await supabase.auth.getSession()
+    const { data, error } = await supabase.functions.invoke('invite-partner', {
+      body: { partner_id: partner.id, redirect_to: `${window.location.origin}/parceiro/ativar` },
+      headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+    })
+    setInviting(null)
+    if (error || data?.error) {
+      const detail = data?.error === 'PARTNER_HAS_NO_EMAIL' ? 'Parceiro sem e-mail cadastrado.' : (data?.detail ?? error?.message ?? 'Erro desconhecido')
+      setInviteMsg((m) => ({ ...m, [partner.id]: `Não foi possível reenviar o convite: ${detail}` }))
+      return
+    }
+    setInviteMsg((m) => ({
+      ...m,
+      [partner.id]: data?.already_had_account
+        ? 'Essa pessoa já concluiu o cadastro — não havia convite pendente para reenviar.'
+        : 'Novo e-mail enviado, com um código novo (o código anterior deixa de valer).',
+    }))
+    load()
+  }
+
   async function linkStaff(partnerId: string) {
     setLinkMsg('')
     const { data: profile } = await supabase.from('profiles').select('id, role').eq('email', linkEmail.trim()).maybeSingle()
@@ -306,7 +333,12 @@ export default function AdminPartners() {
               ))}
             </div>
             {p.invited_at ? (
-              <p className="text-xs text-white/40 mb-3">Convite enviado em {new Date(p.invited_at).toLocaleDateString('pt-BR')}.</p>
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <p className="text-xs text-white/40">Convite enviado em {new Date(p.invited_at).toLocaleDateString('pt-BR')}.</p>
+                <button onClick={() => resendInvite(p)} disabled={inviting === p.id || statusBusyId === p.id} className="text-xs text-gold-400 font-medium">
+                  {inviting === p.id ? 'Reenviando...' : 'Reenviar e-mail'}
+                </button>
+              </div>
             ) : (p.status === 'approved' || p.status === 'active') && (
               <button onClick={() => approveAndInvite(p)} disabled={inviting === p.id || statusBusyId === p.id} className="text-xs text-gold-400 font-medium mb-3">
                 {inviting === p.id ? 'Enviando convite...' : 'Enviar convite de acesso por e-mail'}
