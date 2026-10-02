@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase'
 import { formatBRL, formatDateTime } from '../../lib/format'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
-import { LogoMark } from '../../components/layout/Logo'
+import { Logo } from '../../components/layout/Logo'
 
 const TYPE_LABELS: Record<string, string> = {
   bonus_subscription: 'Bonificação de assinatura',
@@ -54,8 +54,8 @@ export default function SubscriberWallet() {
           </div>
           <p className="text-3xl font-bold text-[#ffffff]">{hide ? '••••••' : formatBRL(balance)}</p>
         </div>
-        <div className="absolute -right-3 -bottom-3 opacity-90">
-          <LogoMark size={68} />
+        <div className="absolute right-4 bottom-4 opacity-95">
+          <Logo size="sm" />
         </div>
       </div>
 
@@ -102,7 +102,7 @@ export default function SubscriberWallet() {
                 {t.direction === 'in' ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{TYPE_LABELS[t.type] ?? t.description}</p>
+                <p className="text-sm font-medium truncate">{t.description || TYPE_LABELS[t.type] || t.type}</p>
                 <p className="text-xs text-white/40">{formatDateTime(t.created_at)}</p>
               </div>
               <div className="text-right shrink-0">

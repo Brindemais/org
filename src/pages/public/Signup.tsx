@@ -4,7 +4,7 @@ import { Check, Copy, CreditCard, KeyRound, QrCode, ShieldCheck, User, Wallet } 
 import { supabase } from '../../lib/supabase'
 import { LogoBadge } from '../../components/layout/Logo'
 import { ReferralFields } from '../../components/ui/ReferralFields'
-import { isValidCPF, maskCPF, maskPhone, maskCardNumber, maskCardExpiry, formatBRL } from '../../lib/format'
+import { isValidCPF, isValidEmail, isValidPhone, maskCPF, maskPhone, maskCardNumber, maskCardExpiry, formatBRL } from '../../lib/format'
 import { PLAN_PRICES, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../../lib/plans'
 import type { SubscriptionPlan } from '../../lib/types'
 
@@ -28,10 +28,23 @@ const STEPS = [
 
 function signupErrorMessage(message: string): string {
   if (message.includes('CPF_ALREADY_REGISTERED')) return 'Este CPF já possui cadastro na Brinde Mais.'
+  if (message.includes('INVALID_EMAIL')) return 'Digite um e-mail válido.'
+  if (message.includes('FULL_NAME_ALREADY_REGISTERED')) return 'Já existe um cadastro com esse nome completo.'
+  if (message.includes('MINOR_NOT_ALLOWED')) return 'É necessário ser maior de 18 anos para se cadastrar.'
+  if (message.includes('INVALID_PHONE')) return 'Digite um celular válido, com DDD.'
   if (message.includes('REFERRAL_REQUIRED') || message.includes('REFERRER_NOT_FOUND')) return 'Código de indicação inválido ou não encontrado.'
   if (message.includes('REFERRAL_LOGIN_TAKEN')) return 'Seu link de indicação já está em uso, escolha outro.'
   if (message.includes('REFERRAL_LOGIN_TOO_SHORT')) return 'Seu link de indicação precisa ter pelo menos 3 letras ou números.'
   return 'Erro ao concluir cadastro: ' + message
+}
+
+function calcAge(birthDate: string): number {
+  const b = new Date(birthDate)
+  const today = new Date()
+  let age = today.getFullYear() - b.getFullYear()
+  const m = today.getMonth() - b.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < b.getDate())) age--
+  return age
 }
 
 export default function Signup() {
@@ -98,6 +111,9 @@ export default function Signup() {
     e.preventDefault()
     setError(null)
     if (!isValidCPF(cpf)) return setError('CPF inválido. Confira os números digitados.')
+    if (!isValidEmail(email)) return setError('Digite um e-mail válido.')
+    if (!isValidPhone(phone)) return setError('Digite um celular válido, com DDD.')
+    if (!birthDate || calcAge(birthDate) < 18) return setError('É necessário ser maior de 18 anos para se cadastrar.')
     if (!referralValid) return setError('Preencha quem indicou você e escolha seu link de indicação antes de continuar.')
     if (!accepted) return setError('É necessário aceitar os Termos de Uso e a Política de Privacidade.')
 

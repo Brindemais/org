@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase'
 import type { AuthorizedPerson } from '../../lib/types'
 import { maskCPF, maskCEP, maskPhone } from '../../lib/format'
 import { useSubscription } from '../../hooks/useSubscription'
+import { ImageUpload } from '../../components/ui/ImageUpload'
 
 export default function SubscriberProfile() {
   const { profile, refreshProfile, signOut } = useAuth()
@@ -19,6 +20,8 @@ export default function SubscriberProfile() {
   const [downloading, setDownloading] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleteRequested, setDeleteRequested] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarSaved, setAvatarSaved] = useState(false)
 
   useEffect(() => {
     if (profile) {
@@ -27,9 +30,19 @@ export default function SubscriberProfile() {
         neighborhood: profile.neighborhood ?? '', city: profile.city ?? '', state: profile.state ?? '',
         pix_key: profile.pix_key ?? '',
       })
+      setAvatarUrl(profile.avatar_url ?? null)
       supabase.from('authorized_persons').select('*').eq('subscriber_id', profile.id).eq('active', true).then(({ data }) => setAuthorized((data as AuthorizedPerson[]) ?? []))
     }
   }, [profile])
+
+  async function saveAvatar(url: string) {
+    if (!profile) return
+    setAvatarUrl(url)
+    await supabase.from('profiles').update({ avatar_url: url }).eq('id', profile.id)
+    await refreshProfile()
+    setAvatarSaved(true)
+    setTimeout(() => setAvatarSaved(false), 2000)
+  }
 
   async function saveProfile(e: FormEvent) {
     e.preventDefault()
@@ -102,10 +115,14 @@ export default function SubscriberProfile() {
     <div className="space-y-6 pb-4">
       <h1 className="font-display text-xl font-semibold">Meu perfil</h1>
 
-      <div className="card space-y-1">
-        <p className="font-semibold">{profile.full_name}</p>
-        <p className="text-sm text-white/40">{profile.email}</p>
-        <p className="text-xs text-white/30">CPF {profile.cpf ? maskCPF(profile.cpf) : '-'}</p>
+      <div className="card space-y-3">
+        <ImageUpload value={avatarUrl} onChange={saveAvatar} folder="avatars" label="Foto de perfil" circular />
+        {avatarSaved && <p className="text-xs text-emerald-400">Foto atualizada!</p>}
+        <div>
+          <p className="font-semibold">{profile.full_name}</p>
+          <p className="text-sm text-white/40">{profile.email}</p>
+          <p className="text-xs text-white/30">CPF {profile.cpf ? maskCPF(profile.cpf) : '-'}</p>
+        </div>
       </div>
 
       <form onSubmit={saveProfile} className="card space-y-3">

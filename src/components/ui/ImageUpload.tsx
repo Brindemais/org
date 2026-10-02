@@ -3,8 +3,8 @@ import { ImagePlus, Loader2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 export function ImageUpload({
-  value, onChange, folder, label = 'Imagem', circular = false,
-}: { value: string | null; onChange: (url: string) => void; folder: string; label?: string; circular?: boolean }) {
+  value, onChange, folder, label = 'Imagem', circular = false, light = false,
+}: { value: string | null; onChange: (url: string) => void; folder: string; label?: string; circular?: boolean; light?: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,21 +32,21 @@ export function ImageUpload({
 
   return (
     <div>
-      <label className="label">{label}</label>
+      <label className={light ? 'label-light' : 'label'}>{label}</label>
       <div className="flex items-center gap-3">
         <div
-          className={`bg-ink-950 border border-ink-700 overflow-hidden flex items-center justify-center shrink-0 ${
-            circular ? 'w-16 h-16 rounded-full' : 'w-20 h-16 rounded-lg'
-          }`}
+          className={`overflow-hidden flex items-center justify-center shrink-0 ${
+            light ? 'bg-black/5 border border-black/10' : 'bg-ink-950 border border-ink-700'
+          } ${circular ? 'w-16 h-16 rounded-full' : 'w-20 h-16 rounded-lg'}`}
         >
           {value ? (
             <img src={value} alt="" className="w-full h-full object-cover" />
           ) : (
-            <ImagePlus size={20} className="text-white/20" />
+            <ImagePlus size={20} className={light ? 'text-black/20' : 'text-white/20'} />
           )}
         </div>
         <div>
-          <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading} className="btn-dark !py-2 !px-3 text-xs gap-1.5">
+          <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading} className={`!py-2 !px-3 text-xs gap-1.5 ${light ? 'btn-dark-light' : 'btn-dark'}`}>
             {uploading ? <Loader2 size={13} className="animate-spin" /> : <ImagePlus size={13} />}
             {uploading ? 'Enviando...' : value ? 'Trocar imagem' : 'Enviar imagem'}
           </button>

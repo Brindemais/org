@@ -5,19 +5,22 @@ import { StatusBadge } from '../../components/ui/StatusBadge'
 import { ImageUpload } from '../../components/ui/ImageUpload'
 
 export default function PartnerProfile() {
-  const { partner, refreshProfile } = useAuth()
+  const { profile, partner, refreshProfile } = useAuth()
   const [form, setForm] = useState({ address: '', opening_hours: '' })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [logoSaved, setLogoSaved] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarSaved, setAvatarSaved] = useState(false)
 
   useEffect(() => {
     if (partner) {
       setLogoUrl(partner.logo_url ?? null)
       setForm({ address: partner.address ?? '', opening_hours: partner.opening_hours ?? '' })
     }
-  }, [partner])
+    if (profile) setAvatarUrl(profile.avatar_url ?? null)
+  }, [partner, profile])
 
   async function saveLogo(url: string) {
     if (!partner) return
@@ -25,6 +28,15 @@ export default function PartnerProfile() {
     await supabase.from('partners').update({ logo_url: url }).eq('id', partner.id)
     setLogoSaved(true)
     setTimeout(() => setLogoSaved(false), 2000)
+  }
+
+  async function saveAvatar(url: string) {
+    if (!profile) return
+    setAvatarUrl(url)
+    await supabase.from('profiles').update({ avatar_url: url }).eq('id', profile.id)
+    await refreshProfile()
+    setAvatarSaved(true)
+    setTimeout(() => setAvatarSaved(false), 2000)
   }
 
   async function saveDetails(e: FormEvent) {
@@ -57,6 +69,12 @@ export default function PartnerProfile() {
         <p className="font-semibold text-sm">Logotipo</p>
         <ImageUpload value={logoUrl} onChange={saveLogo} folder="partner-logos" label="" circular />
         {logoSaved && <p className="text-xs text-emerald-400">Logotipo atualizado!</p>}
+      </div>
+
+      <div className="card space-y-2">
+        <p className="font-semibold text-sm">Foto do responsável</p>
+        <ImageUpload value={avatarUrl} onChange={saveAvatar} folder="avatars" label="" circular />
+        {avatarSaved && <p className="text-xs text-emerald-400">Foto atualizada!</p>}
       </div>
 
       <form onSubmit={saveDetails} className="card space-y-3">
