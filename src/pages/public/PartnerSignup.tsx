@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Check, Copy, KeyRound, ShieldCheck, Store } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { LogoBadge } from '../../components/layout/Logo'
+import { ReferralFields } from '../../components/ui/ReferralFields'
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { maskPhone, formatBRL } from '../../lib/format'
 
@@ -16,6 +17,13 @@ const STEPS = [
   { n: 3, label: 'Pagamento', icon: ShieldCheck },
 ]
 
+function partnerSignupErrorMessage(message: string): string {
+  if (message.includes('REFERRAL_REQUIRED') || message.includes('REFERRER_NOT_FOUND')) return 'Código de indicação inválido ou não encontrado.'
+  if (message.includes('REFERRAL_LOGIN_TAKEN')) return 'Seu link de indicação já está em uso, escolha outro.'
+  if (message.includes('REFERRAL_LOGIN_TOO_SHORT')) return 'Seu link de indicação precisa ter pelo menos 3 letras ou números.'
+  return 'Erro ao concluir cadastro: ' + message
+}
+
 // Cadastro de parceiro já cria o login e cobra a taxa de anunciante na
 // hora, igual o cadastro de assinante — não fica mais esperando a equipe
 // aprovar pra só então convidar e cobrar. A aprovação do admin continua
@@ -23,11 +31,14 @@ const STEPS = [
 // pública do estabelecimento, não o acesso ao painel nem o pagamento.
 export default function PartnerSignup() {
   const [params] = useSearchParams()
-  const referralCode = params.get('ref') ?? ''
   const navigate = useNavigate()
   const [step, setStep] = useState<Step>(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [referralCode, setReferralCode] = useState(params.get('ref') ?? '')
+  const [myReferralCode, setMyReferralCode] = useState('')
+  const [referralValid, setReferralValid] = useState(false)
 
   const [companyName, setCompanyName] = useState('')
   const [tradeName, setTradeName] = useState('')
@@ -63,10 +74,11 @@ export default function PartnerSignup() {
       p_city: city || null,
       p_neighborhood: neighborhood || null,
       p_address: address || null,
-      p_referral_code: referralCode || null,
+      p_referral_code: referralCode,
+      p_my_referral_code: myReferralCode,
     })
     if (rpcError || !data) {
-      setError('Erro ao concluir cadastro: ' + (rpcError?.message ?? ''))
+      setError(partnerSignupErrorMessage(rpcError?.message ?? ''))
       return null
     }
     return (data as { id: string }).id
@@ -102,6 +114,7 @@ export default function PartnerSignup() {
   async function handleStep1(e: FormEvent) {
     e.preventDefault()
     setError(null)
+    if (!referralValid) return setError('Preencha quem indicou você e escolha seu link de indicação antes de continuar.')
     if (!accepted) return setError('É necessário aceitar os Termos de Uso e a Política de Privacidade.')
 
     setLoading(true)
@@ -190,9 +203,6 @@ export default function PartnerSignup() {
               <p className="text-xs text-black/40 mt-2 bg-gold-400/10 text-gold-700 rounded-lg px-3 py-2">
                 Taxa de anunciante: {formatBRL(FEE_AMOUNT)}/mês, mesmo valor da assinatura Brinde Mais. Paga por Pix ao final deste cadastro, libera sua área de anunciante no painel do parceiro.
               </p>
-              {referralCode && (
-                <p className="text-xs bg-gold-400/10 text-gold-700 rounded-lg px-3 py-2 mt-2">Convidado por código {referralCode.toUpperCase()}</p>
-              )}
             </div>
 
             <div>
@@ -203,6 +213,18 @@ export default function PartnerSignup() {
               <label className="label-light">Nome fantasia</label>
               <input className="input-light" required value={tradeName} onChange={(e) => setTradeName(e.target.value)} />
             </div>
+
+            <ReferralFields
+              referrerCode={referralCode}
+              onReferrerCodeChange={setReferralCode}
+              myCode={myReferralCode}
+              onMyCodeChange={setMyReferralCode}
+              autoSuggestSource={tradeName}
+              myCodeLabel="Crie seu link de indicação"
+              myCodeHint="Nome artístico, nome do estabelecimento ou apelido que vai aparecer no seu link pra indicar outras pessoas e parceiros."
+              onValidityChange={setReferralValid}
+            />
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="label-light">CNPJ ou CPF</label>
@@ -265,7 +287,7 @@ export default function PartnerSignup() {
             </p>
 
             {error && <p className="text-sm text-red-500">{error}</p>}
-            <button type="submit" disabled={loading} className="btn-gold w-full">{loading ? 'Enviando...' : 'Continuar para pagamento'}</button>
+            <button type="submit" disabled={loading || !referralValid} className="btn-gold w-full">{loading ? 'Enviando...' : 'Continuar para pagamento'}</button>
             <p className="text-center text-sm text-black/40">Já é parceiro? <Link to="/entrar/parceiro" className="text-gold-600">Entrar</Link></p>
           </form>
         )}
