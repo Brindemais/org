@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useSubscription } from '../../hooks/useSubscription'
 import { useGeolocation } from '../../hooks/useGeolocation'
 import { supabase } from '../../lib/supabase'
-import type { Partner, Pickup } from '../../lib/types'
+import type { Partner, Pickup, ProductRow } from '../../lib/types'
 import { formatDate } from '../../lib/format'
 import { haversineKm, formatDistance } from '../../lib/geo'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -28,6 +28,7 @@ export default function SubscriberPickup() {
   const [pickup, setPickup] = useState<Pickup | null>(null)
   const [loadingPickup, setLoadingPickup] = useState(true)
   const [partner, setPartner] = useState<PickupPartner | null>(null)
+  const [product, setProduct] = useState<Pick<ProductRow, 'name' | 'image_url'> | null>(null)
   const [tick, setTick] = useState(0)
   const geo = useGeolocation()
 
@@ -59,6 +60,18 @@ export default function SubscriberPickup() {
       supabase.rpc('list_public_partners').select('id, trade_name, address, neighborhood, logo_url, lat, lng').eq('id', pickup.partner_id).maybeSingle().then(({ data }) => setPartner(data as PickupPartner | null))
     }
   }, [pickup?.partner_id])
+
+  // O brinde entregue só é definido pelo parceiro na hora da retirada
+  // (confirm_pickup_delivery) — antes disso pickup.product_id é null, já
+  // que cada parceiro cadastra o brinde da própria escolha e pode ter mais
+  // de uma opção em estoque.
+  useEffect(() => {
+    if (pickup?.product_id) {
+      supabase.from('products').select('name, image_url').eq('id', pickup.product_id).maybeSingle().then(({ data }) => setProduct(data as any))
+    } else {
+      setProduct(null)
+    }
+  }, [pickup?.product_id])
 
   useEffect(() => {
     const t = setInterval(() => setTick((v) => v + 1), 60000)
@@ -114,14 +127,16 @@ export default function SubscriberPickup() {
 
       <div className="card !p-0 overflow-hidden">
         <div className="flex items-center gap-3 p-4">
-          <img
-            src="/images/gift-glass.webp"
-            alt="Taça de Cerveja Premium Brinde Mais"
-            className="w-16 h-16 object-contain rounded-lg bg-white shrink-0"
-          />
+          {product?.image_url ? (
+            <img src={product.image_url} alt={product.name} className="w-16 h-16 object-contain rounded-lg bg-white shrink-0" />
+          ) : (
+            <div className="w-16 h-16 rounded-lg bg-ink-950 border border-ink-800 flex items-center justify-center shrink-0">
+              <Gift size={22} className="text-white/20" />
+            </div>
+          )}
           <div>
-            <p className="text-xs text-white/40">Seu brinde deste mês</p>
-            <p className="font-semibold">Taça de Cerveja Premium Brinde Mais</p>
+            <p className="text-xs text-white/40">{product ? 'Seu brinde deste mês' : 'Brinde definido pelo parceiro na retirada'}</p>
+            <p className="font-semibold">{product?.name ?? 'A confirmar no balcão'}</p>
           </div>
         </div>
       </div>

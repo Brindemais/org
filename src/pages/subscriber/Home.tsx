@@ -195,24 +195,27 @@ export default function SubscriberHome() {
       {!benefitsBlocked && subscription?.status === 'active' && (
         <div className="card !p-0 overflow-hidden border-gold-400/30">
           <div className="flex items-center gap-3 p-4">
-            <img
-              src="/images/gift-glass.webp"
-              alt="Taça de Cerveja Premium Brinde Mais"
-              className="w-16 h-16 object-contain rounded-lg bg-white shrink-0"
-            />
+            <div className="w-16 h-16 rounded-lg bg-ink-950 border border-ink-800 flex items-center justify-center shrink-0">
+              <Gift size={22} className="text-gold-400/60" />
+            </div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-bold uppercase tracking-wide text-gold-400">Brinde do mês</p>
-              <p className="font-semibold text-sm truncate">Taça de Cerveja Premium Brinde Mais</p>
               {!pickup ? (
-                <p className="text-xs text-white/50 mt-0.5">Selecione o parceiro desejado e veja seu brinde disponível</p>
+                <>
+                  <p className="font-semibold text-sm truncate">Cada parceiro escolhe seu brinde</p>
+                  <p className="text-xs text-white/50 mt-0.5">Selecione o parceiro desejado e veja seu brinde disponível</p>
+                </>
               ) : (
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <p className="text-xs text-white/50">
-                    Código {pickup.code}
-                    {pickupDaysLeft !== null && pickupDaysLeft >= 0 && ` · ${pickupDaysLeft === 0 ? 'último dia' : `${pickupDaysLeft} ${pickupDaysLeft === 1 ? 'dia' : 'dias'}`}`}
-                  </p>
-                  <StatusBadge status={pickup.status} />
-                </div>
+                <>
+                  <p className="font-semibold text-sm truncate">Brinde confirmado na retirada</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <p className="text-xs text-white/50">
+                      Código {pickup.code}
+                      {pickupDaysLeft !== null && pickupDaysLeft >= 0 && ` · ${pickupDaysLeft === 0 ? 'último dia' : `${pickupDaysLeft} ${pickupDaysLeft === 1 ? 'dia' : 'dias'}`}`}
+                    </p>
+                    <StatusBadge status={pickup.status} />
+                  </div>
+                </>
               )}
             </div>
           </div>

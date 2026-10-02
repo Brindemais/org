@@ -109,7 +109,7 @@ export default function PartnerProducts() {
           {editingId && <button type="button" onClick={cancelEdit} className="text-xs text-white/40 flex items-center gap-1"><X size={12} /> Cancelar edição</button>}
         </div>
         <div className="sm:col-span-2">
-          <ImageUpload value={form.image_url || null} onChange={(url) => setForm({ ...form, image_url: url })} folder="products" label="Foto do brinde" />
+          <ImageUpload value={form.image_url || null} onChange={(url) => setForm({ ...form, image_url: url })} folder="products" label="Foto do brinde" hint="Tamanho recomendado: 800x450px (16:9), até 4MB." />
         </div>
         <div className="sm:col-span-2">
           <label className="label">Nome do brinde</label>
