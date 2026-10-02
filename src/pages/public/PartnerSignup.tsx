@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Check, Copy, KeyRound, ShieldCheck, Store } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { LogoBadge } from '../../components/layout/Logo'
@@ -22,6 +22,8 @@ const STEPS = [
 // existindo (partners.status), só que agora ela controla a visibilidade
 // pública do estabelecimento, não o acesso ao painel nem o pagamento.
 export default function PartnerSignup() {
+  const [params] = useSearchParams()
+  const referralCode = params.get('ref') ?? ''
   const navigate = useNavigate()
   const [step, setStep] = useState<Step>(1)
   const [loading, setLoading] = useState(false)
@@ -61,6 +63,7 @@ export default function PartnerSignup() {
       p_city: city || null,
       p_neighborhood: neighborhood || null,
       p_address: address || null,
+      p_referral_code: referralCode || null,
     })
     if (rpcError || !data) {
       setError('Erro ao concluir cadastro: ' + (rpcError?.message ?? ''))
@@ -187,6 +190,9 @@ export default function PartnerSignup() {
               <p className="text-xs text-black/40 mt-2 bg-gold-400/10 text-gold-700 rounded-lg px-3 py-2">
                 Taxa de anunciante: {formatBRL(FEE_AMOUNT)}/mês, mesmo valor da assinatura Brinde Mais. Paga por Pix ao final deste cadastro, libera sua área de anunciante no painel do parceiro.
               </p>
+              {referralCode && (
+                <p className="text-xs bg-gold-400/10 text-gold-700 rounded-lg px-3 py-2 mt-2">Convidado por código {referralCode.toUpperCase()}</p>
+              )}
             </div>
 
             <div>

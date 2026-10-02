@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronDown, ChevronRight as ChevronRightIcon, Copy, Share2, Users, Crown, Store } from 'lucide-react'
+import { ChevronDown, ChevronRight as ChevronRightIcon, Copy, Share2, Users, Store } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatBRL } from '../../lib/format'
@@ -13,12 +13,7 @@ interface TreeNode {
 }
 interface LevelEarning { level: number; total: number }
 
-// Selo de reconhecimento: 100 indicados diretos (nível 1) com assinatura
-// ativa e em dia viram "VIP". Não muda comissão (já é 10% no nível 1),
-// é só status/selo no painel.
-const VIP_THRESHOLD = 100
-
-export default function SubscriberReferrals() {
+export default function PartnerReferrals() {
   const { profile } = useAuth()
   const [tree, setTree] = useState<TreeNode[]>([])
   const [levels, setLevels] = useState<LevelEarning[]>([])
@@ -52,12 +47,6 @@ export default function SubscriberReferrals() {
     for (const n of tree) (map[n.level] ??= []).push(n)
     return map
   }, [tree])
-
-  const activeDirectCount = useMemo(
-    () => (byLevel[1] ?? []).filter((p) => p.has_active_subscription).length,
-    [byLevel],
-  )
-  const isVip = activeDirectCount >= VIP_THRESHOLD
 
   function toggleLevel(lvl: number) {
     setExpanded((prev) => {
@@ -102,39 +91,18 @@ export default function SubscriberReferrals() {
           <button onClick={copyLink} className="btn-dark flex-1 !py-2.5 text-sm gap-2"><Copy size={14} /> {copied ? 'Copiado!' : 'Copiar link'}</button>
           <button onClick={shareWhatsapp} className="btn-gold flex-1 !py-2.5 text-sm gap-2"><Share2 size={14} /> WhatsApp</button>
         </div>
-        <p className="text-xs text-white/40">Seu código: <span className="text-gold-400 font-semibold">{profile?.referral_code}</span></p>
       </div>
 
       <div className="card space-y-3">
         <p className="text-sm font-semibold flex items-center gap-1.5"><Store size={15} className="text-gold-400" /> Indique parceiros</p>
-        <p className="text-sm text-white/60">Indique um estabelecimento e ganhe bonificação de 1% por nível (até 4 níveis) sobre a taxa de anunciante paga por ele.</p>
+        <p className="text-sm text-white/60">Indique outro estabelecimento e ganhe bonificação de 1% por nível (até 4 níveis) sobre a taxa de anunciante paga por ele.</p>
         <div className="rounded-lg bg-ink-950 border border-ink-800 px-3 py-2.5 text-xs text-gold-300 break-all">{partnerLink}</div>
         <div className="flex gap-2">
           <button onClick={copyPartnerLink} className="btn-dark flex-1 !py-2.5 text-sm gap-2"><Copy size={14} /> {copiedPartner ? 'Copiado!' : 'Copiar link'}</button>
           <button onClick={sharePartnerWhatsapp} className="btn-gold flex-1 !py-2.5 text-sm gap-2"><Share2 size={14} /> WhatsApp</button>
         </div>
+        <p className="text-xs text-white/40">Seu código: <span className="text-gold-400 font-semibold">{profile?.referral_code}</span></p>
       </div>
-
-      {isVip ? (
-        <div className="card !bg-gold-gradient !border-transparent flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-ink-950/20 flex items-center justify-center shrink-0"><Crown size={20} className="text-ink-950" /></div>
-          <div>
-            <p className="font-display font-semibold text-ink-950">Você é VIP Brinde Mais!</p>
-            <p className="text-xs text-ink-950/70">{activeDirectCount} indicados diretos com assinatura ativa. Selo de reconhecimento por trazer o maior volume de rede.</p>
-          </div>
-        </div>
-      ) : (
-        <div className="card space-y-2">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold flex items-center gap-1.5"><Crown size={15} className="text-gold-400" /> Caminho para o selo VIP</p>
-            <span className="text-xs text-white/40">{activeDirectCount}/{VIP_THRESHOLD} indicados diretos ativos</span>
-          </div>
-          <div className="h-2 rounded-full bg-ink-800 overflow-hidden">
-            <div className="h-full bg-gold-gradient" style={{ width: `${Math.min(100, (activeDirectCount / VIP_THRESHOLD) * 100)}%` }} />
-          </div>
-          <p className="text-xs text-white/40">Chegue a {VIP_THRESHOLD} indicados diretos com assinatura ativa e ganhe o selo VIP no seu painel.</p>
-        </div>
-      )}
 
       <div>
         <p className="font-semibold mb-3 flex items-center gap-1.5"><Users size={16} className="text-gold-400" /> Sua árvore de indicações (4 níveis)</p>
