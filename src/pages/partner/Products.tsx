@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Gift } from 'lucide-react'
+import { Gift, Pause, Pencil, Play, X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import type { ProductRow } from '../../lib/types'
@@ -21,6 +21,7 @@ export default function PartnerProducts() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   async function load() {
     if (!partner) return
@@ -49,8 +50,7 @@ export default function PartnerProducts() {
       return
     }
     setSaving(true)
-    const { error: insertError } = await supabase.from('products').insert({
-      partner_id: partner.id,
+    const payload = {
       name: form.name,
       description: form.description,
       normal_price: normalPrice,
@@ -58,12 +58,41 @@ export default function PartnerProducts() {
       discount_pct: discountPct,
       subscriber_discount_pct: subscriberDiscountPct,
       image_url: form.image_url || null,
-      is_gift: true,
-      approved: false,
-    })
+    }
+
+    const { error: saveError } = editingId
+      ? await supabase.from('products').update(payload).eq('id', editingId)
+      : await supabase.from('products').insert({ ...payload, partner_id: partner.id, is_gift: true, approved: false })
+
     setSaving(false)
-    if (insertError) { setError('Não foi possível cadastrar o brinde.'); return }
+    if (saveError) { setError(editingId ? 'Não foi possível salvar as alterações.' : 'Não foi possível cadastrar o brinde.'); return }
     setForm(emptyForm)
+    setEditingId(null)
+    load()
+  }
+
+  function startEdit(p: ProductRow) {
+    setEditingId(p.id)
+    setError(null)
+    setForm({
+      name: p.name,
+      description: p.description ?? '',
+      normal_price: String(p.normal_price),
+      discount_pct: String(p.discount_pct),
+      subscriber_discount_pct: String(p.subscriber_discount_pct),
+      image_url: p.image_url ?? '',
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setForm(emptyForm)
+    setError(null)
+  }
+
+  async function toggleActive(p: ProductRow) {
+    await supabase.from('products').update({ active: !p.active }).eq('id', p.id)
     load()
   }
 
@@ -75,6 +104,10 @@ export default function PartnerProducts() {
       </div>
 
       <form onSubmit={handleSubmit} className="card grid sm:grid-cols-2 gap-3">
+        <div className="sm:col-span-2 flex items-center justify-between">
+          <p className="font-semibold text-sm">{editingId ? 'Editando brinde' : 'Novo brinde'}</p>
+          {editingId && <button type="button" onClick={cancelEdit} className="text-xs text-white/40 flex items-center gap-1"><X size={12} /> Cancelar edição</button>}
+        </div>
         <div className="sm:col-span-2">
           <ImageUpload value={form.image_url || null} onChange={(url) => setForm({ ...form, image_url: url })} folder="products" label="Foto do brinde" />
         </div>
@@ -108,18 +141,20 @@ export default function PartnerProducts() {
         </div>
 
         {error && <p className="sm:col-span-2 text-sm text-red-400">{error}</p>}
-        <button type="submit" disabled={saving || poolInvalid} className="btn-gold sm:col-span-2">{saving ? 'Salvando...' : 'Cadastrar brinde'}</button>
+        <button type="submit" disabled={saving || poolInvalid} className="btn-gold sm:col-span-2">
+          {saving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Cadastrar brinde'}
+        </button>
       </form>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {products.map((p) => (
-          <div key={p.id} className="card">
+          <div key={p.id} className={`card ${!p.active ? 'opacity-60' : ''}`}>
             <div className="aspect-video rounded-lg bg-ink-950 border border-ink-800 mb-3 overflow-hidden flex items-center justify-center">
               {p.image_url ? <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" /> : <span className="text-xs text-white/20">Sem foto</span>}
             </div>
             <div className="flex items-center justify-between mb-1">
               <p className="font-semibold">{p.name}</p>
-              <StatusBadge status={p.approved ? 'approved' : 'pending_approval'} />
+              <StatusBadge status={!p.active ? 'cancelled' : p.approved ? 'approved' : 'pending_approval'} />
             </div>
             <p className="text-xs text-white/50 mb-2">{p.description}</p>
             <div className="flex items-baseline gap-2">
@@ -129,6 +164,12 @@ export default function PartnerProducts() {
             {p.discount_pct > 0 && (
               <p className="text-xs text-white/30 mt-1">Desconto Brinde Mais {p.discount_pct}% · comissão de consumo ativa</p>
             )}
+            <div className="flex gap-2 mt-3 pt-3 border-t border-ink-800">
+              <button onClick={() => startEdit(p)} className="btn-dark flex-1 !py-2 text-xs gap-1.5"><Pencil size={12} /> Editar</button>
+              <button onClick={() => toggleActive(p)} className="btn-dark flex-1 !py-2 text-xs gap-1.5">
+                {p.active ? <><Pause size={12} /> Pausar</> : <><Play size={12} /> Reativar</>}
+              </button>
+            </div>
           </div>
         ))}
         {!products.length && (

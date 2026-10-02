@@ -23,6 +23,7 @@ export interface Profile {
   city: string | null
   state: string | null
   pix_key: string | null
+  avatar_url: string | null
   referral_code: string
   referred_by: string | null
   active: boolean

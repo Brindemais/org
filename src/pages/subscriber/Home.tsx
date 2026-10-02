@@ -15,7 +15,7 @@ import { PARTNER_CATEGORIES } from '../../lib/types'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
-import { LogoMark } from '../../components/layout/Logo'
+import { Logo } from '../../components/layout/Logo'
 
 interface OfferRow { id: string; title: string; discount_pct: number | null; subscriber_price: number | null; normal_price: number | null; image_url: string | null; partner: { trade_name: string } | null }
 
@@ -137,8 +137,8 @@ export default function SubscriberHome() {
             Ver carteira <ChevronRight size={13} />
           </Link>
         </div>
-        <div className="absolute -right-3 -bottom-3 opacity-90">
-          <LogoMark size={68} />
+        <div className="absolute right-4 bottom-4 opacity-95">
+          <Logo size="sm" />
         </div>
       </div>
 
@@ -204,7 +204,7 @@ export default function SubscriberHome() {
               <p className="text-[11px] font-bold uppercase tracking-wide text-gold-400">Brinde do mês</p>
               <p className="font-semibold text-sm truncate">Taça de Cerveja Premium Brinde Mais</p>
               {!pickup ? (
-                <p className="text-xs text-white/50 mt-0.5">Escolha onde retirar</p>
+                <p className="text-xs text-white/50 mt-0.5">Selecione o parceiro desejado e veja seu brinde disponível</p>
               ) : (
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <p className="text-xs text-white/50">
@@ -311,7 +311,7 @@ export default function SubscriberHome() {
                   {t.direction === 'in' ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{TX_LABELS[t.type] ?? t.description}</p>
+                  <p className="text-sm font-medium truncate">{t.description || TX_LABELS[t.type] || t.type}</p>
                   <p className="text-xs text-white/40">{formatDateTime(t.created_at)}</p>
                 </div>
                 <p className={`text-sm font-semibold shrink-0 ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>

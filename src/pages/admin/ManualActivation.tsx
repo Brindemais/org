@@ -21,6 +21,7 @@ export default function AdminManualActivation() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
+  const [confirmForce, setConfirmForce] = useState(false)
 
   async function runSearch(e: FormEvent) {
     e.preventDefault()
@@ -45,9 +46,10 @@ export default function AdminManualActivation() {
     setNote('')
     setError(null)
     setDone(null)
+    setConfirmForce(false)
   }
 
-  async function activate() {
+  async function activate(force = false) {
     if (!selected) return
     if (!note.trim()) {
       setError('Descreva o motivo (ex.: pagamento combinado por WhatsApp, cortesia, migração).')
@@ -58,10 +60,19 @@ export default function AdminManualActivation() {
 
     if (selected.role === 'subscriber') {
       const { error: rpcError } = await supabase.rpc('admin_activate_subscription_manually', {
-        p_subscriber_id: selected.id, p_plan: plan, p_note: note.trim(),
+        p_subscriber_id: selected.id, p_plan: plan, p_note: note.trim(), p_force: force,
       })
       setBusy(false)
-      if (rpcError) { setError('Não foi possível ativar. Tente novamente.'); return }
+      if (rpcError) {
+        if (rpcError.message.includes('ALREADY_ACTIVE')) {
+          setConfirmForce(true)
+          setError('Esse assinante já tem assinatura ativa. Confirme abaixo se quiser ativar mesmo assim (evita duplicar bônus de indicação por engano).')
+          return
+        }
+        setError('Não foi possível ativar. Tente novamente.')
+        return
+      }
+      setConfirmForce(false)
       setDone(`Assinatura ${plan === 'annual' ? 'anual' : 'mensal'} ativada para ${selected.full_name}.`)
       return
     }
@@ -144,9 +155,18 @@ export default function AdminManualActivation() {
           {error && <p className="text-sm text-red-400">{error}</p>}
           {done && <p className="text-sm text-emerald-400">{done}</p>}
 
-          <button onClick={activate} disabled={busy} className="btn-gold">
-            {busy ? 'Ativando...' : 'Confirmar ativação'}
-          </button>
+          {confirmForce ? (
+            <div className="flex gap-2">
+              <button onClick={() => activate(true)} disabled={busy} className="btn-dark flex-1 !border-red-500/40 text-red-400">
+                {busy ? 'Ativando...' : 'Ativar mesmo assim'}
+              </button>
+              <button onClick={() => setConfirmForce(false)} className="btn-ghost flex-1">Cancelar</button>
+            </div>
+          ) : (
+            <button onClick={() => activate()} disabled={busy} className="btn-gold">
+              {busy ? 'Ativando...' : 'Confirmar ativação'}
+            </button>
+          )}
         </div>
       )}
     </div>

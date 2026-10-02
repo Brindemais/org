@@ -4,8 +4,9 @@ import { Check, Copy, KeyRound, ShieldCheck, Store } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { LogoBadge } from '../../components/layout/Logo'
 import { ReferralFields } from '../../components/ui/ReferralFields'
+import { ImageUpload } from '../../components/ui/ImageUpload'
 import { PARTNER_CATEGORIES } from '../../lib/types'
-import { maskPhone, formatBRL } from '../../lib/format'
+import { isValidEmail, isValidPhone, maskCEP, maskPhone, formatBRL } from '../../lib/format'
 
 type Step = 1 | 2 | 3
 
@@ -18,6 +19,9 @@ const STEPS = [
 ]
 
 function partnerSignupErrorMessage(message: string): string {
+  if (message.includes('INVALID_EMAIL')) return 'Digite um e-mail válido.'
+  if (message.includes('FULL_NAME_ALREADY_REGISTERED')) return 'Já existe um cadastro com esse nome de responsável.'
+  if (message.includes('INVALID_PHONE')) return 'Digite um telefone válido, com DDD.'
   if (message.includes('REFERRAL_REQUIRED') || message.includes('REFERRER_NOT_FOUND')) return 'Código de indicação inválido ou não encontrado.'
   if (message.includes('REFERRAL_LOGIN_TAKEN')) return 'Seu link de indicação já está em uso, escolha outro.'
   if (message.includes('REFERRAL_LOGIN_TOO_SHORT')) return 'Seu link de indicação precisa ter pelo menos 3 letras ou números.'
@@ -49,9 +53,11 @@ export default function PartnerSignup() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [category, setCategory] = useState('bar')
+  const [cep, setCep] = useState('')
   const [city, setCity] = useState('')
   const [neighborhood, setNeighborhood] = useState('')
   const [address, setAddress] = useState('')
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [accepted, setAccepted] = useState(false)
 
   const [code, setCode] = useState('')
@@ -84,6 +90,11 @@ export default function PartnerSignup() {
     return (data as { id: string }).id
   }
 
+  async function saveExtras(partnerId: string) {
+    if (!cep && !logoUrl) return
+    await supabase.from('partners').update({ cep: cep.replace(/\D/g, '') || null, logo_url: logoUrl }).eq('id', partnerId)
+  }
+
   async function activateFeePayment(partnerId: string) {
     const { data: userRes } = await supabase.auth.getUser()
     const uid = userRes.user?.id
@@ -114,6 +125,8 @@ export default function PartnerSignup() {
   async function handleStep1(e: FormEvent) {
     e.preventDefault()
     setError(null)
+    if (!isValidEmail(email)) return setError('Digite um e-mail válido.')
+    if (!isValidPhone(phone)) return setError('Digite um telefone válido, com DDD.')
     if (!referralValid) return setError('Preencha quem indicou você e escolha seu link de indicação antes de continuar.')
     if (!accepted) return setError('É necessário aceitar os Termos de Uso e a Política de Privacidade.')
 
@@ -128,6 +141,7 @@ export default function PartnerSignup() {
     if (data.session) {
       const partnerId = await runCompletePartnerSignup()
       if (!partnerId) { setLoading(false); return }
+      await saveExtras(partnerId)
       const paid = await activateFeePayment(partnerId)
       setLoading(false)
       if (!paid) return
@@ -150,6 +164,7 @@ export default function PartnerSignup() {
     }
     const partnerId = await runCompletePartnerSignup()
     if (!partnerId) { setLoading(false); return }
+    await saveExtras(partnerId)
     const paid = await activateFeePayment(partnerId)
     setLoading(false)
     if (!paid) return
@@ -203,6 +218,10 @@ export default function PartnerSignup() {
               <p className="text-xs text-black/40 mt-2 bg-gold-400/10 text-gold-700 rounded-lg px-3 py-2">
                 Taxa de anunciante: {formatBRL(FEE_AMOUNT)}/mês, mesmo valor da assinatura Brinde Mais. Paga por Pix ao final deste cadastro, libera sua área de anunciante no painel do parceiro.
               </p>
+            </div>
+
+            <div>
+              <ImageUpload value={logoUrl} onChange={setLogoUrl} folder="partner-logos" label="Logotipo do estabelecimento" circular light />
             </div>
 
             <div>
@@ -261,17 +280,23 @@ export default function PartnerSignup() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="label-light">Cidade</label>
-                <input className="input-light" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Rio de Janeiro" />
+                <label className="label-light">CEP</label>
+                <input className="input-light" value={cep} onChange={(e) => setCep(maskCEP(e.target.value))} placeholder="00000-000" />
               </div>
               <div>
                 <label className="label-light">Bairro</label>
                 <input className="input-light" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
               </div>
             </div>
-            <div>
-              <label className="label-light">Endereço</label>
-              <input className="input-light" value={address} onChange={(e) => setAddress(e.target.value)} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label-light">Cidade</label>
+                <input className="input-light" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Rio de Janeiro" />
+              </div>
+              <div>
+                <label className="label-light">Endereço</label>
+                <input className="input-light" value={address} onChange={(e) => setAddress(e.target.value)} />
+              </div>
             </div>
 
             <label className="flex items-start gap-2.5 text-xs text-black/60">
