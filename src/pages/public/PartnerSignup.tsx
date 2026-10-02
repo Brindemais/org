@@ -221,7 +221,15 @@ export default function PartnerSignup() {
             </div>
 
             <div>
-              <ImageUpload value={logoUrl} onChange={setLogoUrl} folder="partner-logos" label="Logotipo do estabelecimento" circular light />
+              <ImageUpload
+                value={logoUrl}
+                onChange={setLogoUrl}
+                folder="partner-logos"
+                label="Logotipo do estabelecimento"
+                circular
+                light
+                hint="Tamanho recomendado: 512x512px, formato quadrado, até 4MB."
+              />
             </div>
 
             <div>

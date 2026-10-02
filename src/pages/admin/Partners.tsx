@@ -5,6 +5,7 @@ import type { Partner, PartnerStatus } from '../../lib/types'
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { ImageUpload } from '../../components/ui/ImageUpload'
 import { downloadCSV } from '../../lib/csv'
 
 const STATUS_FLOW: PartnerStatus[] = ['interested', 'pending_docs', 'analyzing', 'approved', 'active', 'suspended', 'rejected', 'closed']
@@ -39,6 +40,7 @@ export default function AdminPartners() {
   const [editForm, setEditForm] = useState<Record<string, string>>({})
   const [editCategory, setEditCategory] = useState('bar')
   const [savingEdit, setSavingEdit] = useState(false)
+  const [logoSavedId, setLogoSavedId] = useState<string | null>(null)
 
   async function load() {
     const { data } = await supabase.from('partners').select('*').order('created_at', { ascending: false })
@@ -60,6 +62,13 @@ export default function AdminPartners() {
     const { error } = await supabase.from('partners').update(payload).eq('id', id)
     setSavingEdit(false)
     if (!error) { setEditingId(null); load() }
+  }
+
+  async function saveLogo(id: string, url: string) {
+    await supabase.from('partners').update({ logo_url: url }).eq('id', id)
+    setPartners((prev) => prev.map((p) => (p.id === id ? { ...p, logo_url: url } : p)))
+    setLogoSavedId(id)
+    setTimeout(() => setLogoSavedId(null), 2000)
   }
 
   const filtered = useMemo(() => partners.filter((p) => {
@@ -227,6 +236,17 @@ export default function AdminPartners() {
 
             {editingId === p.id ? (
               <div className="grid sm:grid-cols-2 gap-3 mb-3 bg-ink-950/50 rounded-lg p-3">
+                <div className="sm:col-span-2">
+                  <ImageUpload
+                    value={p.logo_url}
+                    onChange={(url) => saveLogo(p.id, url)}
+                    folder="partner-logos"
+                    label="Logotipo do estabelecimento"
+                    circular
+                    hint="Tamanho recomendado: 512x512px, formato quadrado, até 4MB."
+                  />
+                  {logoSavedId === p.id && <p className="text-xs text-emerald-400 mt-1">Logotipo atualizado!</p>}
+                </div>
                 {EDIT_FIELDS.map((f) => (
                   <input
                     key={f.key}

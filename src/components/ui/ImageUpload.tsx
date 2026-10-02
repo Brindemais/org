@@ -3,8 +3,8 @@ import { ImagePlus, Loader2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 export function ImageUpload({
-  value, onChange, folder, label = 'Imagem', circular = false, light = false,
-}: { value: string | null; onChange: (url: string) => void; folder: string; label?: string; circular?: boolean; light?: boolean }) {
+  value, onChange, folder, label = 'Imagem', circular = false, light = false, hint,
+}: { value: string | null; onChange: (url: string) => void; folder: string; label?: string; circular?: boolean; light?: boolean; hint?: string }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -54,6 +54,7 @@ export function ImageUpload({
         </div>
         <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
       </div>
+      {hint && <p className={`text-xs mt-1.5 ${light ? 'text-black/35' : 'text-white/30'}`}>{hint}</p>}
     </div>
   )
 }
