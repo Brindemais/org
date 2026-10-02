@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Percent, Search } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { PromotionStatus } from '../../lib/types'
-import { StatusBadge } from '../../components/ui/StatusBadge'
+import { StatusBadge, STATUS_LABELS } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { ImageUpload } from '../../components/ui/ImageUpload'
 import { formatDate } from '../../lib/format'
@@ -78,7 +78,7 @@ export default function AdminPromotions() {
         </div>
         <select className="input !w-auto" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">Todos os status</option>
-          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>)}
         </select>
       </div>
 
