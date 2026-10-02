@@ -18,7 +18,7 @@ import { PLAN_PRICES, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../
 type PublicPartner = Pick<Partner, 'id' | 'trade_name' | 'category' | 'neighborhood' | 'logo_url' | 'opening_hours'>
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { PublicHeader } from './PublicHeader'
-import { Logo, LogoBadge } from '../../components/layout/Logo'
+import { Logo } from '../../components/layout/Logo'
 import { BeerBottleArt } from '../../components/layout/Illustrations'
 import { ResponsiveContainer } from '../../components/ui/ResponsiveContainer'
 import { SectionTitle } from '../../components/ui/SectionTitle'
@@ -271,14 +271,18 @@ export default function Landing() {
       <section id="brinde" className="border-t border-black/10 py-16">
         <ResponsiveContainer className="grid lg:grid-cols-[1fr,1.3fr] gap-10 items-center">
           <GiftCard
-            name="Brinde escolhido pelo parceiro"
-            description="Cada parceiro define o brinde que oferece aos assinantes, de acordo com o próprio estoque."
+            name="Exemplo de brinde"
+            description="Você escolhe o parceiro, e o brinde disponível é confirmado na hora da retirada."
             deadlineLabel="até o fim do ciclo mensal"
             stockNote="O ponto de retirada escolhido precisa possuir estoque disponível."
             image={
-              <div className="w-full h-full flex items-center justify-center">
-                <LogoBadge size={140} />
-              </div>
+              <img
+                src="/images/gift-glass.webp"
+                alt="Exemplo de brinde Brinde Mais"
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover object-top"
+              />
             }
             onView={goToSignup}
           />
@@ -288,12 +292,12 @@ export default function Landing() {
               O brinde é só o começo
             </h3>
             <p className="text-black/55 leading-relaxed mb-4">
-              Cada parceiro escolhe o brinde que oferece aos assinantes da sua região, e a assinatura Brinde Mais vai muito além
-              dele: descontos exclusivos, cashback, bonificações por indicação e por consumo na rede, e uma carteira interna pra
-              acompanhar tudo.
+              Cada parceiro escolhe o brinde que oferece aos assinantes, e você escolhe o parceiro: o brinde disponível é
+              confirmado na hora da retirada. Além disso, a assinatura Brinde Mais vai muito além do brinde: descontos
+              exclusivos, cashback, bonificações por indicação e por consumo na rede, e uma carteira interna pra acompanhar tudo.
             </p>
             <ul className="space-y-2 text-sm text-black/65">
-              {['O modelo do brinde pode variar de acordo com o parceiro escolhido', 'Retirada disponível apenas em pontos com estoque', 'Novos brindes e parceiros são adicionados ao longo do tempo'].map((t) => (
+              {['Você escolhe o parceiro; o brinde disponível é confirmado na retirada', 'Retirada disponível apenas em pontos com estoque', 'Novos brindes e parceiros são adicionados ao longo do tempo'].map((t) => (
                 <li key={t} className="flex gap-2.5">
                   <ShieldCheck size={16} className="text-gold-500 shrink-0 mt-0.5" /> {t}
                 </li>
