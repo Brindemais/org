@@ -41,6 +41,7 @@ export default function AdminPartners() {
   const [editCategory, setEditCategory] = useState('bar')
   const [savingEdit, setSavingEdit] = useState(false)
   const [logoSavedId, setLogoSavedId] = useState<string | null>(null)
+  const [statusBusyId, setStatusBusyId] = useState<string | null>(null)
 
   async function load() {
     const { data } = await supabase.from('partners').select('*').order('created_at', { ascending: false })
@@ -112,14 +113,20 @@ export default function AdminPartners() {
   }
 
   async function setStatus(id: string, status: PartnerStatus) {
+    if (statusBusyId) return
+    setStatusBusyId(id)
     await supabase.rpc('admin_set_partner_status', { p_partner_id: id, p_status: status })
+    setStatusBusyId(null)
     load()
   }
 
   async function approveAndInvite(partner: Partner) {
+    if (statusBusyId || inviting) return
     setInviteMsg((m) => ({ ...m, [partner.id]: '' }))
     if (partner.status !== 'approved' && partner.status !== 'active') {
+      setStatusBusyId(partner.id)
       await supabase.rpc('admin_set_partner_status', { p_partner_id: partner.id, p_status: 'approved' })
+      setStatusBusyId(null)
     }
     if (partner.invited_at) {
       await load()
@@ -282,7 +289,7 @@ export default function AdminPartners() {
                 <button
                   key={s}
                   onClick={() => (s === 'approved' ? approveAndInvite(p) : setStatus(p.id, s))}
-                  disabled={p.status === s || inviting === p.id}
+                  disabled={p.status === s || inviting === p.id || statusBusyId === p.id}
                   className={`pill text-xs ${p.status === s ? 'bg-gold-400/20 text-gold-300' : 'bg-ink-950 border border-ink-800 text-white/50 hover:text-white'}`}
                 >
                   {s === 'approved' ? (inviting === p.id ? 'enviando convite...' : 'approved (envia convite)') : s}
@@ -292,7 +299,7 @@ export default function AdminPartners() {
             {p.invited_at ? (
               <p className="text-xs text-white/40 mb-3">Convite enviado em {new Date(p.invited_at).toLocaleDateString('pt-BR')}.</p>
             ) : (p.status === 'approved' || p.status === 'active') && (
-              <button onClick={() => approveAndInvite(p)} disabled={inviting === p.id} className="text-xs text-gold-400 font-medium mb-3">
+              <button onClick={() => approveAndInvite(p)} disabled={inviting === p.id || statusBusyId === p.id} className="text-xs text-gold-400 font-medium mb-3">
                 {inviting === p.id ? 'Enviando convite...' : 'Enviar convite de acesso por e-mail'}
               </button>
             )}

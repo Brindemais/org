@@ -23,6 +23,7 @@ export default function AdminStock() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editProduct, setEditProduct] = useState(emptyEditProduct)
   const [savingEdit, setSavingEdit] = useState(false)
+  const [approvalBusyId, setApprovalBusyId] = useState<string | null>(null)
 
   async function load() {
     const { data: prods } = await supabase.from('products').select('*').is('partner_id', null)
@@ -51,12 +52,18 @@ export default function AdminStock() {
   useEffect(() => { load() }, [])
 
   async function approveProduct(id: string) {
+    if (approvalBusyId) return
+    setApprovalBusyId(id)
     await supabase.rpc('admin_set_product_approval', { p_product_id: id, p_approved: true })
+    setApprovalBusyId(null)
     load()
   }
 
   async function rejectProduct(id: string) {
+    if (approvalBusyId) return
+    setApprovalBusyId(id)
     await supabase.from('products').update({ active: false }).eq('id', id)
+    setApprovalBusyId(null)
     load()
   }
 
@@ -149,8 +156,8 @@ export default function AdminStock() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <button onClick={() => approveProduct(p.id)} className="btn-gold !py-1.5 !px-3 text-xs">Aprovar</button>
-                <button onClick={() => rejectProduct(p.id)} className="btn-ghost !py-1.5 !px-3 text-xs">Rejeitar</button>
+                <button onClick={() => approveProduct(p.id)} disabled={approvalBusyId === p.id} className="btn-gold !py-1.5 !px-3 text-xs">Aprovar</button>
+                <button onClick={() => rejectProduct(p.id)} disabled={approvalBusyId === p.id} className="btn-ghost !py-1.5 !px-3 text-xs">Rejeitar</button>
               </div>
             </div>
           ))}
