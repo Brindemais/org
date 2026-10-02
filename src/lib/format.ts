@@ -2,6 +2,19 @@ export function formatBRL(value: number | null | undefined): string {
   return (value ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+// Espelha normalize_referral_code() no banco, só pra pré-visualização
+// instantânea no front — a validação de verdade (unicidade, etc.) sempre
+// roda no banco via referral_code_available/resolve_referral_code.
+export function slugifyReferralCode(value: string): string {
+  return value
+    .trim()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-+)|(-+$)/g, '')
+}
+
 export function formatDate(value: string | null | undefined): string {
   if (!value) return '-'
   return new Date(value).toLocaleDateString('pt-BR')

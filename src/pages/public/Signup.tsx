@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Check, Copy, CreditCard, KeyRound, QrCode, ShieldCheck, User, Wallet } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { LogoBadge } from '../../components/layout/Logo'
+import { ReferralFields } from '../../components/ui/ReferralFields'
 import { isValidCPF, maskCPF, maskPhone, maskCardNumber, maskCardExpiry, formatBRL } from '../../lib/format'
 import { PLAN_PRICES, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../../lib/plans'
 import type { SubscriptionPlan } from '../../lib/types'
@@ -25,9 +26,16 @@ const STEPS = [
   { n: 4, label: 'Pagamento', icon: Wallet },
 ]
 
+function signupErrorMessage(message: string): string {
+  if (message.includes('CPF_ALREADY_REGISTERED')) return 'Este CPF já possui cadastro na Brinde Mais.'
+  if (message.includes('REFERRAL_REQUIRED') || message.includes('REFERRER_NOT_FOUND')) return 'Código de indicação inválido ou não encontrado.'
+  if (message.includes('REFERRAL_LOGIN_TAKEN')) return 'Seu link de indicação já está em uso, escolha outro.'
+  if (message.includes('REFERRAL_LOGIN_TOO_SHORT')) return 'Seu link de indicação precisa ter pelo menos 3 letras ou números.'
+  return 'Erro ao concluir cadastro: ' + message
+}
+
 export default function Signup() {
   const [params] = useSearchParams()
-  const referralCode = params.get('ref') ?? ''
   const navigate = useNavigate()
 
   const [step, setStep] = useState<Step>(1)
@@ -41,6 +49,10 @@ export default function Signup() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [accepted, setAccepted] = useState(false)
+
+  const [referralCode, setReferralCode] = useState(params.get('ref') ?? '')
+  const [myReferralCode, setMyReferralCode] = useState('')
+  const [referralValid, setReferralValid] = useState(false)
 
   const [code, setCode] = useState('')
   const [resent, setResent] = useState(false)
@@ -72,10 +84,11 @@ export default function Signup() {
       p_birth_date: birthDate,
       p_phone: phone.replace(/\D/g, ''),
       p_email: email,
-      p_referral_code: referralCode || null,
+      p_referral_code: referralCode,
+      p_my_referral_code: myReferralCode,
     })
     if (rpcError) {
-      setError(rpcError.message.includes('CPF_ALREADY_REGISTERED') ? 'Este CPF já possui cadastro na Brinde Mais.' : 'Erro ao concluir cadastro: ' + rpcError.message)
+      setError(signupErrorMessage(rpcError.message))
       return false
     }
     return true
@@ -85,6 +98,7 @@ export default function Signup() {
     e.preventDefault()
     setError(null)
     if (!isValidCPF(cpf)) return setError('CPF inválido. Confira os números digitados.')
+    if (!referralValid) return setError('Preencha quem indicou você e escolha seu link de indicação antes de continuar.')
     if (!accepted) return setError('É necessário aceitar os Termos de Uso e a Política de Privacidade.')
 
     setLoading(true)
@@ -245,13 +259,22 @@ export default function Signup() {
           <form onSubmit={handleStep1} className="card-light space-y-4">
             <h1 className="font-display text-xl font-semibold text-ink-950">Crie sua conta</h1>
             <p className="text-sm text-black/50 -mt-2">Preencha seus dados para começar</p>
-            {referralCode && (
-              <p className="text-xs bg-gold-400/10 text-gold-700 rounded-lg px-3 py-2">Convidado por código {referralCode.toUpperCase()}</p>
-            )}
             <div>
               <label className="label-light">Nome completo</label>
               <input className="input-light" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
             </div>
+
+            <ReferralFields
+              referrerCode={referralCode}
+              onReferrerCodeChange={setReferralCode}
+              myCode={myReferralCode}
+              onMyCodeChange={setMyReferralCode}
+              autoSuggestSource={fullName}
+              myCodeLabel="Crie seu link de indicação"
+              myCodeHint="É o nome ou apelido que vai aparecer no seu link pra indicar outras pessoas."
+              onValidityChange={setReferralValid}
+            />
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="label-light">CPF</label>
@@ -280,7 +303,7 @@ export default function Signup() {
               <Link to="/privacidade" target="_blank" className="text-gold-600 underline">Política de Privacidade</Link>.
             </label>
             {error && <p className="text-sm text-red-500">{error}</p>}
-            <button type="submit" disabled={loading} className="btn-gold w-full">{loading ? 'Enviando...' : 'Continuar'}</button>
+            <button type="submit" disabled={loading || !referralValid} className="btn-gold w-full">{loading ? 'Enviando...' : 'Continuar'}</button>
             <p className="text-center text-sm text-black/40">Já tem uma conta? <Link to="/entrar/assinante" className="text-gold-600">Entrar</Link></p>
           </form>
         )}
