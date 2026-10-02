@@ -27,7 +27,7 @@ export default function AdminPartners() {
   const [partners, setPartners] = useState<Partner[]>([])
   const [creating, setCreating] = useState(false)
   const [createMsg, setCreateMsg] = useState('')
-  const [form, setForm] = useState({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '', email: '' })
+  const [form, setForm] = useState({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '', email: '', logo_url: '' })
   const [linking, setLinking] = useState<string | null>(null)
   const [linkEmail, setLinkEmail] = useState('')
   const [linkMsg, setLinkMsg] = useState('')
@@ -92,7 +92,7 @@ export default function AdminPartners() {
     // away too — no separate manual step needed.
     const { data: created, error } = await supabase
       .from('partners')
-      .insert({ ...form, email: form.email || null, status: 'approved', approved_at: new Date().toISOString() })
+      .insert({ ...form, email: form.email || null, logo_url: form.logo_url || null, status: 'approved', approved_at: new Date().toISOString() })
       .select()
       .single()
     setCreating(false)
@@ -100,7 +100,7 @@ export default function AdminPartners() {
       setCreateMsg('Não foi possível cadastrar o parceiro.')
       return
     }
-    setForm({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '', email: '' })
+    setForm({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '', email: '', logo_url: '' })
     if (created.email) {
       setCreateMsg('Parceiro cadastrado! Enviando convite de acesso por e-mail...')
       await approveAndInvite(created as Partner)
@@ -199,6 +199,9 @@ export default function AdminPartners() {
       <details className="card">
         <summary className="font-semibold cursor-pointer">+ Cadastrar novo parceiro</summary>
         <form onSubmit={createPartner} className="grid sm:grid-cols-2 gap-3 mt-4">
+          <div className="sm:col-span-2">
+            <ImageUpload value={form.logo_url || null} onChange={(url) => setForm({ ...form, logo_url: url })} folder="partner-logos" label="Logotipo (opcional)" circular hint="Tamanho recomendado: 512x512px, formato quadrado, até 4MB." />
+          </div>
           <input className="input" required placeholder="Razão social" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} />
           <input className="input" required placeholder="Nome fantasia" value={form.trade_name} onChange={(e) => setForm({ ...form, trade_name: e.target.value })} />
           <select className="input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
