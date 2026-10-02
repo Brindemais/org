@@ -7,7 +7,8 @@
 //     (service_role only), not the partner-linking RPC.
 //
 // E-mail delivery goes through Resend, same as invite-partner — see that
-// function's header for the RESEND_API_KEY / RESEND_FROM_EMAIL secrets.
+// function's header for the RESEND_API_KEY / RESEND_FROM_EMAIL secrets, and
+// for why this sends a typed code (email_otp) instead of a clickable link.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -19,22 +20,33 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 }
 
-function inviteEmailHtml(name: string, roleLabel: string, actionLink: string) {
+function inviteEmailHtml(name: string, roleLabel: string, code: string) {
   return `
-    <div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;color:#0A0A0A;">
-      <h2 style="margin-bottom:4px;">Bem-vindo(a) à equipe Brinde Mais!</h2>
-      <p>Olá, ${name}. Você foi cadastrado(a) como <strong>${roleLabel}</strong> no painel administrativo. Defina sua senha de acesso clicando no botão abaixo.</p>
-      <p style="text-align:center;margin:28px 0;">
-        <a href="${actionLink}" style="background-color:#D4941E;color:#0A0A0A;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;">Definir minha senha</a>
-      </p>
-      <p style="font-size:13px;color:#555;">Se o botão não funcionar, copie e cole este link no navegador:<br>${actionLink}</p>
-      <p style="font-size:13px;color:#555;">Se você não reconhece este convite, pode ignorar este e-mail com segurança.</p>
-      <p>Equipe Brinde Mais</p>
+    <div style="background-color:#f5f2ec;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;margin:0 auto;background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e8e4db;">
+        <tr><td style="height:4px;background-color:#d4941e;font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr><td style="padding:32px 32px 8px;text-align:center;">
+          <img src="https://brindemais.com.br/images/email-logo.png" alt="Brinde Mais" width="96" style="display:block;margin:0 auto;height:auto;" />
+        </td></tr>
+        <tr><td style="padding:16px 32px 0;">
+          <h1 style="margin:0 0 12px;font-size:20px;color:#0A0A0A;font-family:Arial,Helvetica,sans-serif;">Bem-vindo(a) à equipe Brinde Mais!</h1>
+          <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#555555;">Olá, ${name}. Você foi cadastrado(a) como <strong>${roleLabel}</strong> no painel administrativo. Acesse <a href="https://brindemais.com.br/parceiro/ativar" style="color:#935915;">brindemais.com.br/parceiro/ativar</a> e informe seu e-mail junto com o código abaixo para criar sua senha de acesso.</p>
+        </td></tr>
+        <tr><td style="padding:0 32px 8px;text-align:center;">
+          <div style="background-color:#faf8f4;border:1px solid #e8e4db;border-radius:10px;padding:16px 24px;display:inline-block;">
+            <span style="font-size:28px;font-weight:bold;letter-spacing:6px;color:#0A0A0A;font-family:Arial,Helvetica,sans-serif;">${code}</span>
+          </div>
+        </td></tr>
+        <tr><td style="padding:24px 32px 32px;">
+          <p style="margin:0;font-size:12px;color:#aaaaaa;border-top:1px solid #e8e4db;padding-top:16px;">Se você não reconhece este convite, pode ignorar este e-mail com segurança.</p>
+          <p style="margin:8px 0 0;font-size:12px;color:#aaaaaa;">Equipe Brinde Mais &middot; brindemais.com.br</p>
+        </td></tr>
+      </table>
     </div>
   `
 }
 
-async function sendViaResend(to: string, name: string, roleLabel: string, actionLink: string) {
+async function sendViaResend(to: string, name: string, roleLabel: string, code: string) {
   const resendKey = Deno.env.get('RESEND_API_KEY')
   const fromEmail = Deno.env.get('RESEND_FROM_EMAIL')
   if (!resendKey || !fromEmail) throw new Error('RESEND_NOT_CONFIGURED')
@@ -46,7 +58,7 @@ async function sendViaResend(to: string, name: string, roleLabel: string, action
       from: fromEmail,
       to,
       subject: 'Seu acesso ao painel administrativo Brinde Mais está pronto',
-      html: inviteEmailHtml(name, roleLabel, actionLink),
+      html: inviteEmailHtml(name, roleLabel, code),
     }),
   })
   if (!res.ok) {
@@ -109,7 +121,7 @@ Deno.serve(async (req) => {
     }
 
     try {
-      await sendViaResend(email, full_name, roleLabel, generated.properties.action_link)
+      await sendViaResend(email, full_name, roleLabel, generated.properties.email_otp)
     } catch (sendErr) {
       return json({ error: 'EMAIL_SEND_FAILED', detail: String(sendErr) }, 500)
     }
