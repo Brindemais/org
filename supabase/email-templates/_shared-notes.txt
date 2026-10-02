@@ -1,0 +1,25 @@
+Templates de e-mail do Supabase Auth (Authentication > Email Templates no
+dashboard do projeto) — não existe API/CLI nesta sessão para publicar isso
+automaticamente, então cada arquivo .html abaixo precisa ser colado à mão.
+
+Para cada arquivo:
+1. Supabase Dashboard > Authentication > Email Templates
+2. Abra o template correspondente (nome indicado no comentário HTML no topo
+   do arquivo)
+3. Apague o conteúdo da aba "Source" e cole o HTML do arquivo (tudo, menos o
+   comentário <!-- --> inicial)
+4. Ajuste o campo "Subject" com o assunto sugerido no mesmo comentário
+5. Salvar
+
+O logo usado (https://brindemais.com.br/images/email-logo.png) só existe
+depois que este branch for mergeado e o Vercel fizer o deploy — se os
+templates forem colados antes disso, o logo aparece quebrado até o deploy
+terminar.
+
+Arquivos:
+- confirm-signup.html     -> template "Confirm signup"
+- invite.html             -> template "Invite user"
+- magic-link.html         -> template "Magic Link"
+- change-email.html       -> template "Change Email Address"
+- reset-password.html     -> template "Reset Password" (o que estava indo pro spam)
+- reauthentication.html   -> template "Reauthentication"
