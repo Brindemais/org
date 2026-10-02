@@ -40,6 +40,7 @@ export default function AdminPartners() {
   const [editForm, setEditForm] = useState<Record<string, string>>({})
   const [editCategory, setEditCategory] = useState('bar')
   const [savingEdit, setSavingEdit] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
   const [logoSavedId, setLogoSavedId] = useState<string | null>(null)
   const [statusBusyId, setStatusBusyId] = useState<string | null>(null)
 
@@ -51,6 +52,7 @@ export default function AdminPartners() {
   function startEdit(p: Partner) {
     setEditingId(p.id)
     setEditCategory(p.category)
+    setEditError(null)
     const initial: Record<string, string> = {}
     for (const f of EDIT_FIELDS) initial[f.key] = (p[f.key] as string) ?? ''
     setEditForm(initial)
@@ -58,11 +60,17 @@ export default function AdminPartners() {
 
   async function saveEdit(id: string) {
     setSavingEdit(true)
+    setEditError(null)
     const payload: Record<string, string | null> = { category: editCategory }
     for (const f of EDIT_FIELDS) payload[f.key] = editForm[f.key]?.trim() || null
     const { error } = await supabase.from('partners').update(payload).eq('id', id)
     setSavingEdit(false)
-    if (!error) { setEditingId(null); load() }
+    if (error) {
+      setEditError(error.code === '23505' ? 'Já existe outro parceiro cadastrado com esse e-mail, telefone ou CNPJ/CPF.' : 'Não foi possível salvar as alterações.')
+      return
+    }
+    setEditingId(null)
+    load()
   }
 
   async function saveLogo(id: string, url: string) {
@@ -98,7 +106,7 @@ export default function AdminPartners() {
       .single()
     setCreating(false)
     if (error || !created) {
-      setCreateMsg('Não foi possível cadastrar o parceiro.')
+      setCreateMsg(error?.code === '23505' ? 'Já existe um parceiro cadastrado com esse e-mail, telefone ou CNPJ/CPF.' : 'Não foi possível cadastrar o parceiro.')
       return
     }
     setForm({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '', email: '', logo_url: '' })
@@ -269,6 +277,7 @@ export default function AdminPartners() {
                 <select className="input !py-2 text-xs" value={editCategory} onChange={(e) => setEditCategory(e.target.value)}>
                   {PARTNER_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
+                {editError && <p className="sm:col-span-2 text-xs text-red-400">{editError}</p>}
                 <div className="sm:col-span-2 flex gap-2">
                   <button onClick={() => saveEdit(p.id)} disabled={savingEdit} className="btn-gold !py-2 !px-3 text-xs">{savingEdit ? 'Salvando...' : 'Salvar alterações'}</button>
                   <button onClick={() => setEditingId(null)} className="btn-ghost !py-2 !px-3 text-xs">Cancelar</button>
