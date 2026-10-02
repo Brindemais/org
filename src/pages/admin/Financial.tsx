@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
-import { TrendingDown, TrendingUp, Users2, Wallet } from 'lucide-react'
+import { TrendingDown, TrendingUp, Users2, Wallet, KeyRound, Store, QrCode } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { StatCard } from '../../components/ui/StatCard'
 import { formatBRL } from '../../lib/format'
@@ -9,6 +9,7 @@ import { useDashboardTheme } from '../../contexts/DashboardThemeContext'
 const PLATFORM_COST_PCT = 0.15
 
 interface MonthRow { key: string; label: string; gross: number; referralCost: number }
+interface ConfirmedPayment { amount: number; confirmed_at: string; type: string; payment_method: string }
 
 export default function AdminFinancial() {
   const { theme } = useDashboardTheme()
@@ -17,18 +18,41 @@ export default function AdminFinancial() {
     : { grid: '#26262d', axis: '#666666', tooltipBg: '#151519', tooltipBorder: '#26262d' }
   const [payments, setPayments] = useState<{ amount: number; confirmed_at: string }[]>([])
   const [bonuses, setBonuses] = useState<{ amount: number; created_at: string }[]>([])
+  const [confirmedByMethod, setConfirmedByMethod] = useState<ConfirmedPayment[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     Promise.all([
       supabase.from('payments').select('amount, confirmed_at').eq('type', 'subscription').eq('status', 'confirmed').not('confirmed_at', 'is', null),
       supabase.from('bonuses').select('amount, created_at').eq('status', 'confirmed'),
-    ]).then(([{ data: p }, { data: b }]) => {
+      supabase.from('payments').select('amount, confirmed_at, type, payment_method').in('type', ['subscription', 'partner_fee']).eq('status', 'confirmed'),
+    ]).then(([{ data: p }, { data: b }, { data: cm }]) => {
       setPayments((p as any[]) ?? [])
       setBonuses((b as any[]) ?? [])
+      setConfirmedByMethod((cm as ConfirmedPayment[]) ?? [])
       setLoading(false)
     })
   }, [])
+
+  // "Ativação manual" = pagamento marcado payment_method='manual' (criado
+  // em /admin/ativacao-manual), em oposição a pix/credit_card confirmados
+  // direto pela Asaas — mesma distinção pedida pro financeiro: quanto
+  // entrou de cada jeito, separado por assinante e por parceiro.
+  const confirmations = useMemo(() => {
+    const isManual = (p: ConfirmedPayment) => p.payment_method === 'manual'
+    const subs = confirmedByMethod.filter((p) => p.type === 'subscription')
+    const partners = confirmedByMethod.filter((p) => p.type === 'partner_fee')
+    const sum = (rows: ConfirmedPayment[]) => rows.reduce((s, p) => s + Number(p.amount), 0)
+    const manualRows = confirmedByMethod.filter(isManual)
+    return {
+      manualTotal: sum(manualRows),
+      manualCount: manualRows.length,
+      subscriberManual: sum(subs.filter(isManual)),
+      subscriberAsaas: sum(subs.filter((p) => !isManual(p))),
+      partnerManual: sum(partners.filter(isManual)),
+      partnerAsaas: sum(partners.filter((p) => !isManual(p))),
+    }
+  }, [confirmedByMethod])
 
   const monthly = useMemo(() => {
     const map = new Map<string, MonthRow>()
@@ -85,6 +109,39 @@ export default function AdminFinancial() {
           <StatCard label="Custo de indicações" value={formatBRL(thisMonth.referralCost)} icon={<Users2 size={18} />} />
           <StatCard label="Valor líquido" value={formatBRL(thisMonth.net)} icon={<Wallet size={18} />} />
         </div>
+      </div>
+
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wide text-white/40 mb-3">Confirmações por origem</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <StatCard
+            label="Ativação manual"
+            value={formatBRL(confirmations.manualTotal)}
+            icon={<KeyRound size={18} />}
+            tone="gold"
+          />
+          <StatCard
+            label="Assinantes — manual"
+            value={formatBRL(confirmations.subscriberManual)}
+            icon={<Users2 size={18} />}
+          />
+          <StatCard
+            label="Assinantes — Asaas"
+            value={formatBRL(confirmations.subscriberAsaas)}
+            icon={<QrCode size={18} />}
+          />
+          <StatCard
+            label="Parceiros — manual"
+            value={formatBRL(confirmations.partnerManual)}
+            icon={<Store size={18} />}
+          />
+          <StatCard
+            label="Parceiros — Asaas"
+            value={formatBRL(confirmations.partnerAsaas)}
+            icon={<QrCode size={18} />}
+          />
+        </div>
+        <p className="text-xs text-white/30 mt-2">{confirmations.manualCount} pagamento{confirmations.manualCount === 1 ? '' : 's'} confirmado{confirmations.manualCount === 1 ? '' : 's'} manualmente no total (assinante + parceiro).</p>
       </div>
 
       <div>
