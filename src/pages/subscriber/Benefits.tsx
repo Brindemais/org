@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Lock, MapPin, Percent, Store, LocateFixed } from 'lucide-react'
+import { Lock, MapPin, Percent, Store, LocateFixed, Gift } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, Promotion } from '../../lib/types'
 import { useSubscription } from '../../hooks/useSubscription'
@@ -12,11 +12,12 @@ import { LoadingState } from '../../components/ui/LoadingState'
 
 // Only the columns this card grid renders — see the same note in Partners.tsx.
 type BenefitPartner = Pick<Partner, 'id' | 'trade_name' | 'category' | 'neighborhood' | 'city' | 'logo_url' | 'lat' | 'lng'>
+interface GiftOption { name: string; image_url: string | null }
 
 export default function SubscriberBenefits() {
   const { subscription, pickup, reload, benefitsBlocked } = useSubscription()
   const [partners, setPartners] = useState<BenefitPartner[]>([])
-  const [inStockIds, setInStockIds] = useState<Set<string> | null>(null)
+  const [giftsByPartner, setGiftsByPartner] = useState<Record<string, GiftOption[]> | null>(null)
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [category, setCategory] = useState<string>('')
   const [choosing, setChoosing] = useState<string | null>(null)
@@ -31,16 +32,32 @@ export default function SubscriberBenefits() {
     if (category) query = query.eq('category', category)
     query.then(({ data }) => { setPartners((data as BenefitPartner[]) ?? []); setLoading(false) })
     supabase.from('promotions').select('*').eq('status', 'approved').gte('valid_until', new Date().toISOString().slice(0, 10)).then(({ data }) => setPromotions((data as Promotion[]) ?? []))
-    // Only partners with at least one brinde in stock can be chosen as a
-    // pickup point — filtering them out here (instead of only rejecting at
-    // confirm time) is what actually satisfies "não deixar escolher parceiro
-    // sem estoque".
-    supabase.from('stock_partner').select('partner_id, quantity').gt('quantity', 0)
-      .then(({ data }) => setInStockIds(new Set((data ?? []).map((s) => s.partner_id))))
+
+    // Só da pra saber se um brinde é de verdade "disponível" cruzando dois
+    // dados: o catálogo público de brindes aprovados/ativos
+    // (list_public_products, única leitura de products liberada pra
+    // assinante via RLS) com o estoque atual de cada parceiro. Um parceiro
+    // só aparece como ponto de retirada se tiver pelo menos um brinde
+    // aprovado com estoque > 0 — mesma regra que choose_pickup_partner
+    // aplica no banco na hora de reservar.
+    Promise.all([
+      supabase.rpc('list_public_products').select('id, partner_id, name, image_url').eq('is_gift', true),
+      supabase.from('stock_partner').select('partner_id, product_id, quantity').gt('quantity', 0),
+    ]).then(([{ data: gifts }, { data: stock }]) => {
+      const giftList = (gifts ?? []) as any as { id: string; partner_id: string | null; name: string; image_url: string | null }[]
+      const giftById = new Map(giftList.map((g) => [g.id, g]))
+      const map: Record<string, GiftOption[]> = {}
+      for (const s of stock ?? []) {
+        const gift = giftById.get(s.product_id)
+        if (!gift || !gift.partner_id) continue
+        ;(map[gift.partner_id] ??= []).push({ name: gift.name, image_url: gift.image_url })
+      }
+      setGiftsByPartner(map)
+    })
   }, [category])
 
   const sortedPartners = useMemo(() => {
-    const available = inStockIds ? partners.filter((p) => inStockIds.has(p.id)) : partners
+    const available = giftsByPartner ? partners.filter((p) => giftsByPartner[p.id]?.length) : partners
     const withDistance = available.map((p) => ({
       partner: p,
       distanceKm: geo.status === 'granted' && p.lat != null && p.lng != null ? haversineKm(geo.lat!, geo.lng!, p.lat, p.lng) : null,
@@ -52,9 +69,9 @@ export default function SubscriberBenefits() {
       return a.distanceKm - b.distanceKm
     })
     return withDistance
-  }, [partners, geo, inStockIds])
+  }, [partners, geo, giftsByPartner])
 
-  const outOfStockCount = inStockIds ? partners.length - sortedPartners.length : 0
+  const outOfStockCount = giftsByPartner ? partners.length - sortedPartners.length : 0
 
   async function choosePartner(partnerId: string) {
     if (!subscription || benefitsBlocked) return
@@ -141,28 +158,41 @@ export default function SubscriberBenefits() {
 
         <div className="space-y-3">
           {loading && <LoadingState dark label="Carregando parceiros..." />}
-          {!loading && sortedPartners.map(({ partner: p, distanceKm }) => (
-            <div key={p.id} className="card flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gold-gradient p-[1.5px] shrink-0">
-                <div className="w-full h-full rounded-full bg-ink-800 flex items-center justify-center font-display text-gold-400 font-semibold overflow-hidden">
-                  {p.logo_url ? <img src={p.logo_url} alt="" className="w-full h-full object-cover" /> : p.trade_name.slice(0, 2).toUpperCase()}
+          {!loading && sortedPartners.map(({ partner: p, distanceKm }) => {
+            const gifts = giftsByPartner?.[p.id] ?? []
+            const firstGift = gifts[0]
+            return (
+              <div key={p.id} className="card flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gold-gradient p-[1.5px] shrink-0">
+                  <div className="w-full h-full rounded-full bg-ink-800 flex items-center justify-center font-display text-gold-400 font-semibold overflow-hidden">
+                    {p.logo_url ? <img src={p.logo_url} alt="" className="w-full h-full object-cover" /> : p.trade_name.slice(0, 2).toUpperCase()}
+                  </div>
                 </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{p.trade_name}</p>
+                  <p className="text-xs text-white/40 flex items-center gap-1">
+                    <MapPin size={11} /> {p.neighborhood ?? p.city}{distanceKm != null && ` · ${formatDistance(distanceKm)}`}
+                  </p>
+                  {firstGift && (
+                    <p className="text-xs text-gold-300 flex items-center gap-1.5 mt-1 min-w-0">
+                      <Gift size={11} className="shrink-0" />
+                      <span className="truncate">{firstGift.name}{gifts.length > 1 && ` +${gifts.length - 1}`}</span>
+                    </p>
+                  )}
+                </div>
+                {firstGift?.image_url ? (
+                  <img src={firstGift.image_url} alt={firstGift.name} className="w-11 h-11 rounded-lg object-cover shrink-0 bg-white" />
+                ) : null}
+                <button
+                  disabled={!!pickup || !subscription || choosing === p.id}
+                  onClick={() => choosePartner(p.id)}
+                  className="btn-gold !px-3 !py-2 text-xs shrink-0"
+                >
+                  {choosing === p.id ? '...' : 'Escolher'}
+                </button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{p.trade_name}</p>
-                <p className="text-xs text-white/40 flex items-center gap-1">
-                  <MapPin size={11} /> {p.neighborhood ?? p.city}{distanceKm != null && ` · ${formatDistance(distanceKm)}`}
-                </p>
-              </div>
-              <button
-                disabled={!!pickup || !subscription || choosing === p.id}
-                onClick={() => choosePartner(p.id)}
-                className="btn-gold !px-3 !py-2 text-xs shrink-0"
-              >
-                {choosing === p.id ? '...' : 'Escolher'}
-              </button>
-            </div>
-          ))}
+            )
+          })}
           {!loading && !sortedPartners.length && (
             <EmptyState dark icon={Store} title="Nenhum parceiro encontrado" description="Tente outra categoria ou volte mais tarde." />
           )}
