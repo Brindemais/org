@@ -4,7 +4,7 @@ import { Check, Copy, CreditCard, KeyRound, QrCode, ShieldCheck, User, Wallet } 
 import { supabase } from '../../lib/supabase'
 import { LogoBadge } from '../../components/layout/Logo'
 import { ReferralFields } from '../../components/ui/ReferralFields'
-import { isValidCPF, isValidEmail, isValidPhone, maskCPF, maskPhone, maskCardNumber, maskCardExpiry, formatBRL } from '../../lib/format'
+import { isValidCpfCnpj, isValidEmail, isValidPhone, maskCpfCnpj, maskPhone, maskCardNumber, maskCardExpiry, formatBRL } from '../../lib/format'
 import { PLAN_PRICES, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../../lib/plans'
 import type { SubscriptionPlan } from '../../lib/types'
 
@@ -27,7 +27,7 @@ const STEPS = [
 ]
 
 function signupErrorMessage(message: string): string {
-  if (message.includes('CPF_ALREADY_REGISTERED')) return 'Este CPF já possui cadastro na Brinde Mais.'
+  if (message.includes('CPF_ALREADY_REGISTERED')) return 'Este CPF/CNPJ já possui cadastro na Brinde Mais.'
   if (message.includes('INVALID_EMAIL')) return 'Digite um e-mail válido.'
   if (message.includes('FULL_NAME_ALREADY_REGISTERED')) return 'Já existe um cadastro com esse nome completo.'
   if (message.includes('MINOR_NOT_ALLOWED')) return 'É necessário ser maior de 18 anos para se cadastrar.'
@@ -111,7 +111,7 @@ export default function Signup() {
   async function handleStep1(e: FormEvent) {
     e.preventDefault()
     setError(null)
-    if (!isValidCPF(cpf)) return setError('CPF inválido. Confira os números digitados.')
+    if (!isValidCpfCnpj(cpf)) return setError('CPF/CNPJ inválido. Confira os números digitados.')
     if (!isValidEmail(email)) return setError('Digite um e-mail válido.')
     if (!isValidPhone(phone)) return setError('Digite um celular válido, com DDD.')
     if (!birthDate || calcAge(birthDate) < 18) return setError('É necessário ser maior de 18 anos para se cadastrar.')
@@ -294,8 +294,8 @@ export default function Signup() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="label-light">CPF</label>
-                <input className="input-light" required value={cpf} onChange={(e) => setCpf(maskCPF(e.target.value))} placeholder="000.000.000-00" />
+                <label className="label-light">CPF ou CNPJ</label>
+                <input className="input-light" required value={cpf} onChange={(e) => setCpf(maskCpfCnpj(e.target.value))} placeholder="000.000.000-00" />
               </div>
               <div>
                 <label className="label-light">Data de nascimento</label>

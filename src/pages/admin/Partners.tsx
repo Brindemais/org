@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Download, Store, Search } from 'lucide-react'
+import { Download, Store, Search, Boxes } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import type { Partner, PartnerStatus } from '../../lib/types'
 import { PARTNER_CATEGORIES } from '../../lib/types'
@@ -7,6 +8,7 @@ import { StatusBadge, STATUS_LABELS } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { ImageUpload } from '../../components/ui/ImageUpload'
 import { downloadCSV } from '../../lib/csv'
+import { maskCEP } from '../../lib/format'
 
 const STATUS_FLOW: PartnerStatus[] = ['interested', 'pending_docs', 'analyzing', 'approved', 'active', 'suspended', 'rejected', 'closed']
 
@@ -27,7 +29,7 @@ export default function AdminPartners() {
   const [partners, setPartners] = useState<Partner[]>([])
   const [creating, setCreating] = useState(false)
   const [createMsg, setCreateMsg] = useState('')
-  const [form, setForm] = useState({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '', email: '', logo_url: '' })
+  const [form, setForm] = useState({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '', cep: '', email: '', logo_url: '' })
   const [linking, setLinking] = useState<string | null>(null)
   const [linkEmail, setLinkEmail] = useState('')
   const [linkMsg, setLinkMsg] = useState('')
@@ -101,7 +103,7 @@ export default function AdminPartners() {
     // away too — no separate manual step needed.
     const { data: created, error } = await supabase
       .from('partners')
-      .insert({ ...form, email: form.email || null, logo_url: form.logo_url || null, status: 'approved', approved_at: new Date().toISOString() })
+      .insert({ ...form, email: form.email || null, logo_url: form.logo_url || null, cep: form.cep.replace(/\D/g, '') || null, status: 'approved', approved_at: new Date().toISOString() })
       .select()
       .single()
     setCreating(false)
@@ -109,7 +111,7 @@ export default function AdminPartners() {
       setCreateMsg(error?.code === '23505' ? 'Já existe um parceiro cadastrado com esse e-mail, telefone ou CNPJ/CPF.' : 'Não foi possível cadastrar o parceiro.')
       return
     }
-    setForm({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '', email: '', logo_url: '' })
+    setForm({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '', cep: '', email: '', logo_url: '' })
     if (created.email) {
       setCreateMsg('Parceiro cadastrado! Enviando convite de acesso por e-mail...')
       await approveAndInvite(created as Partner)
@@ -253,6 +255,7 @@ export default function AdminPartners() {
           <input className="input" type="email" placeholder="E-mail (login de acesso ao painel)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           <input className="input" placeholder="Endereço" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
           <input className="input" placeholder="Bairro" value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} />
+          <input className="input" placeholder="CEP" value={form.cep} onChange={(e) => setForm({ ...form, cep: maskCEP(e.target.value) })} />
           <p className="text-xs text-white/40 sm:col-span-2">
             Informando o e-mail, o convite de acesso ao painel do parceiro é enviado automaticamente ao cadastrar.
           </p>
@@ -276,6 +279,9 @@ export default function AdminPartners() {
                 {editingId !== p.id && (
                   <button onClick={() => startEdit(p)} className="text-xs text-gold-400 font-medium">Editar</button>
                 )}
+                <Link to={`/admin/parceiros/${p.id}/gerenciar`} className="text-xs text-gold-400 font-medium flex items-center gap-1">
+                  <Boxes size={12} /> Produtos e estoque
+                </Link>
               </div>
             </div>
 

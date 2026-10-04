@@ -56,6 +56,7 @@ const AdminManualActivation = lazy(() => import('./pages/admin/ManualActivation'
 const AdminRegisterGift = lazy(() => import('./pages/admin/RegisterGift'))
 const AdminReferrals = lazy(() => import('./pages/admin/Referrals'))
 const AdminPartners = lazy(() => import('./pages/admin/Partners'))
+const AdminPartnerManage = lazy(() => import('./pages/admin/PartnerManage'))
 const AdminPayments = lazy(() => import('./pages/admin/Payments'))
 const AdminStock = lazy(() => import('./pages/admin/Stock'))
 const AdminPromotions = lazy(() => import('./pages/admin/Promotions'))
@@ -147,6 +148,7 @@ export default function App() {
           <Route path="ativacao-manual" element={<AdminManualActivation />} />
           <Route path="indicacoes" element={<AdminReferrals />} />
           <Route path="parceiros" element={<AdminPartners />} />
+          <Route path="parceiros/:id/gerenciar" element={<AdminPartnerManage />} />
           <Route path="pagamentos" element={<AdminPayments />} />
           <Route path="estoque" element={<AdminStock />} />
           <Route path="cadastrar-brinde" element={<AdminRegisterGift />} />

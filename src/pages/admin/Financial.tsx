@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
-import { TrendingDown, TrendingUp, Users2, Wallet, KeyRound, Store, QrCode } from 'lucide-react'
+import { TrendingDown, TrendingUp, Users2, Wallet, KeyRound, Store, QrCode, Search, Undo2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { StatCard } from '../../components/ui/StatCard'
-import { formatBRL } from '../../lib/format'
+import { formatBRL, formatDateTime } from '../../lib/format'
 import { useDashboardTheme } from '../../contexts/DashboardThemeContext'
 
 const PLATFORM_COST_PCT = 0.15
 
 interface MonthRow { key: string; label: string; gross: number; referralCost: number }
 interface ConfirmedPayment { amount: number; confirmed_at: string; type: string; payment_method: string }
+interface UserResult { id: string; full_name: string; email: string | null }
+interface BonusRow { id: string; type: string; level: number; amount: number; status: string; created_at: string }
 
 export default function AdminFinancial() {
   const { theme } = useDashboardTheme()
@@ -20,6 +22,18 @@ export default function AdminFinancial() {
   const [bonuses, setBonuses] = useState<{ amount: number; created_at: string }[]>([])
   const [confirmedByMethod, setConfirmedByMethod] = useState<ConfirmedPayment[]>([])
   const [loading, setLoading] = useState(true)
+
+  const [walletQuery, setWalletQuery] = useState('')
+  const [walletResults, setWalletResults] = useState<UserResult[]>([])
+  const [searchingWallet, setSearchingWallet] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<UserResult | null>(null)
+  const [selectedBalance, setSelectedBalance] = useState<number | null>(null)
+  const [selectedBonuses, setSelectedBonuses] = useState<BonusRow[]>([])
+  const [adjustAmount, setAdjustAmount] = useState('')
+  const [adjustReason, setAdjustReason] = useState('')
+  const [adjusting, setAdjusting] = useState(false)
+  const [walletMsg, setWalletMsg] = useState('')
+  const [reversingId, setReversingId] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([
@@ -94,6 +108,55 @@ export default function AdminFinancial() {
     liquido: m.gross - m.gross * PLATFORM_COST_PCT - m.referralCost,
   }))
 
+  async function searchWallet() {
+    const q = walletQuery.trim()
+    if (!q) return
+    setSearchingWallet(true)
+    const { data } = await supabase.from('profiles').select('id, full_name, email').or(`full_name.ilike.%${q}%,email.ilike.%${q}%`).limit(8)
+    setWalletResults((data as UserResult[]) ?? [])
+    setSearchingWallet(false)
+  }
+
+  async function selectUser(u: UserResult) {
+    setSelectedUser(u)
+    setWalletResults([])
+    setWalletQuery('')
+    setWalletMsg('')
+    setAdjustAmount('')
+    setAdjustReason('')
+    const [{ data: balance }, { data: bonusRows }] = await Promise.all([
+      supabase.rpc('current_wallet_balance', { p_user_id: u.id }),
+      supabase.from('bonuses').select('id, type, level, amount, status, created_at').eq('beneficiary_id', u.id).order('created_at', { ascending: false }).limit(20),
+    ])
+    setSelectedBalance(typeof balance === 'number' ? balance : Number(balance ?? 0))
+    setSelectedBonuses((bonusRows as BonusRow[]) ?? [])
+  }
+
+  async function applyAdjustment() {
+    if (!selectedUser) return
+    const amount = Number(adjustAmount)
+    if (!amount) { setWalletMsg('Informe um valor diferente de zero (use - pra saldo negativo).'); return }
+    setAdjusting(true)
+    setWalletMsg('')
+    const { error } = await supabase.rpc('admin_adjust_wallet', { p_user_id: selectedUser.id, p_amount: amount, p_reason: adjustReason || null })
+    setAdjusting(false)
+    if (error) { setWalletMsg('Não foi possível aplicar o ajuste.'); return }
+    setWalletMsg('Ajuste aplicado com sucesso.')
+    setAdjustAmount('')
+    setAdjustReason('')
+    selectUser(selectedUser)
+  }
+
+  async function reverseBonus(bonusId: string) {
+    if (!selectedUser) return
+    if (!confirm('Estornar este bônus? O valor sai do saldo da pessoa.')) return
+    setReversingId(bonusId)
+    const { error } = await supabase.rpc('admin_reverse_bonus', { p_bonus_id: bonusId })
+    setReversingId(null)
+    if (error) { setWalletMsg('Não foi possível estornar este bônus.'); return }
+    selectUser(selectedUser)
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -142,6 +205,80 @@ export default function AdminFinancial() {
           />
         </div>
         <p className="text-xs text-white/30 mt-2">{confirmations.manualCount} pagamento{confirmations.manualCount === 1 ? '' : 's'} confirmado{confirmations.manualCount === 1 ? '' : 's'} manualmente no total (assinante + parceiro).</p>
+      </div>
+
+      <div className="card">
+        <p className="font-semibold mb-1">Ajustes manuais de saldo</p>
+        <p className="text-xs text-white/40 mb-4">Busque um assinante ou parceiro pra corrigir o saldo dele (positivo ou negativo) ou estornar um bônus específico.</p>
+
+        <div className="flex gap-2 mb-3">
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+            <input
+              className="input !pl-9"
+              placeholder="Buscar por nome ou e-mail..."
+              value={walletQuery}
+              onChange={(e) => setWalletQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && searchWallet()}
+            />
+          </div>
+          <button onClick={searchWallet} disabled={searchingWallet} className="btn-dark !px-4 text-xs">{searchingWallet ? 'Buscando...' : 'Buscar'}</button>
+        </div>
+
+        {walletResults.length > 0 && (
+          <div className="rounded-lg border border-ink-800 divide-y divide-ink-800 mb-4">
+            {walletResults.map((u) => (
+              <button key={u.id} onClick={() => selectUser(u)} className="w-full text-left px-3 py-2 text-sm hover:bg-white/5 flex items-center justify-between">
+                <span>{u.full_name}</span>
+                <span className="text-xs text-white/40">{u.email}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {selectedUser && (
+          <div className="rounded-lg bg-ink-950 border border-ink-800 p-4 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <p className="font-semibold text-sm">{selectedUser.full_name}</p>
+                <p className="text-xs text-white/40">{selectedUser.email}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-white/40">Saldo atual</p>
+                <p className={`font-semibold ${(selectedBalance ?? 0) < 0 ? 'text-red-400' : 'text-gold-400'}`}>{formatBRL(selectedBalance ?? 0)}</p>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-[1fr_2fr_auto] gap-2">
+              <input className="input !text-xs" type="number" step="0.01" placeholder="Valor (-14.90)" value={adjustAmount} onChange={(e) => setAdjustAmount(e.target.value)} />
+              <input className="input !text-xs" placeholder="Motivo (opcional)" value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} />
+              <button onClick={applyAdjustment} disabled={adjusting} className="btn-gold !py-2 text-xs">{adjusting ? 'Aplicando...' : 'Aplicar ajuste'}</button>
+            </div>
+            {walletMsg && <p className="text-xs text-white/50">{walletMsg}</p>}
+
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-white/40 mb-2">Bônus recebidos</p>
+              {selectedBonuses.length === 0 && <p className="text-xs text-white/30">Nenhum bônus registrado.</p>}
+              <div className="space-y-1.5">
+                {selectedBonuses.map((b) => (
+                  <div key={b.id} className="flex items-center justify-between text-xs py-1.5 border-t border-ink-800">
+                    <span className="text-white/60">{formatDateTime(b.created_at)} · nível {b.level} · {b.type}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={b.status === 'reversed' ? 'text-white/30 line-through' : 'font-semibold'}>{formatBRL(b.amount)}</span>
+                      {b.status !== 'reversed' ? (
+                        <button onClick={() => reverseBonus(b.id)} disabled={reversingId === b.id} className="text-red-400 flex items-center gap-1">
+                          <Undo2 size={12} /> Estornar
+                        </button>
+                      ) : (
+                        <span className="text-white/30">Estornado</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div>
