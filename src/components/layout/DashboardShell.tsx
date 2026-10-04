@@ -1,5 +1,5 @@
 import { NavLink, Link, Outlet } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Bell, LogOut, Menu, Moon, Sun, type LucideIcon } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -13,7 +13,7 @@ export interface DashNavItem {
   end?: boolean
 }
 
-export function DashboardShell(props: { navItems: DashNavItem[]; eyebrow: string; subtitle: string; accountLabel: string; notificationsPath?: string }) {
+export function DashboardShell(props: { navItems: DashNavItem[]; eyebrow: string; subtitle: string; accountLabel: string; notificationsPath?: string; banner?: ReactNode }) {
   return (
     <DashboardThemeProvider>
       <DashboardShellInner {...props} />
@@ -22,8 +22,8 @@ export function DashboardShell(props: { navItems: DashNavItem[]; eyebrow: string
 }
 
 function DashboardShellInner({
-  navItems, eyebrow, subtitle, accountLabel, notificationsPath,
-}: { navItems: DashNavItem[]; eyebrow: string; subtitle: string; accountLabel: string; notificationsPath?: string }) {
+  navItems, eyebrow, subtitle, accountLabel, notificationsPath, banner,
+}: { navItems: DashNavItem[]; eyebrow: string; subtitle: string; accountLabel: string; notificationsPath?: string; banner?: ReactNode }) {
   const { profile, partner, signOut } = useAuth()
   const { theme, toggleTheme } = useDashboardTheme()
   const [open, setOpen] = useState(false)
@@ -106,6 +106,7 @@ function DashboardShellInner({
       )}
 
       <div className="flex-1 min-w-0 flex flex-col">
+        {banner}
         <header className="sticky top-0 z-30 bg-ink-950/90 backdrop-blur border-b border-ink-800 px-4 lg:px-8 py-3.5 flex items-center justify-between">
           <button className="lg:hidden text-white/70" onClick={() => setOpen(true)}>
             <Menu size={22} />

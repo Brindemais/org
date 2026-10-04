@@ -1,4 +1,5 @@
-import { LayoutDashboard, PackageCheck, Boxes, Gift, Percent, CalendarCheck, Bell, History, Store, Megaphone, Users } from 'lucide-react'
+import { LayoutDashboard, PackageCheck, Boxes, Gift, Percent, CalendarCheck, Bell, History, Store, Megaphone, Users, AlertTriangle } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { DashboardShell, type DashNavItem } from './DashboardShell'
 import { useAuth } from '../../contexts/AuthContext'
 import { PartnerFeeGate } from '../partner/PartnerFeeGate'
@@ -29,6 +30,25 @@ export function PartnerShell() {
     return <PartnerFeeGate />
   }
 
+  // Aviso de vencimento próximo (até 7 dias) da taxa de anunciante — só
+  // enquanto ela ainda está ativa; depois de vencer de verdade, o painel
+  // inteiro já fica bloqueado pelo PartnerFeeGate acima, então não faz
+  // sentido mostrar os dois ao mesmo tempo.
+  const daysLeft = isAdvertiserActive && partner?.advertiser_expires_at
+    ? Math.ceil((new Date(partner.advertiser_expires_at).getTime() - Date.now()) / 86400000)
+    : null
+  const showExpiryBanner = daysLeft !== null && daysLeft <= 7
+
+  const banner = showExpiryBanner ? (
+    <div className="bg-red-600 text-white px-4 lg:px-8 py-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm font-medium">
+      <AlertTriangle size={15} className="shrink-0" />
+      <span>
+        {daysLeft === 0 ? 'Sua taxa de anunciante vence hoje.' : daysLeft === 1 ? 'Sua taxa de anunciante vence amanhã.' : `Sua taxa de anunciante vence em ${daysLeft} dias.`}
+      </span>
+      <Link to="/parceiro/anunciante" className="underline font-semibold whitespace-nowrap">Renovar agora</Link>
+    </div>
+  ) : undefined
+
   return (
     <DashboardShell
       navItems={NAV}
@@ -36,6 +56,7 @@ export function PartnerShell() {
       subtitle="Visão geral do seu parceiro"
       accountLabel={partner ? `Parceiro desde ${new Date(partner.approved_at ?? partner.created_at).toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' })}` : 'Parceiro Brinde Mais'}
       notificationsPath="/parceiro/notificacoes"
+      banner={banner}
     />
   )
 }
