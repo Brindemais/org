@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { RefreshCw, UserPlus, Gift, MapPin, Check, XCircle } from 'lucide-react'
+import { RefreshCw, UserPlus, Gift, MapPin, Check, XCircle, Clock, X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSubscription } from '../../hooks/useSubscription'
 import { useGeolocation } from '../../hooks/useGeolocation'
@@ -30,6 +30,8 @@ export default function SubscriberPickup() {
   const [partner, setPartner] = useState<PickupPartner | null>(null)
   const [product, setProduct] = useState<Pick<ProductRow, 'name' | 'image_url'> | null>(null)
   const [tick, setTick] = useState(0)
+  const [cancelling, setCancelling] = useState(false)
+  const [cancelError, setCancelError] = useState<string | null>(null)
   const geo = useGeolocation()
 
   // useSubscription() only ever returns a pickup while it's still
@@ -82,6 +84,28 @@ export default function SubscriberPickup() {
     ? haversineKm(geo.lat!, geo.lng!, partner.lat, partner.lng)
     : null
 
+  const daysLeft = pickup?.deadline
+    ? Math.ceil((new Date(pickup.deadline).getTime() - Date.now()) / 86400000)
+    : null
+
+  async function cancelPickup() {
+    if (!pickup) return
+    if (!window.confirm('Cancelar esta retirada? Você poderá escolher outro parceiro em seguida.')) return
+    setCancelling(true)
+    setCancelError(null)
+    const { error } = await supabase.rpc('cancel_pickup_by_subscriber', { p_pickup_id: pickup.id })
+    setCancelling(false)
+    if (error) {
+      const map: Record<string, string> = {
+        PICKUP_NOT_CANCELLABLE: 'Esta retirada não pode mais ser cancelada.',
+        PICKUP_DEADLINE_PASSED: 'O prazo de 30 dias já passou, não é possível cancelar.',
+      }
+      setCancelError(map[error.message] ?? 'Não foi possível cancelar esta retirada.')
+      return
+    }
+    setTick((v) => v + 1)
+  }
+
   if (subLoading || loadingPickup) return <LoadingState dark label="Carregando retirada..." className="py-16" />
 
   if (!pickup) {
@@ -125,6 +149,19 @@ export default function SubscriberPickup() {
         <p className="text-sm text-white/50">Retirada #{pickup.cycle_month.toString().padStart(2, '0')}/{pickup.cycle_year}</p>
       </div>
 
+      {pickup.status !== 'withdrawn' && daysLeft !== null && (
+        <div className="card !py-2.5 flex items-center gap-2 text-xs text-white/60">
+          <Clock size={13} className="text-gold-400 shrink-0" />
+          {daysLeft <= 0
+            ? 'O prazo para retirada vence hoje.'
+            : daysLeft === 1
+              ? 'Falta 1 dia para o prazo de retirada vencer.'
+              : `Faltam ${daysLeft} dias para o prazo de retirada vencer (30 dias a partir da escolha).`}
+        </div>
+      )}
+
+      {cancelError && <p className="text-xs bg-red-500/10 text-red-400 rounded-lg px-3 py-2">{cancelError}</p>}
+
       <div className="card !p-0 overflow-hidden">
         <div className="flex items-center gap-3 p-4">
           {product?.image_url ? (
@@ -157,6 +194,16 @@ export default function SubscriberPickup() {
             </p>
           </div>
         </div>
+
+        {pickup.status !== 'withdrawn' && (
+          <button
+            onClick={cancelPickup}
+            disabled={cancelling}
+            className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-red-400 hover:text-red-300 disabled:opacity-50 py-1.5"
+          >
+            <X size={13} /> {cancelling ? 'Cancelando...' : 'Cancelar e escolher outro parceiro'}
+          </button>
+        )}
       </div>
 
       <div className="card text-center space-y-4">
