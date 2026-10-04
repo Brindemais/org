@@ -118,7 +118,7 @@ export function ReferralFields({
           <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1"><Check size={12} /> Disponível</p>
         )}
         {myCodeStatus === 'taken' && (
-          <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><X size={12} /> Esse link já está em uso, escolha outro.</p>
+          <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><X size={12} /> Esse nome já está em uso, escolha outro.</p>
         )}
         {myCodeStatus === 'invalid' && (
           <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><X size={12} /> Use pelo menos 3 letras ou números.</p>

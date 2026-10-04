@@ -104,6 +104,7 @@ export interface ProductRow {
   created_at: string
   discount_pct: number
   subscriber_discount_pct: number
+  catalog_id: string | null
 }
 
 export interface StockPartnerRow {

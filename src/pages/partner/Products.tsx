@@ -1,96 +1,70 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { Gift, Pause, Pencil, Play, Trash2, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Check, Gift, Pause, Play, Plus, Trash2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import type { ProductRow } from '../../lib/types'
 import { formatBRL } from '../../lib/format'
-import { ImageUpload } from '../../components/ui/ImageUpload'
-import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 
-// Comissionamento da rede de consumo é sempre 1% por nível em 4 níveis
-// (ver award_referral_bonuses no banco) — 4% fixo, não configurável por
-// produto.
-const NETWORK_COMMISSION_PCT = 4
+interface CatalogItem { id: string; name: string; description: string | null; image_url: string | null }
 
-const emptyForm = { name: '', description: '', normal_price: '', discount_pct: '', subscriber_discount_pct: '', image_url: '' }
-
+// O parceiro não cadastra brinde nenhum do zero — só escolhe, do catálogo
+// que o admin disponibiliza (/admin/cadastrar-brinde), quais quer colocar
+// na própria vitrine. O brinde não tem preço pro assinante (é benefício
+// incluso na assinatura); o "valor de referência" informado aqui só serve
+// de base pro bônus de 1% por nível da rede de indicação quando alguém
+// retira esse brinde (award_referral_bonuses, tipo consumption).
 export default function PartnerProducts() {
   const { partner } = useAuth()
-  const [products, setProducts] = useState<ProductRow[]>([])
-  const [form, setForm] = useState(emptyForm)
+  const [catalog, setCatalog] = useState<CatalogItem[]>([])
+  const [mine, setMine] = useState<ProductRow[]>([])
+  const [addingId, setAddingId] = useState<string | null>(null)
+  const [refValue, setRefValue] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [editingValueId, setEditingValueId] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState('')
   const [deleteError, setDeleteError] = useState<{ id: string; message: string } | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   async function load() {
     if (!partner) return
-    const { data } = await supabase.from('products').select('*').eq('partner_id', partner.id).order('created_at', { ascending: false })
-    setProducts((data as ProductRow[]) ?? [])
+    const [{ data: cat }, { data: own }] = await Promise.all([
+      supabase.from('products_public').select('id, name, description, image_url').is('partner_id', null).eq('is_gift', true).order('name'),
+      supabase.from('products').select('*').eq('partner_id', partner.id).order('created_at', { ascending: false }),
+    ])
+    setCatalog((cat as CatalogItem[]) ?? [])
+    setMine((own as ProductRow[]) ?? [])
   }
 
   useEffect(() => { load() }, [partner])
 
-  const normalPrice = Number(form.normal_price || 0)
-  const discountPct = Math.min(50, Math.max(0, Number(form.discount_pct || 0)))
-  const subscriberDiscountPct = Math.max(0, Number(form.subscriber_discount_pct || 0))
-  const netProfitPct = discountPct - subscriberDiscountPct - NETWORK_COMMISSION_PCT
-  const usesPricingRule = discountPct > 0
-  const subscriberPrice = normalPrice * (1 - subscriberDiscountPct / 100)
-  const commissionValue = usesPricingRule ? (normalPrice * NETWORK_COMMISSION_PCT) / 100 : 0
-  const netProfitValue = usesPricingRule ? (normalPrice * netProfitPct) / 100 : 0
-  const poolInvalid = usesPricingRule && subscriberDiscountPct + NETWORK_COMMISSION_PCT > discountPct
+  const selectedCatalogIds = new Set(mine.map((p) => p.catalog_id).filter(Boolean))
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
+  function startAdd(catalogId: string) {
+    setAddingId(catalogId)
+    setRefValue('')
+    setError(null)
+  }
+
+  async function confirmAdd(item: CatalogItem) {
     if (!partner) return
     setError(null)
-    if (poolInvalid) {
-      setError(`O desconto Brinde Mais precisa cobrir o repasse ao assinante + os ${NETWORK_COMMISSION_PCT}% da rede de consumo.`)
-      return
-    }
     setSaving(true)
-    const payload = {
-      name: form.name,
-      description: form.description,
-      normal_price: normalPrice,
-      subscriber_price: Number(subscriberPrice.toFixed(2)),
-      discount_pct: discountPct,
-      subscriber_discount_pct: subscriberDiscountPct,
-      image_url: form.image_url || null,
-    }
-
-    const { error: saveError } = editingId
-      ? await supabase.from('products').update(payload).eq('id', editingId)
-      : await supabase.from('products').insert({ ...payload, partner_id: partner.id, is_gift: true, approved: false })
-
-    setSaving(false)
-    if (saveError) { setError(editingId ? 'Não foi possível salvar as alterações.' : 'Não foi possível cadastrar o brinde.'); return }
-    setForm(emptyForm)
-    setEditingId(null)
-    load()
-  }
-
-  function startEdit(p: ProductRow) {
-    setEditingId(p.id)
-    setError(null)
-    setForm({
-      name: p.name,
-      description: p.description ?? '',
-      normal_price: String(p.normal_price),
-      discount_pct: String(p.discount_pct),
-      subscriber_discount_pct: String(p.subscriber_discount_pct),
-      image_url: p.image_url ?? '',
+    const { error: insertError } = await supabase.from('products').insert({
+      partner_id: partner.id,
+      catalog_id: item.id,
+      name: item.name,
+      description: item.description,
+      image_url: item.image_url,
+      normal_price: Number(refValue || 0),
+      is_gift: true,
+      approved: true,
     })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  function cancelEdit() {
-    setEditingId(null)
-    setForm(emptyForm)
-    setError(null)
+    setSaving(false)
+    if (insertError) { setError('Não foi possível adicionar este brinde à sua vitrine.'); return }
+    setAddingId(null)
+    load()
   }
 
   async function toggleActive(p: ProductRow) {
@@ -98,8 +72,14 @@ export default function PartnerProducts() {
     load()
   }
 
-  async function deleteProduct(p: ProductRow) {
-    if (!confirm(`Excluir "${p.name}" definitivamente? Essa ação não pode ser desfeita.`)) return
+  async function saveValue(p: ProductRow) {
+    await supabase.from('products').update({ normal_price: Number(editValue || 0) }).eq('id', p.id)
+    setEditingValueId(null)
+    load()
+  }
+
+  async function deleteMine(p: ProductRow) {
+    if (!confirm(`Remover "${p.name}" da sua vitrine? Essa ação não pode ser desfeita.`)) return
     setDeleteError(null)
     setDeletingId(p.id)
     const { error: deleteErr } = await supabase.from('products').delete().eq('id', p.id)
@@ -107,101 +87,91 @@ export default function PartnerProducts() {
     if (deleteErr) {
       setDeleteError({
         id: p.id,
-        message: deleteErr.code === '23503'
-          ? 'Não é possível excluir: já tem retirada ou movimentação de estoque registrada. Use Pausar.'
-          : 'Não foi possível excluir o brinde.',
+        message: deleteErr.code === '23503' ? 'Não é possível remover: já tem retirada ou movimentação de estoque registrada. Use Pausar.' : 'Não foi possível remover.',
       })
       return
     }
-    setDeleteError(null)
     load()
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="font-display text-2xl font-semibold">Produtos cadastrados</h1>
-        <p className="text-white/50 text-sm">Cadastre os brindes disponíveis para retirada no seu estabelecimento. Novos brindes e alterações passam por aprovação da administração antes de ficarem visíveis.</p>
+        <h1 className="font-display text-2xl font-semibold">Brindes</h1>
+        <p className="text-white/50 text-sm">Escolha, do catálogo abaixo, quais brindes você quer oferecer aos assinantes. O brinde é um benefício da assinatura — não tem preço pro assinante.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="card grid sm:grid-cols-2 gap-3">
-        <div className="sm:col-span-2 flex items-center justify-between">
-          <p className="font-semibold text-sm">{editingId ? 'Editando brinde' : 'Novo brinde'}</p>
-          {editingId && <button type="button" onClick={cancelEdit} className="text-xs text-white/40 flex items-center gap-1"><X size={12} /> Cancelar edição</button>}
-        </div>
-        <div className="sm:col-span-2">
-          <ImageUpload value={form.image_url || null} onChange={(url) => setForm({ ...form, image_url: url })} folder="products" label="Foto do brinde" hint="Tamanho recomendado: 800x450px (16:9), até 4MB." />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="label">Nome do brinde</label>
-          <input className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="label">Descrição</label>
-          <input className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        </div>
+      <div>
+        <p className="font-semibold mb-3">Catálogo disponível</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {catalog.map((item) => {
+            const selected = selectedCatalogIds.has(item.id)
+            return (
+              <div key={item.id} className="card">
+                <div className="aspect-video rounded-lg bg-ink-950 border border-ink-800 mb-3 overflow-hidden flex items-center justify-center">
+                  {item.image_url ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" /> : <span className="text-xs text-white/20">Sem foto</span>}
+                </div>
+                <p className="font-semibold">{item.name}</p>
+                {item.description && <p className="text-xs text-white/50 mb-2">{item.description}</p>}
 
-        <div>
-          <label className="label">Valor do produto (R$)</label>
-          <input className="input" type="number" step="0.01" min="0" value={form.normal_price} onChange={(e) => setForm({ ...form, normal_price: e.target.value })} />
+                {selected ? (
+                  <p className="mt-3 pt-3 border-t border-ink-800 text-xs text-emerald-400 flex items-center gap-1.5"><Check size={12} /> Já está na sua vitrine</p>
+                ) : addingId === item.id ? (
+                  <div className="mt-3 pt-3 border-t border-ink-800 space-y-2">
+                    <div>
+                      <label className="label">Valor de referência (R$)</label>
+                      <input className="input" type="number" step="0.01" min="0" value={refValue} onChange={(e) => setRefValue(e.target.value)} placeholder="0,00" />
+                    </div>
+                    {error && <p className="text-xs text-red-400">{error}</p>}
+                    <div className="flex gap-2">
+                      <button onClick={() => confirmAdd(item)} disabled={saving} className="btn-gold !py-2 text-xs flex-1">{saving ? 'Adicionando...' : 'Confirmar'}</button>
+                      <button onClick={() => setAddingId(null)} className="btn-ghost !py-2 text-xs flex-1">Cancelar</button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => startAdd(item.id)} className="btn-dark w-full !py-2 text-xs gap-1.5 mt-3 pt-3 border-t border-ink-800 justify-center"><Plus size={12} /> Adicionar à minha vitrine</button>
+                )}
+              </div>
+            )
+          })}
+          {!catalog.length && (
+            <div className="col-span-full"><EmptyState dark icon={Gift} title="Nenhum brinde disponível no catálogo ainda" description="Assim que a administração cadastrar um brinde, ele aparece aqui." /></div>
+          )}
         </div>
-        <div>
-          <label className="label">Desconto Brinde Mais (até 50%)</label>
-          <input className="input" type="number" step="0.01" min="0" max="50" placeholder="0" value={form.discount_pct} onChange={(e) => setForm({ ...form, discount_pct: e.target.value })} />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="label">% desse desconto repassado ao assinante</label>
-          <input className="input" type="number" step="0.01" min="0" placeholder="0" value={form.subscriber_discount_pct} onChange={(e) => setForm({ ...form, subscriber_discount_pct: e.target.value })} />
-        </div>
+      </div>
 
-        <div className="sm:col-span-2 rounded-lg bg-ink-950 border border-ink-800 p-3 space-y-1.5 text-sm">
-          <div className="flex items-center justify-between"><span className="text-white/50">Valor de venda para o assinante</span><span className="font-semibold">{formatBRL(subscriberPrice)}</span></div>
-          <div className="flex items-center justify-between"><span className="text-white/50">Comissionamento rede de consumo (4 níveis, 1% cada)</span><span className="font-semibold text-gold-400">{usesPricingRule ? formatBRL(commissionValue) : '—'}</span></div>
-          <div className="flex items-center justify-between"><span className="text-white/50">Lucro líquido Brinde Mais</span><span className={`font-semibold ${poolInvalid ? 'text-red-400' : ''}`}>{usesPricingRule ? `${netProfitPct.toFixed(2)}% · ${formatBRL(netProfitValue)}` : '—'}</span></div>
-          {!usesPricingRule && <p className="text-xs text-white/30">Sem desconto Brinde Mais definido: o assinante paga o valor cheio e este brinde não gera comissão de consumo na retirada.</p>}
-        </div>
-
-        {error && <p className="sm:col-span-2 text-sm text-red-400">{error}</p>}
-        <button type="submit" disabled={saving || poolInvalid} className="btn-gold sm:col-span-2">
-          {saving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Cadastrar brinde'}
-        </button>
-      </form>
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {products.map((p) => (
-          <div key={p.id} className={`card ${!p.active ? 'opacity-60' : ''}`}>
-            <div className="aspect-video rounded-lg bg-ink-950 border border-ink-800 mb-3 overflow-hidden flex items-center justify-center">
-              {p.image_url ? <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" /> : <span className="text-xs text-white/20">Sem foto</span>}
-            </div>
-            <div className="flex items-center justify-between mb-1">
+      <div>
+        <p className="font-semibold mb-3">Minha vitrine</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {mine.map((p) => (
+            <div key={p.id} className={`card ${!p.active ? 'opacity-60' : ''}`}>
+              <div className="aspect-video rounded-lg bg-ink-950 border border-ink-800 mb-3 overflow-hidden flex items-center justify-center">
+                {p.image_url ? <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" /> : <span className="text-xs text-white/20">Sem foto</span>}
+              </div>
               <p className="font-semibold">{p.name}</p>
-              <StatusBadge status={!p.active ? 'cancelled' : p.approved ? 'approved' : 'pending_approval'} />
+              {editingValueId === p.id ? (
+                <div className="flex gap-1.5 mt-1">
+                  <input className="input !py-1.5 !text-xs" type="number" step="0.01" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} />
+                  <button onClick={() => saveValue(p)} className="btn-gold !py-1.5 !px-2 text-xs">Salvar</button>
+                </div>
+              ) : (
+                <button onClick={() => { setEditingValueId(p.id); setEditValue(String(p.normal_price)) }} className="text-xs text-white/40 mt-1">
+                  Valor de referência: <span className="text-gold-400 font-medium">{formatBRL(p.normal_price)}</span>
+                </button>
+              )}
+              <div className="flex gap-2 mt-3 pt-3 border-t border-ink-800">
+                <button onClick={() => toggleActive(p)} className="btn-dark flex-1 !py-2 text-xs gap-1.5">
+                  {p.active ? <><Pause size={12} /> Pausar</> : <><Play size={12} /> Reativar</>}
+                </button>
+                <button onClick={() => deleteMine(p)} disabled={deletingId === p.id} className="btn-dark !py-2 !px-2.5 text-xs text-red-400"><Trash2 size={12} /></button>
+              </div>
+              {deleteError?.id === p.id && <p className="text-xs text-red-400 mt-2">{deleteError.message}</p>}
             </div>
-            <p className="text-xs text-white/50 mb-2">{p.description}</p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-xs line-through text-white/30">{formatBRL(p.normal_price)}</span>
-              <span className="text-sm font-bold text-gold-400">{formatBRL(p.subscriber_price)}</span>
-            </div>
-            {p.discount_pct > 0 && (
-              <p className="text-xs text-white/30 mt-1">Desconto Brinde Mais {p.discount_pct}% · comissão de consumo ativa</p>
-            )}
-            <div className="flex gap-2 mt-3 pt-3 border-t border-ink-800">
-              <button onClick={() => startEdit(p)} className="btn-dark flex-1 !py-2 text-xs gap-1.5"><Pencil size={12} /> Editar</button>
-              <button onClick={() => toggleActive(p)} className="btn-dark flex-1 !py-2 text-xs gap-1.5">
-                {p.active ? <><Pause size={12} /> Pausar</> : <><Play size={12} /> Reativar</>}
-              </button>
-              <button onClick={() => deleteProduct(p)} disabled={deletingId === p.id} className="btn-dark !py-2 !px-2.5 text-xs text-red-400">
-                <Trash2 size={12} />
-              </button>
-            </div>
-            {deleteError?.id === p.id && <p className="text-xs text-red-400 mt-2">{deleteError.message}</p>}
-          </div>
-        ))}
-        {!products.length && (
-          <div className="col-span-full">
-            <EmptyState dark icon={Gift} title="Nenhum brinde cadastrado ainda" description="Cadastre o primeiro brinde no formulário acima." />
-          </div>
-        )}
+          ))}
+          {!mine.length && (
+            <div className="col-span-full"><EmptyState dark icon={Gift} title="Você ainda não escolheu nenhum brinde" description="Escolha um brinde do catálogo acima pra começar." /></div>
+          )}
+        </div>
       </div>
     </div>
   )
