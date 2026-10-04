@@ -16,6 +16,10 @@ export default function PartnerAdvertiser() {
   const [stats, setStats] = useState({ products: 0, promotions: 0 })
 
   const isActive = !!partner?.is_advertiser && (!partner.advertiser_expires_at || new Date(partner.advertiser_expires_at) > new Date())
+  const daysLeft = isActive && partner?.advertiser_expires_at
+    ? Math.ceil((new Date(partner.advertiser_expires_at).getTime() - Date.now()) / 86400000)
+    : null
+  const nearExpiry = daysLeft !== null && daysLeft <= 7
 
   useEffect(() => {
     if (!partner) return
@@ -72,6 +76,28 @@ export default function PartnerAdvertiser() {
               </p>
             </div>
           </div>
+          {nearExpiry && (
+            <div className="card space-y-3 border-red-500/30 bg-red-500/5">
+              <p className="text-sm text-white/70">
+                {daysLeft === 0 ? 'Sua taxa de anunciante vence hoje.' : daysLeft === 1 ? 'Sua taxa de anunciante vence amanhã.' : `Sua taxa de anunciante vence em ${daysLeft} dias.`} Renove agora pra não perder o acesso.
+              </p>
+              {pending ? (
+                <>
+                  {pending.pix_qr_code && (
+                    <div className="w-36 h-36 mx-auto rounded-xl bg-white p-2 flex items-center justify-center overflow-hidden">
+                      <img src={`data:image/png;base64,${pending.pix_qr_code}`} alt="QR Code Pix" className="w-full h-full object-contain" />
+                    </div>
+                  )}
+                  <div className="rounded-lg bg-ink-950 border border-ink-800 px-3 py-2.5 text-xs text-gold-300 break-all font-mono">{pending.pix_code}</div>
+                </>
+              ) : (
+                <>
+                  {error && <p className="text-sm text-red-400">{error}</p>}
+                  <button onClick={payFee} disabled={loading} className="btn-gold w-full">{loading ? 'Gerando Pix...' : `Renovar por ${formatBRL(FEE_AMOUNT)}`}</button>
+                </>
+              )}
+            </div>
+          )}
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="card flex items-center gap-3">
               <Gift size={20} className="text-gold-400 shrink-0" />
