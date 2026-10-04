@@ -35,6 +35,21 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 }
 
+// Mesma lógica de normalize_referral_code() no banco / slugifyReferralCode
+// no front — gera um link "bonito" (nome do estabelecimento) em vez do
+// código aleatório que essa função usava antes de o convite aceitar
+// p_referral_code. Convite não tem humano escolhendo em tempo real, então
+// colisão de nome cai pra código aleatório em vez de travar o convite.
+function slugifyReferralCode(value: string): string {
+  return value
+    .trim()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-+)|(-+$)/g, '')
+}
+
 function inviteEmailHtml(name: string, code: string) {
   return `
     <div style="background-color:#f5f2ec;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
@@ -150,13 +165,23 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { error: linkErr } = await admin.rpc('admin_complete_partner_invite', {
+    const desiredCode = slugifyReferralCode(displayName)
+    let { error: linkErr } = await admin.rpc('admin_complete_partner_invite', {
       p_partner_id: partner_id,
       p_user_id: targetUserId,
       p_email: partner.email,
       p_full_name: displayName,
       p_phone: partner.phone,
+      p_referral_code: desiredCode || null,
     })
+    if (linkErr && /REFERRAL_LOGIN_(TAKEN|TOO_SHORT)/.test(linkErr.message ?? '')) {
+      // Nome já em uso como link de outra pessoa (ou curto demais) — sem
+      // humano aqui pra escolher outro, cai pro código aleatório de sempre
+      // em vez de falhar o convite inteiro.
+      ;({ error: linkErr } = await admin.rpc('admin_complete_partner_invite', {
+        p_partner_id: partner_id, p_user_id: targetUserId, p_email: partner.email, p_full_name: displayName, p_phone: partner.phone,
+      }))
+    }
     if (linkErr) return json({ error: 'LINK_FAILED', detail: linkErr.message }, 500)
 
     return json({ ok: true, already_had_account: alreadyHadAccount })
