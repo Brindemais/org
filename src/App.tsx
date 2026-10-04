@@ -32,6 +32,8 @@ const SubscriberWithdraw = lazy(() => import('./pages/subscriber/Withdraw'))
 const SubscriberReferrals = lazy(() => import('./pages/subscriber/Referrals'))
 const SubscriberPartners = lazy(() => import('./pages/subscriber/Partners'))
 const SubscriberPartnerDetail = lazy(() => import('./pages/subscriber/PartnerDetail'))
+const SubscriberProductsHub = lazy(() => import('./pages/subscriber/ProductsHub'))
+const SubscriberPartnerProducts = lazy(() => import('./pages/subscriber/PartnerProducts'))
 const SubscriberNotifications = lazy(() => import('./pages/subscriber/Notifications'))
 const SubscriberSupport = lazy(() => import('./pages/subscriber/Support'))
 const SubscriberProfile = lazy(() => import('./pages/subscriber/Profile'))
@@ -109,6 +111,8 @@ export default function App() {
           <Route path="indique" element={<SubscriberReferrals />} />
           <Route path="parceiros" element={<SubscriberPartners />} />
           <Route path="parceiros/:id" element={<SubscriberPartnerDetail />} />
+          <Route path="produtos" element={<SubscriberProductsHub />} />
+          <Route path="produtos/:id" element={<SubscriberPartnerProducts />} />
           <Route path="notificacoes" element={<SubscriberNotifications />} />
           <Route path="suporte" element={<SubscriberSupport />} />
           <Route path="perfil" element={<SubscriberProfile />} />

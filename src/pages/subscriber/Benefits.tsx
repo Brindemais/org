@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Lock, MapPin, Percent, Store, LocateFixed, Gift, ZoomIn } from 'lucide-react'
+import { Lock, MapPin, Store, LocateFixed, Gift, ZoomIn } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import type { Partner, Promotion } from '../../lib/types'
+import type { Partner } from '../../lib/types'
 import { useSubscription } from '../../hooks/useSubscription'
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { useGeolocation } from '../../hooks/useGeolocation'
@@ -19,7 +19,6 @@ export default function SubscriberBenefits() {
   const { subscription, pickup, reload, benefitsBlocked } = useSubscription()
   const [partners, setPartners] = useState<BenefitPartner[]>([])
   const [giftsByPartner, setGiftsByPartner] = useState<Record<string, GiftOption[]> | null>(null)
-  const [promotions, setPromotions] = useState<Promotion[]>([])
   const [category, setCategory] = useState<string>('')
   const [choosing, setChoosing] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -33,7 +32,6 @@ export default function SubscriberBenefits() {
     let query = supabase.rpc('list_public_partners').select('id, trade_name, category, neighborhood, city, logo_url, lat, lng')
     if (category) query = query.eq('category', category)
     query.then(({ data }) => { setPartners((data as BenefitPartner[]) ?? []); setLoading(false) })
-    supabase.from('promotions').select('*').eq('status', 'approved').gte('valid_until', new Date().toISOString().slice(0, 10)).then(({ data }) => setPromotions((data as Promotion[]) ?? []))
 
     // Só da pra saber se um brinde é de verdade "disponível" cruzando dois
     // dados: o catálogo público de brindes aprovados/ativos
@@ -118,24 +116,6 @@ export default function SubscriberBenefits() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-xl font-semibold">Benefícios</h1>
-
-      {promotions.length > 0 && (
-        <section>
-          <p className="font-semibold mb-3 flex items-center gap-1.5"><Percent size={16} className="text-gold-400" /> Produtos e descontos</p>
-          <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pb-1">
-            {promotions.map((p) => (
-              <Link key={p.id} to={`/app/parceiros/${p.partner_id}`} className="shrink-0 w-56 card !bg-ink-900 block active:scale-[0.99] transition">
-                <p className="font-semibold text-sm mb-1">{p.title}</p>
-                <p className="text-xs text-white/50 mb-2">{p.description}</p>
-                <div className="flex items-baseline gap-2">
-                  {p.normal_price && <span className="text-xs line-through text-white/30">R$ {p.normal_price.toFixed(2)}</span>}
-                  {p.subscriber_price && <span className="text-gold-400 font-bold text-sm">R$ {p.subscriber_price.toFixed(2)}</span>}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
 
       <section>
         <div className="flex items-center justify-between mb-3">
