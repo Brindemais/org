@@ -6,39 +6,56 @@ import type { ProductRow } from '../../lib/types'
 import { EmptyState } from '../../components/ui/EmptyState'
 
 interface CatalogItem { id: string; name: string; description: string | null; image_url: string | null }
+interface StockMap { [productId: string]: number }
 
 // O parceiro não cadastra brinde nenhum do zero — só escolhe, do catálogo
 // que o admin disponibiliza (/admin/cadastrar-brinde), quais quer colocar
 // na própria vitrine. O brinde não tem valor nenhum atribuído — é um
-// benefício sem custo incluso na assinatura, não uma venda.
+// benefício sem custo incluso na assinatura, não uma venda. A quantidade
+// em estoque é informada já na hora de escolher, pra não precisar de um
+// segundo passo em "Estoque" — essa aba continua existindo só pra ajustar
+// depois (perda, avaria, reposição).
 export default function PartnerProducts() {
   const { partner } = useAuth()
   const [catalog, setCatalog] = useState<CatalogItem[]>([])
   const [mine, setMine] = useState<ProductRow[]>([])
+  const [stock, setStock] = useState<StockMap>({})
   const [addingId, setAddingId] = useState<string | null>(null)
+  const [qty, setQty] = useState('')
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<{ id: string; message: string } | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   async function load() {
     if (!partner) return
-    const [{ data: cat }, { data: own }] = await Promise.all([
+    const [{ data: cat }, { data: own }, { data: stockRows }] = await Promise.all([
       supabase.rpc('list_public_products').select('id, name, description, image_url').is('partner_id', null).eq('is_gift', true).order('name'),
       supabase.from('products').select('*').eq('partner_id', partner.id).order('created_at', { ascending: false }),
+      supabase.from('stock_partner').select('product_id, quantity').eq('partner_id', partner.id),
     ])
     setCatalog((cat as CatalogItem[]) ?? [])
     setMine((own as ProductRow[]) ?? [])
+    const map: StockMap = {}
+    for (const s of (stockRows as any[]) ?? []) map[s.product_id] = s.quantity
+    setStock(map)
   }
 
   useEffect(() => { load() }, [partner])
 
   const selectedCatalogIds = new Set(mine.map((p) => p.catalog_id).filter(Boolean))
 
-  async function addToShowcase(item: CatalogItem) {
+  function startAdd(catalogId: string) {
+    setAddingId(catalogId)
+    setQty('')
+    setError(null)
+  }
+
+  async function confirmAdd(item: CatalogItem) {
     if (!partner) return
     setError(null)
-    setAddingId(item.id)
-    const { error: insertError } = await supabase.from('products').insert({
+    setSaving(true)
+    const { data: inserted, error: insertError } = await supabase.from('products').insert({
       partner_id: partner.id,
       catalog_id: item.id,
       name: item.name,
@@ -46,9 +63,20 @@ export default function PartnerProducts() {
       image_url: item.image_url,
       is_gift: true,
       approved: true,
-    })
+    }).select('id').single()
+    if (insertError || !inserted) {
+      setSaving(false)
+      setError('Não foi possível adicionar este brinde à sua vitrine.')
+      return
+    }
+    const quantity = Math.max(0, Number(qty || 0))
+    if (quantity > 0) {
+      await supabase.rpc('partner_adjust_stock', {
+        p_product_id: inserted.id, p_partner_id: partner.id, p_quantity: quantity, p_type: 'adjustment', p_reason: 'Estoque inicial',
+      })
+    }
+    setSaving(false)
     setAddingId(null)
-    if (insertError) { setError('Não foi possível adicionar este brinde à sua vitrine.'); return }
     load()
   }
 
@@ -77,7 +105,7 @@ export default function PartnerProducts() {
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-2xl font-semibold">Brindes</h1>
-        <p className="text-white/50 text-sm">Escolha, do catálogo abaixo, quais brindes você quer oferecer aos assinantes. O brinde é um benefício sem custo, incluso na assinatura.</p>
+        <p className="text-white/50 text-sm">Escolha, do catálogo abaixo, quais brindes você quer oferecer aos assinantes e informe a quantidade disponível.</p>
       </div>
 
       <div>
@@ -96,9 +124,20 @@ export default function PartnerProducts() {
 
                 {selected ? (
                   <p className="mt-3 pt-3 border-t border-ink-800 text-xs text-emerald-400 flex items-center gap-1.5"><Check size={12} /> Já está na sua vitrine</p>
+                ) : addingId === item.id ? (
+                  <div className="mt-3 pt-3 border-t border-ink-800 space-y-2">
+                    <div>
+                      <label className="label">Quantidade em estoque</label>
+                      <input className="input" type="number" min="0" placeholder="0" value={qty} onChange={(e) => setQty(e.target.value)} autoFocus />
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => confirmAdd(item)} disabled={saving} className="btn-gold !py-2 text-xs flex-1">{saving ? 'Adicionando...' : 'Confirmar'}</button>
+                      <button onClick={() => setAddingId(null)} className="btn-ghost !py-2 text-xs flex-1">Cancelar</button>
+                    </div>
+                  </div>
                 ) : (
-                  <button onClick={() => addToShowcase(item)} disabled={addingId === item.id} className="btn-dark w-full !py-2 text-xs gap-1.5 mt-3 pt-3 border-t border-ink-800 justify-center">
-                    <Plus size={12} /> {addingId === item.id ? 'Adicionando...' : 'Adicionar à minha vitrine'}
+                  <button onClick={() => startAdd(item.id)} className="btn-dark w-full !py-2 text-xs gap-1.5 mt-3 pt-3 border-t border-ink-800 justify-center">
+                    <Plus size={12} /> Adicionar à minha vitrine
                   </button>
                 )}
               </div>
@@ -119,6 +158,9 @@ export default function PartnerProducts() {
                 {p.image_url ? <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" /> : <span className="text-xs text-white/20">Sem foto</span>}
               </div>
               <p className="font-semibold">{p.name}</p>
+              <p className="text-xs text-white/40 mt-0.5">
+                Estoque: <span className={`font-semibold ${!stock[p.id] ? 'text-red-400' : stock[p.id] <= 5 ? 'text-gold-300' : 'text-emerald-400'}`}>{stock[p.id] ?? 0}</span>
+              </p>
               <div className="flex gap-2 mt-3 pt-3 border-t border-ink-800">
                 <button onClick={() => toggleActive(p)} className="btn-dark flex-1 !py-2 text-xs gap-1.5">
                   {p.active ? <><Pause size={12} /> Pausar</> : <><Play size={12} /> Reativar</>}
@@ -132,6 +174,7 @@ export default function PartnerProducts() {
             <div className="col-span-full"><EmptyState dark icon={Gift} title="Você ainda não escolheu nenhum brinde" description="Escolha um brinde do catálogo acima pra começar." /></div>
           )}
         </div>
+        <p className="text-xs text-white/30 mt-3">Pra ajustar o estoque depois (perda, avaria, reposição), use a aba Estoque.</p>
       </div>
     </div>
   )

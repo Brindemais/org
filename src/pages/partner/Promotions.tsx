@@ -1,19 +1,21 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Percent, Trash2 } from 'lucide-react'
+import { formatDate } from '../../lib/format'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import type { Promotion } from '../../lib/types'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { ImageUpload } from '../../components/ui/ImageUpload'
-import { formatDate } from '../../lib/format'
 
 export default function PartnerPromotions() {
   const { partner } = useAuth()
   const [promotions, setPromotions] = useState<Promotion[]>([])
-  const [form, setForm] = useState({ title: '', description: '', image_url: '', normal_price: '', subscriber_price: '', valid_until: '' })
+  const [form, setForm] = useState({ title: '', description: '', image_url: '', normal_price: '', subscriber_price: '', valid_until: '', quantity: '' })
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [editingQtyId, setEditingQtyId] = useState<string | null>(null)
+  const [editQty, setEditQty] = useState('')
 
   async function load() {
     if (!partner) return
@@ -35,12 +37,13 @@ export default function PartnerPromotions() {
       normal_price: Number(form.normal_price || 0),
       subscriber_price: Number(form.subscriber_price || 0),
       valid_until: form.valid_until,
+      quantity: Math.max(0, Number(form.quantity || 0)),
       // Partner-created promotions go live immediately — no admin approval
       // step. The admin panel can still suspend one after the fact if needed.
       status: 'approved',
     })
     setSaving(false)
-    setForm({ title: '', description: '', image_url: '', normal_price: '', subscriber_price: '', valid_until: '' })
+    setForm({ title: '', description: '', image_url: '', normal_price: '', subscriber_price: '', valid_until: '', quantity: '' })
     load()
   }
 
@@ -49,6 +52,12 @@ export default function PartnerPromotions() {
     setDeleting(id)
     await supabase.from('promotions').delete().eq('id', id)
     setDeleting(null)
+    load()
+  }
+
+  async function saveQty(id: string) {
+    await supabase.from('promotions').update({ quantity: Math.max(0, Number(editQty || 0)) }).eq('id', id)
+    setEditingQtyId(null)
     load()
   }
 
@@ -79,6 +88,10 @@ export default function PartnerPromotions() {
           <label className="label">Preço assinante</label>
           <input className="input" type="number" step="0.01" value={form.subscriber_price} onChange={(e) => setForm({ ...form, subscriber_price: e.target.value })} />
         </div>
+        <div>
+          <label className="label">Quantidade em estoque</label>
+          <input className="input" type="number" min="0" placeholder="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
+        </div>
         <div className="sm:col-span-2">
           <label className="label">Válida até</label>
           <input className="input" type="date" required value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} />
@@ -94,6 +107,17 @@ export default function PartnerPromotions() {
               <div className="min-w-0">
                 <p className="font-medium text-sm truncate">{p.title}</p>
                 <p className="text-xs text-white/40">Válida até {formatDate(p.valid_until)}</p>
+                {editingQtyId === p.id ? (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <input className="input !py-1 !px-2 !text-xs !w-20" type="number" min="0" value={editQty} onChange={(e) => setEditQty(e.target.value)} autoFocus />
+                    <button onClick={() => saveQty(p.id)} className="btn-gold !py-1 !px-2 text-xs">Salvar</button>
+                    <button onClick={() => setEditingQtyId(null)} className="btn-ghost !py-1 !px-2 text-xs">Cancelar</button>
+                  </div>
+                ) : (
+                  <button onClick={() => { setEditingQtyId(p.id); setEditQty(String(p.quantity)) }} className="text-xs text-white/40 mt-0.5">
+                    Estoque: <span className={`font-semibold ${!p.quantity ? 'text-red-400' : p.quantity <= 5 ? 'text-gold-300' : 'text-emerald-400'}`}>{p.quantity}</span>
+                  </button>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">

@@ -171,6 +171,7 @@ export interface Promotion {
   valid_until: string
   status: PromotionStatus
   created_at: string
+  quantity: number
 }
 
 export interface NotificationRow {

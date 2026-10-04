@@ -5,12 +5,17 @@ import { supabase } from '../../lib/supabase'
 import type { ProductRow, Partner } from '../../lib/types'
 import { EmptyState } from '../../components/ui/EmptyState'
 
-// Admin gerenciando a vitrine e o estoque de um parceiro específico, nos
-// mesmos moldes de partner/Products.tsx e partner/Stock.tsx — não é um
-// "logar como o parceiro" de verdade, mas chega no mesmo resultado prático
-// via RLS (is_admin() libera tudo que is_partner_staff libera). Mesma
-// regra de produto do parceiro comum: só escolhe do catálogo do admin
+// Admin gerenciando a vitrine deste parceiro específico, nos mesmos
+// moldes de partner/Products.tsx — não é um "logar como o parceiro" de
+// verdade, mas chega no mesmo resultado prático via RLS (is_admin()
+// libera tudo que is_partner_staff libera). Mesma regra de produto do
+// parceiro comum: só escolhe do catálogo do admin
 // (/admin/cadastrar-brinde), não cadastra brinde do zero, sem valor.
+//
+// Quantidade em estoque é SÓ do parceiro — o admin não sabe quanto o
+// parceiro tem de verdade no balcão, então não tem campo de quantidade
+// aqui nem forma de ajustar estoque por aqui. A lista abaixo é só
+// consulta (read-only); o parceiro ajusta na própria aba Brindes/Estoque.
 interface CatalogItem { id: string; name: string; description: string | null; image_url: string | null }
 interface StockRow { id: string; quantity: number; product: { id: string; name: string } }
 
@@ -24,10 +29,6 @@ export default function AdminPartnerManage() {
   const [error, setError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<{ id: string; message: string } | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-
-  const [receiveProduct, setReceiveProduct] = useState('')
-  const [receiveQty, setReceiveQty] = useState('')
-  const [receiving, setReceiving] = useState(false)
 
   async function load() {
     if (!id) return
@@ -86,17 +87,6 @@ export default function AdminPartnerManage() {
     load()
   }
 
-  async function receiveStock() {
-    if (!id || !receiveProduct || !receiveQty || Number(receiveQty) <= 0) return
-    setReceiving(true)
-    await supabase.rpc('partner_adjust_stock', {
-      p_product_id: receiveProduct, p_partner_id: id, p_quantity: Math.abs(Number(receiveQty)), p_type: 'adjustment', p_reason: 'Ajuste de estoque pelo administrador',
-    })
-    setReceiving(false)
-    setReceiveProduct(''); setReceiveQty('')
-    load()
-  }
-
   if (!partner) return null
 
   return (
@@ -104,7 +94,7 @@ export default function AdminPartnerManage() {
       <div>
         <Link to="/admin/parceiros" className="text-xs text-white/40 flex items-center gap-1 mb-2 w-fit"><ArrowLeft size={12} /> Voltar pra parceiros</Link>
         <h1 className="font-display text-2xl font-semibold">{partner.trade_name}</h1>
-        <p className="text-white/50 text-sm">Escolha, do catálogo, quais brindes este parceiro oferece, e gerencie o estoque, como se fosse o próprio painel dele.</p>
+        <p className="text-white/50 text-sm">Escolha, do catálogo, quais brindes este parceiro oferece. A quantidade em estoque é definida pelo próprio parceiro.</p>
       </div>
 
       <div>
@@ -162,27 +152,8 @@ export default function AdminPartnerManage() {
       </div>
 
       <div>
-        <p className="font-semibold mb-3 flex items-center gap-2"><Package size={16} className="text-gold-400" /> Estoque</p>
-        <div className="card mb-4">
-          {mine.length ? (
-            <div className="grid sm:grid-cols-[1fr_auto_auto] gap-3 items-end">
-              <div>
-                <label className="label">Brinde</label>
-                <select className="input" value={receiveProduct} onChange={(e) => setReceiveProduct(e.target.value)}>
-                  <option value="">Selecione um brinde da vitrine...</option>
-                  {mine.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-              <div className="w-full sm:w-32">
-                <label className="label">Quantidade</label>
-                <input className="input" type="number" min="1" placeholder="0" value={receiveQty} onChange={(e) => setReceiveQty(e.target.value)} />
-              </div>
-              <button onClick={receiveStock} disabled={!receiveProduct || !receiveQty || receiving} className="btn-gold !py-3">{receiving ? 'Adicionando...' : 'Adicionar'}</button>
-            </div>
-          ) : (
-            <p className="text-xs text-white/40">Escolha um brinde do catálogo acima antes de adicionar estoque.</p>
-          )}
-        </div>
+        <p className="font-semibold mb-3 flex items-center gap-2"><Package size={16} className="text-gold-400" /> Estoque (consulta)</p>
+        <p className="text-xs text-white/30 mb-3">Só o parceiro informa e ajusta a quantidade, na própria aba Brindes/Estoque do painel dele.</p>
         <div className="card overflow-x-auto">
           <table className="w-full text-sm min-w-[400px]">
             <thead>
