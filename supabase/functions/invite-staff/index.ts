@@ -20,6 +20,18 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 }
 
+// Mesma lógica de normalize_referral_code() no banco / slugifyReferralCode
+// no front — ver invite-partner/index.ts pro porquê.
+function slugifyReferralCode(value: string): string {
+  return value
+    .trim()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-+)|(-+$)/g, '')
+}
+
 function inviteEmailHtml(name: string, roleLabel: string, code: string) {
   return `
     <div style="background-color:#f5f2ec;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
@@ -126,9 +138,15 @@ Deno.serve(async (req) => {
       return json({ error: 'EMAIL_SEND_FAILED', detail: String(sendErr) }, 500)
     }
 
-    const { error: linkErr } = await admin.rpc('admin_complete_staff_invite', {
-      p_user_id: generated.user.id, p_email: email, p_full_name: full_name, p_role: role,
+    const desiredCode = slugifyReferralCode(full_name)
+    let { error: linkErr } = await admin.rpc('admin_complete_staff_invite', {
+      p_user_id: generated.user.id, p_email: email, p_full_name: full_name, p_role: role, p_referral_code: desiredCode || null,
     })
+    if (linkErr && /REFERRAL_LOGIN_(TAKEN|TOO_SHORT)/.test(linkErr.message ?? '')) {
+      ;({ error: linkErr } = await admin.rpc('admin_complete_staff_invite', {
+        p_user_id: generated.user.id, p_email: email, p_full_name: full_name, p_role: role,
+      }))
+    }
     if (linkErr) return json({ error: 'LINK_FAILED', detail: linkErr.message }, 500)
 
     return json({ ok: true, already_had_account: false })
