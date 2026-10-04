@@ -32,7 +32,7 @@ function PartnerFeeGateInner() {
       </header>
       <main className="max-w-lg mx-auto px-5 py-8">
         <p className="text-sm text-white/50 mb-6 text-center">
-          Sua taxa de anunciante ainda não foi confirmada — pague abaixo para liberar o painel do parceiro.
+          Sua taxa de anunciante ainda não foi confirmada. Pague abaixo para liberar o painel do parceiro.
         </p>
         <PartnerAdvertiser />
       </main>

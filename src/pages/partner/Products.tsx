@@ -98,7 +98,7 @@ export default function PartnerProducts() {
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-2xl font-semibold">Brindes</h1>
-        <p className="text-white/50 text-sm">Escolha, do catálogo abaixo, quais brindes você quer oferecer aos assinantes. O brinde é um benefício da assinatura — não tem preço pro assinante.</p>
+        <p className="text-white/50 text-sm">Escolha, do catálogo abaixo, quais brindes você quer oferecer aos assinantes. O brinde é um benefício da assinatura, não tem preço pro assinante.</p>
       </div>
 
       <div>

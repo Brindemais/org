@@ -188,7 +188,7 @@ export default function AdminPartners() {
     setInviteMsg((m) => ({
       ...m,
       [partner.id]: data?.already_had_account
-        ? 'Essa pessoa já concluiu o cadastro — não havia convite pendente para reenviar.'
+        ? 'Essa pessoa já concluiu o cadastro, não havia convite pendente para reenviar.'
         : 'Novo e-mail enviado, com um código novo (o código anterior deixa de valer).',
     }))
     load()

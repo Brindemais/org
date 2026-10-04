@@ -250,7 +250,7 @@ export default function PartnerSignup() {
               onMyCodeChange={setMyReferralCode}
               autoSuggestSource={tradeName}
               myCodeLabel="Nome de usuário"
-              myCodeHint="Nome artístico, nome do estabelecimento ou apelido — não pode repetir, e também é o nome que vai aparecer no seu link de indicação."
+              myCodeHint="Nome artístico, nome do estabelecimento ou apelido. Não pode repetir, e também é o nome que vai aparecer no seu link de indicação."
               onValidityChange={setReferralValid}
             />
 
