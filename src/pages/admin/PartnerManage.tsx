@@ -3,7 +3,6 @@ import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Check, Gift, Package, Pause, Play, Plus, Trash2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { ProductRow, Partner } from '../../lib/types'
-import { formatBRL } from '../../lib/format'
 import { EmptyState } from '../../components/ui/EmptyState'
 
 // Admin gerenciando a vitrine e o estoque de um parceiro específico, nos
@@ -11,7 +10,7 @@ import { EmptyState } from '../../components/ui/EmptyState'
 // "logar como o parceiro" de verdade, mas chega no mesmo resultado prático
 // via RLS (is_admin() libera tudo que is_partner_staff libera). Mesma
 // regra de produto do parceiro comum: só escolhe do catálogo do admin
-// (/admin/cadastrar-brinde), não cadastra brinde do zero.
+// (/admin/cadastrar-brinde), não cadastra brinde do zero, sem valor.
 interface CatalogItem { id: string; name: string; description: string | null; image_url: string | null }
 interface StockRow { id: string; quantity: number; product: { id: string; name: string } }
 
@@ -22,11 +21,7 @@ export default function AdminPartnerManage() {
   const [mine, setMine] = useState<ProductRow[]>([])
   const [stock, setStock] = useState<StockRow[]>([])
   const [addingId, setAddingId] = useState<string | null>(null)
-  const [refValue, setRefValue] = useState('')
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [editingValueId, setEditingValueId] = useState<string | null>(null)
-  const [editValue, setEditValue] = useState('')
   const [deleteError, setDeleteError] = useState<{ id: string; message: string } | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
@@ -52,40 +47,26 @@ export default function AdminPartnerManage() {
 
   const selectedCatalogIds = new Set(mine.map((p) => p.catalog_id).filter(Boolean))
 
-  function startAdd(catalogId: string) {
-    setAddingId(catalogId)
-    setRefValue('')
-    setError(null)
-  }
-
-  async function confirmAdd(item: CatalogItem) {
+  async function addToShowcase(item: CatalogItem) {
     if (!id) return
     setError(null)
-    setSaving(true)
+    setAddingId(item.id)
     const { error: insertError } = await supabase.from('products').insert({
       partner_id: id,
       catalog_id: item.id,
       name: item.name,
       description: item.description,
       image_url: item.image_url,
-      normal_price: Number(refValue || 0),
       is_gift: true,
       approved: true,
     })
-    setSaving(false)
-    if (insertError) { setError('Não foi possível adicionar este brinde à vitrine do parceiro.'); return }
     setAddingId(null)
+    if (insertError) { setError('Não foi possível adicionar este brinde à vitrine do parceiro.'); return }
     load()
   }
 
   async function toggleActive(p: ProductRow) {
     await supabase.from('products').update({ active: !p.active }).eq('id', p.id)
-    load()
-  }
-
-  async function saveValue(p: ProductRow) {
-    await supabase.from('products').update({ normal_price: Number(editValue || 0) }).eq('id', p.id)
-    setEditingValueId(null)
     load()
   }
 
@@ -128,6 +109,7 @@ export default function AdminPartnerManage() {
 
       <div>
         <p className="font-semibold mb-3">Catálogo disponível</p>
+        {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {catalog.map((item) => {
             const selected = selectedCatalogIds.has(item.id)
@@ -141,20 +123,10 @@ export default function AdminPartnerManage() {
 
                 {selected ? (
                   <p className="mt-3 pt-3 border-t border-ink-800 text-xs text-emerald-400 flex items-center gap-1.5"><Check size={12} /> Já está na vitrine</p>
-                ) : addingId === item.id ? (
-                  <div className="mt-3 pt-3 border-t border-ink-800 space-y-2">
-                    <div>
-                      <label className="label">Valor de referência (R$)</label>
-                      <input className="input" type="number" step="0.01" min="0" value={refValue} onChange={(e) => setRefValue(e.target.value)} placeholder="0,00" />
-                    </div>
-                    {error && <p className="text-xs text-red-400">{error}</p>}
-                    <div className="flex gap-2">
-                      <button onClick={() => confirmAdd(item)} disabled={saving} className="btn-gold !py-2 text-xs flex-1">{saving ? 'Adicionando...' : 'Confirmar'}</button>
-                      <button onClick={() => setAddingId(null)} className="btn-ghost !py-2 text-xs flex-1">Cancelar</button>
-                    </div>
-                  </div>
                 ) : (
-                  <button onClick={() => startAdd(item.id)} className="btn-dark w-full !py-2 text-xs gap-1.5 mt-3 pt-3 border-t border-ink-800 justify-center"><Plus size={12} /> Adicionar à vitrine</button>
+                  <button onClick={() => addToShowcase(item)} disabled={addingId === item.id} className="btn-dark w-full !py-2 text-xs gap-1.5 mt-3 pt-3 border-t border-ink-800 justify-center">
+                    <Plus size={12} /> {addingId === item.id ? 'Adicionando...' : 'Adicionar à vitrine'}
+                  </button>
                 )}
               </div>
             )
@@ -174,16 +146,6 @@ export default function AdminPartnerManage() {
                 {p.image_url ? <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" /> : <span className="text-xs text-white/20">Sem foto</span>}
               </div>
               <p className="font-semibold">{p.name}</p>
-              {editingValueId === p.id ? (
-                <div className="flex gap-1.5 mt-1">
-                  <input className="input !py-1.5 !text-xs" type="number" step="0.01" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} />
-                  <button onClick={() => saveValue(p)} className="btn-gold !py-1.5 !px-2 text-xs">Salvar</button>
-                </div>
-              ) : (
-                <button onClick={() => { setEditingValueId(p.id); setEditValue(String(p.normal_price)) }} className="text-xs text-white/40 mt-1">
-                  Valor de referência: <span className="text-gold-400 font-medium">{formatBRL(p.normal_price)}</span>
-                </button>
-              )}
               <div className="flex gap-2 mt-3 pt-3 border-t border-ink-800">
                 <button onClick={() => toggleActive(p)} className="btn-dark flex-1 !py-2 text-xs gap-1.5">
                   {p.active ? <><Pause size={12} /> Pausar</> : <><Play size={12} /> Reativar</>}
