@@ -196,9 +196,9 @@ export const PARTNER_CATEGORIES = [
   { value: 'bar', label: 'Bares' },
   { value: 'restaurante', label: 'Restaurantes' },
   { value: 'deposito', label: 'Depósitos de bebidas' },
-  { value: 'supermercado', label: 'Supermercados' },
+  { value: 'supermercado', label: 'Balada' },
   { value: 'conveniencia', label: 'Lojas de conveniência' },
   { value: 'adega', label: 'Adegas' },
-  { value: 'distribuidora', label: 'Distribuidoras' },
+  { value: 'distribuidora', label: 'Shopping' },
   { value: 'outros', label: 'Outros parceiros' },
 ]

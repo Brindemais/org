@@ -48,6 +48,46 @@ export function isValidCPF(cpfRaw: string): boolean {
   return rev === parseInt(cpf[10])
 }
 
+export function maskCNPJ(v: string): string {
+  const digits = v.replace(/\D/g, '').slice(0, 14)
+  return digits
+    .replace(/(\d{2})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1/$2')
+    .replace(/(\d{4})(\d{1,2})$/, '$1-$2')
+}
+
+export function isValidCNPJ(cnpjRaw: string): boolean {
+  const cnpj = cnpjRaw.replace(/\D/g, '')
+  if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false
+  const calcDigit = (len: number) => {
+    let sum = 0
+    let pos = len - 7
+    for (let i = 0; i < len; i++) {
+      sum += parseInt(cnpj[i]) * pos--
+      if (pos < 2) pos = 9
+    }
+    const rest = sum % 11
+    return rest < 2 ? 0 : 11 - rest
+  }
+  if (calcDigit(12) !== parseInt(cnpj[12])) return false
+  return calcDigit(13) === parseInt(cnpj[13])
+}
+
+// Campo único de documento no cadastro de assinante: aceita CPF (11
+// dígitos) ou CNPJ (14 dígitos), pra quem prefere receber valores altos
+// por pessoa jurídica. O formato se ajusta sozinho pela quantidade de
+// dígitos digitados.
+export function maskCpfCnpj(v: string): string {
+  const digits = v.replace(/\D/g, '')
+  return digits.length > 11 ? maskCNPJ(v) : maskCPF(v)
+}
+
+export function isValidCpfCnpj(v: string): boolean {
+  const digits = v.replace(/\D/g, '')
+  return digits.length === 14 ? isValidCNPJ(v) : isValidCPF(v)
+}
+
 export function maskPhone(v: string): string {
   const digits = v.replace(/\D/g, '').slice(0, 11)
   return digits
