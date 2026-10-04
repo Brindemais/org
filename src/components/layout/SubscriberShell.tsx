@@ -1,10 +1,11 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import { Home, Gift, Wallet, MapPin, User, LogOut, Bell, CreditCard, Receipt, Share2, LifeBuoy, Moon, Sun } from 'lucide-react'
+import { NavLink, Outlet, Link } from 'react-router-dom'
+import { Home, Gift, Wallet, MapPin, User, LogOut, Bell, CreditCard, Receipt, Share2, LifeBuoy, Moon, Sun, AlertTriangle } from 'lucide-react'
 import { TopBar } from './TopBar'
 import { Logo } from './Logo'
 import { BottomNavigation, type BottomNavItem } from '../ui/BottomNavigation'
 import { useAuth } from '../../contexts/AuthContext'
 import { useWallet } from '../../hooks/useWallet'
+import { useSubscription } from '../../hooks/useSubscription'
 import { formatBRL } from '../../lib/format'
 import { DashboardThemeProvider, useDashboardTheme } from '../../contexts/DashboardThemeContext'
 import { SubscriptionPaywall } from '../subscriber/SubscriptionPaywall'
@@ -52,6 +53,7 @@ function SubscriberShellInner() {
   const { profile, hasActiveSubscription, signOut } = useAuth()
   const { balance } = useWallet()
   const { theme, toggleTheme } = useDashboardTheme()
+  const { renewalDue, daysUntilExpiry } = useSubscription()
 
   // hasActiveSubscription is null while AuthContext is still checking, or
   // for non-subscriber roles — only block once we actually know it's false.
@@ -104,6 +106,22 @@ function SubscriberShellInner() {
       </aside>
 
       <div className="flex-1 min-w-0 flex flex-col">
+        {renewalDue && (
+          <Link
+            to="/app/assinatura"
+            className="bg-red-600 text-white px-4 lg:px-8 py-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm font-medium"
+          >
+            <AlertTriangle size={15} className="shrink-0" />
+            <span>
+              {daysUntilExpiry !== null && daysUntilExpiry <= 0
+                ? 'Sua assinatura vence hoje.'
+                : daysUntilExpiry === 1
+                  ? 'Sua assinatura vence amanhã.'
+                  : `Sua assinatura vence em ${daysUntilExpiry} dias.`}
+            </span>
+            <span className="underline font-semibold whitespace-nowrap">Renovar agora</span>
+          </Link>
+        )}
         <div className="lg:hidden">
           <TopBar />
         </div>

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import {
-  AlertTriangle, ArrowDownLeft, ArrowUpRight, ChevronRight, Clock, Copy, CreditCard,
+  ArrowDownLeft, ArrowUpRight, ChevronRight, Copy, CreditCard,
   Eye, EyeOff, Gift, History, Lock, MapPin, Percent, Share2, Users2, Wallet,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
@@ -42,7 +42,7 @@ const QUICK_LINKS = [
 
 export default function SubscriberHome() {
   const { profile } = useAuth()
-  const { subscription, pickup, loading: subLoading, benefitsBlocked, renewalDue, daysUntilExpiry } = useSubscription()
+  const { subscription, pickup, loading: subLoading, benefitsBlocked } = useSubscription()
   const { balance, transactions } = useWallet()
   const [partners, setPartners] = useState<HomePartner[]>([])
   const [promoCounts, setPromoCounts] = useState<Record<string, number>>({})
@@ -174,22 +174,6 @@ export default function SubscriberHome() {
           </p>
           <Link to="/app/assinatura" className="btn-gold w-full">Aguardando pagamento · Renovar agora</Link>
         </div>
-      )}
-
-      {!subLoading && !benefitsBlocked && renewalDue && (
-        <Link to="/app/assinatura" className="card border-gold-400/40 bg-gold-400/5 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gold-400/15 flex items-center justify-center shrink-0">
-            <Clock size={18} className="text-gold-400" />
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold text-sm flex items-center gap-1.5">
-              <AlertTriangle size={13} className="text-gold-400" />
-              {daysUntilExpiry !== null && daysUntilExpiry <= 0 ? 'Sua assinatura vence hoje' : `Vence em ${daysUntilExpiry} ${daysUntilExpiry === 1 ? 'dia' : 'dias'}`}
-            </p>
-            <p className="text-xs text-white/50">Renove agora para não perder o acesso aos benefícios.</p>
-          </div>
-          <ChevronRight size={18} className="text-white/30" />
-        </Link>
       )}
 
       {!benefitsBlocked && subscription?.status === 'active' && (
