@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Lock, MapPin, Percent, Store, LocateFixed, Gift } from 'lucide-react'
+import { Lock, MapPin, Percent, Store, LocateFixed, Gift, ZoomIn } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, Promotion } from '../../lib/types'
 import { useSubscription } from '../../hooks/useSubscription'
@@ -9,6 +9,7 @@ import { useGeolocation } from '../../hooks/useGeolocation'
 import { haversineKm, formatDistance } from '../../lib/geo'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
+import { Modal } from '../../components/ui/Modal'
 
 // Only the columns this card grid renders — see the same note in Partners.tsx.
 type BenefitPartner = Pick<Partner, 'id' | 'trade_name' | 'category' | 'neighborhood' | 'city' | 'logo_url' | 'lat' | 'lng'>
@@ -23,6 +24,7 @@ export default function SubscriberBenefits() {
   const [choosing, setChoosing] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [zoomedGift, setZoomedGift] = useState<GiftOption | null>(null)
   const navigate = useNavigate()
   const geo = useGeolocation()
 
@@ -181,7 +183,17 @@ export default function SubscriberBenefits() {
                   )}
                 </div>
                 {firstGift?.image_url ? (
-                  <img src={firstGift.image_url} alt={firstGift.name} className="w-11 h-11 rounded-lg object-cover shrink-0 bg-white" />
+                  <button
+                    type="button"
+                    onClick={() => setZoomedGift(firstGift)}
+                    className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0 bg-white"
+                    aria-label={`Ampliar imagem de ${firstGift.name}`}
+                  >
+                    <img src={firstGift.image_url} alt={firstGift.name} className="w-full h-full object-cover" />
+                    <span className="absolute inset-0 bg-black/0 hover:bg-black/30 active:bg-black/30 transition flex items-center justify-center">
+                      <ZoomIn size={14} className="text-white opacity-0 hover:opacity-100 active:opacity-100 transition" />
+                    </span>
+                  </button>
                 ) : null}
                 <button
                   disabled={!!pickup || !subscription || choosing === p.id}
@@ -203,6 +215,15 @@ export default function SubscriberBenefits() {
           )}
         </div>
       </section>
+
+      <Modal open={!!zoomedGift} onClose={() => setZoomedGift(null)} className="!max-w-sm">
+        {zoomedGift?.image_url && (
+          <div className="space-y-3">
+            <img src={zoomedGift.image_url} alt={zoomedGift.name} className="w-full rounded-xl object-cover" />
+            <p className="font-semibold text-center text-ink-950">{zoomedGift.name}</p>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

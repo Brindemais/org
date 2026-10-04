@@ -8,6 +8,7 @@ import { formatBRL, formatDate } from '../../lib/format'
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
+import { Modal } from '../../components/ui/Modal'
 
 type DetailPartner = Pick<Partner, 'id' | 'trade_name' | 'category' | 'address' | 'neighborhood' | 'city' | 'state' | 'opening_hours' | 'logo_url' | 'whatsapp'>
 
@@ -22,6 +23,7 @@ export default function SubscriberPartnerDetail() {
   const [loading, setLoading] = useState(true)
   const [choosing, setChoosing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [zoomedGift, setZoomedGift] = useState<ProductRow | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -140,9 +142,14 @@ export default function SubscriberPartnerDetail() {
           <div className="grid grid-cols-2 gap-3">
             {gifts.map((g) => (
               <div key={g.id} className="card !p-3">
-                <div className="aspect-square rounded-lg bg-ink-950 border border-ink-800 mb-2 overflow-hidden flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => g.image_url && setZoomedGift(g)}
+                  className="w-full aspect-square rounded-lg bg-ink-950 border border-ink-800 mb-2 overflow-hidden flex items-center justify-center"
+                  aria-label={g.image_url ? `Ampliar imagem de ${g.name}` : undefined}
+                >
                   {g.image_url ? <img src={g.image_url} alt={g.name} className="w-full h-full object-cover" /> : <Gift size={20} className="text-white/15" />}
-                </div>
+                </button>
                 <p className="text-xs font-medium truncate">{g.name}</p>
                 {g.is_gift ? (
                   <p className="text-[11px] text-gold-400 font-semibold mt-0.5">Brinde da comunidade</p>
@@ -161,6 +168,15 @@ export default function SubscriberPartnerDetail() {
       {!promotions.length && !gifts.length && (
         <EmptyState dark icon={Percent} title="Sem benefícios cadastrados no momento" description="Esse parceiro ainda não publicou promoções ou brindes." />
       )}
+
+      <Modal open={!!zoomedGift} onClose={() => setZoomedGift(null)} className="!max-w-sm">
+        {zoomedGift?.image_url && (
+          <div className="space-y-3">
+            <img src={zoomedGift.image_url} alt={zoomedGift.name} className="w-full rounded-xl object-cover" />
+            <p className="font-semibold text-center text-ink-950">{zoomedGift.name}</p>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
