@@ -7,7 +7,7 @@ const NAV: DashNavItem[] = [
   { to: '/parceiro', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/parceiro/retiradas', label: 'Retiradas pendentes', icon: PackageCheck },
   { to: '/parceiro/estoque', label: 'Estoque', icon: Boxes },
-  { to: '/parceiro/brindes', label: 'Cadastrar brinde', icon: Gift },
+  { to: '/parceiro/brindes', label: 'Brindes', icon: Gift },
   { to: '/parceiro/promocoes', label: 'Promoções e descontos', icon: Percent },
   { to: '/parceiro/anunciante', label: 'Anunciante', icon: Megaphone },
   { to: '/parceiro/indicacoes', label: 'Indicações', icon: Users },
