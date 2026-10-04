@@ -111,7 +111,7 @@ export default function SubscriberPartnerDetail() {
 
       {promotions.length > 0 && (
         <section>
-          <p className="font-semibold mb-3 flex items-center gap-1.5"><Percent size={16} className="text-gold-400" /> Descontos e promoções</p>
+          <p className="font-semibold mb-3 flex items-center gap-1.5"><Percent size={16} className="text-gold-400" /> Produtos e descontos</p>
           <div className="space-y-2">
             {promotions.map((p) => (
               <div key={p.id} className="card !bg-ink-900">

@@ -45,7 +45,7 @@ export default function PartnerPromotions() {
   }
 
   async function remove(id: string) {
-    if (!window.confirm('Excluir esta promoção? Essa ação não pode ser desfeita.')) return
+    if (!window.confirm('Excluir este produto? Essa ação não pode ser desfeita.')) return
     setDeleting(id)
     await supabase.from('promotions').delete().eq('id', id)
     setDeleting(null)
@@ -55,16 +55,16 @@ export default function PartnerPromotions() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">Promoções e descontos</h1>
-        <p className="text-white/50 text-sm">Promoções publicadas aqui ficam visíveis para assinantes imediatamente.</p>
+        <h1 className="font-display text-2xl font-semibold">Produtos e descontos</h1>
+        <p className="text-white/50 text-sm">Cadastre produtos com preço normal e preço assinante. Publicados aqui ficam visíveis para assinantes imediatamente.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="card grid sm:grid-cols-2 gap-3">
         <div className="sm:col-span-2">
-          <ImageUpload value={form.image_url || null} onChange={(url) => setForm({ ...form, image_url: url })} folder="promotions" label="Foto da promoção" />
+          <ImageUpload value={form.image_url || null} onChange={(url) => setForm({ ...form, image_url: url })} folder="promotions" label="Foto do produto" />
         </div>
         <div className="sm:col-span-2">
-          <label className="label">Título da promoção</label>
+          <label className="label">Nome do produto</label>
           <input className="input" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         </div>
         <div className="sm:col-span-2">
@@ -83,7 +83,7 @@ export default function PartnerPromotions() {
           <label className="label">Válida até</label>
           <input className="input" type="date" required value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} />
         </div>
-        <button type="submit" disabled={saving} className="btn-gold sm:col-span-2">{saving ? 'Publicando...' : 'Publicar promoção'}</button>
+        <button type="submit" disabled={saving} className="btn-gold sm:col-span-2">{saving ? 'Publicando...' : 'Publicar produto'}</button>
       </form>
 
       <div className="space-y-2">
@@ -102,14 +102,14 @@ export default function PartnerPromotions() {
                 onClick={() => remove(p.id)}
                 disabled={deleting === p.id}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-white/40 hover:text-red-400 hover:bg-red-500/10 transition"
-                aria-label="Excluir promoção"
+                aria-label="Excluir produto"
               >
                 <Trash2 size={15} />
               </button>
             </div>
           </div>
         ))}
-        {!promotions.length && <EmptyState dark icon={Percent} title="Nenhuma promoção cadastrada" description="Publique a primeira promoção no formulário acima." />}
+        {!promotions.length && <EmptyState dark icon={Percent} title="Nenhum produto cadastrado" description="Publique o primeiro produto no formulário acima." />}
       </div>
     </div>
   )

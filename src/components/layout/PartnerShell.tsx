@@ -8,7 +8,7 @@ const NAV: DashNavItem[] = [
   { to: '/parceiro/retiradas', label: 'Retiradas pendentes', icon: PackageCheck },
   { to: '/parceiro/estoque', label: 'Estoque', icon: Boxes },
   { to: '/parceiro/brindes', label: 'Brindes', icon: Gift },
-  { to: '/parceiro/promocoes', label: 'Promoções e descontos', icon: Percent },
+  { to: '/parceiro/promocoes', label: 'Produtos e descontos', icon: Percent },
   { to: '/parceiro/anunciante', label: 'Anunciante', icon: Megaphone },
   { to: '/parceiro/indicacoes', label: 'Indicações', icon: Users },
   { to: '/parceiro/reservas', label: 'Reservas selecionadas', icon: CalendarCheck },

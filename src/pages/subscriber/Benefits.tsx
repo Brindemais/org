@@ -119,7 +119,7 @@ export default function SubscriberBenefits() {
 
       {promotions.length > 0 && (
         <section>
-          <p className="font-semibold mb-3 flex items-center gap-1.5"><Percent size={16} className="text-gold-400" /> Descontos e promoções</p>
+          <p className="font-semibold mb-3 flex items-center gap-1.5"><Percent size={16} className="text-gold-400" /> Produtos e descontos</p>
           <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pb-1">
             {promotions.map((p) => (
               <Link key={p.id} to={`/app/parceiros/${p.partner_id}`} className="shrink-0 w-56 card !bg-ink-900 block active:scale-[0.99] transition">
