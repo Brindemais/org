@@ -67,8 +67,8 @@ export default function AdminPromotions() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">Promoções</h1>
-        <p className="text-white/50 text-sm">Revise e aprove as promoções enviadas pelos parceiros.</p>
+        <h1 className="font-display text-2xl font-semibold">Produtos e descontos</h1>
+        <p className="text-white/50 text-sm">Revise e aprove os produtos com desconto enviados pelos parceiros.</p>
       </div>
 
       <div className="flex flex-wrap gap-2">

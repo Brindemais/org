@@ -376,7 +376,7 @@ export default function Landing() {
       {/* ============ 4.7 DESCONTOS E PROMOÇÕES ============ */}
       <section id="promocoes" className="border-t border-black/10 py-16">
         <ResponsiveContainer>
-          <SectionTitle eyebrow="Ofertas para assinantes" title="Descontos e promoções" description="Preços e condições especiais em parceiros selecionados, válidos apenas para assinantes ativos." />
+          <SectionTitle eyebrow="Ofertas para assinantes" title="Produtos e descontos" description="Preços e condições especiais em parceiros selecionados, válidos apenas para assinantes ativos." />
           {promos.length === 0 ? (
             <EmptyState icon={Percent} title="Sem promoções ativas no momento" description="Novas promoções são publicadas com frequência pelos parceiros da comunidade." />
           ) : (

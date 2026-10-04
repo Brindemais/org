@@ -11,7 +11,7 @@ const NAV: DashNavItem[] = [
   { to: '/admin/pagamentos', label: 'Pagamentos Pix', icon: Wallet },
   { to: '/admin/cadastrar-brinde', label: 'Cadastrar brinde', icon: Gift },
   { to: '/admin/estoque', label: 'Estoque', icon: Boxes },
-  { to: '/admin/promocoes', label: 'Promoções', icon: Percent },
+  { to: '/admin/promocoes', label: 'Produtos e descontos', icon: Percent },
   { to: '/admin/saques', label: 'Saques', icon: Landmark },
   { to: '/admin/suporte', label: 'Suporte', icon: LifeBuoy },
   { to: '/admin/equipe', label: 'Equipe', icon: UserCog },
