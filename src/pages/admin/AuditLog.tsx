@@ -29,7 +29,7 @@ function summarize(row: Pick<LogRow, 'before' | 'after'>) {
   if (row.after) {
     for (const [k, v] of Object.entries(row.after)) parts.push(`${k}: ${JSON.stringify(v)}`)
   }
-  return parts.join(' · ') || '—'
+  return parts.join(' · ') || '-'
 }
 
 export default function AdminAuditLog() {
@@ -81,7 +81,7 @@ export default function AdminAuditLog() {
             {filtered.map((l) => (
               <tr key={l.id} className="border-t border-ink-800 align-top">
                 <td className="py-3 text-white/50 whitespace-nowrap">{formatDateTime(l.created_at)}</td>
-                <td className="py-3">{l.actor?.full_name ?? '—'}</td>
+                <td className="py-3">{l.actor?.full_name ?? '-'}</td>
                 <td className="py-3"><span className="pill bg-gold-400/15 text-gold-300">{ACTION_LABELS[l.action] ?? l.action}</span></td>
                 <td className="py-3 text-white/50">
                   {l.entity}

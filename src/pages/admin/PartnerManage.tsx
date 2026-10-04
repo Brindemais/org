@@ -123,7 +123,7 @@ export default function AdminPartnerManage() {
       <div>
         <Link to="/admin/parceiros" className="text-xs text-white/40 flex items-center gap-1 mb-2 w-fit"><ArrowLeft size={12} /> Voltar pra parceiros</Link>
         <h1 className="font-display text-2xl font-semibold">{partner.trade_name}</h1>
-        <p className="text-white/50 text-sm">Escolha, do catálogo, quais brindes este parceiro oferece, e gerencie o estoque — como se fosse o próprio painel dele.</p>
+        <p className="text-white/50 text-sm">Escolha, do catálogo, quais brindes este parceiro oferece, e gerencie o estoque, como se fosse o próprio painel dele.</p>
       </div>
 
       <div>

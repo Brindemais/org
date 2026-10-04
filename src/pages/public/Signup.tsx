@@ -288,7 +288,7 @@ export default function Signup() {
               onMyCodeChange={setMyReferralCode}
               autoSuggestSource={fullName}
               myCodeLabel="Nome de usuário"
-              myCodeHint="Não pode repetir — também é o nome que vai aparecer no seu link de indicação."
+              myCodeHint="Não pode repetir, também é o nome que vai aparecer no seu link de indicação."
               onValidityChange={setReferralValid}
             />
 

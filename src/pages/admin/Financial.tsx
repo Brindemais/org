@@ -184,22 +184,22 @@ export default function AdminFinancial() {
             tone="gold"
           />
           <StatCard
-            label="Assinantes — manual"
+            label="Assinantes (manual)"
             value={formatBRL(confirmations.subscriberManual)}
             icon={<Users2 size={18} />}
           />
           <StatCard
-            label="Assinantes — Asaas"
+            label="Assinantes (Asaas)"
             value={formatBRL(confirmations.subscriberAsaas)}
             icon={<QrCode size={18} />}
           />
           <StatCard
-            label="Parceiros — manual"
+            label="Parceiros (manual)"
             value={formatBRL(confirmations.partnerManual)}
             icon={<Store size={18} />}
           />
           <StatCard
-            label="Parceiros — Asaas"
+            label="Parceiros (Asaas)"
             value={formatBRL(confirmations.partnerAsaas)}
             icon={<QrCode size={18} />}
           />

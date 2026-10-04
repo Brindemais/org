@@ -65,7 +65,7 @@ export default function AdminRegisterGift() {
     setDeletingId(p.id)
     const { error: deleteErr } = await supabase.from('products').delete().eq('id', p.id)
     setDeletingId(null)
-    if (deleteErr) { setDeleteError({ id: p.id, message: 'Não foi possível remover — use Pausar pra tirar da lista de novas escolhas.' }); return }
+    if (deleteErr) { setDeleteError({ id: p.id, message: 'Não foi possível remover. Use Pausar pra tirar da lista de novas escolhas.' }); return }
     load()
   }
 
@@ -73,7 +73,7 @@ export default function AdminRegisterGift() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold flex items-center gap-2"><Gift size={22} className="text-gold-400" /> Catálogo de brindes</h1>
-        <p className="text-white/50 text-sm">Cadastre os modelos de brinde que os parceiros poderão escolher oferecer na vitrine deles. O parceiro não cria brinde do zero — só seleciona destes.</p>
+        <p className="text-white/50 text-sm">Cadastre os modelos de brinde que os parceiros poderão escolher oferecer na vitrine deles. O parceiro não cria brinde do zero, só seleciona destes.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="card grid sm:grid-cols-2 gap-3 max-w-2xl">
