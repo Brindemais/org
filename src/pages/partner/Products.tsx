@@ -30,7 +30,7 @@ export default function PartnerProducts() {
   async function load() {
     if (!partner) return
     const [{ data: cat }, { data: own }] = await Promise.all([
-      supabase.from('products_public').select('id, name, description, image_url').is('partner_id', null).eq('is_gift', true).order('name'),
+      supabase.rpc('list_public_products').select('id, name, description, image_url').is('partner_id', null).eq('is_gift', true).order('name'),
       supabase.from('products').select('*').eq('partner_id', partner.id).order('created_at', { ascending: false }),
     ])
     setCatalog((cat as CatalogItem[]) ?? [])

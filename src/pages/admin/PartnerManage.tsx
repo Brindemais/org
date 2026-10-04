@@ -38,7 +38,7 @@ export default function AdminPartnerManage() {
     if (!id) return
     const [{ data: p }, { data: cat }, { data: own }, { data: stockRows }] = await Promise.all([
       supabase.from('partners').select('*').eq('id', id).maybeSingle(),
-      supabase.from('products_public').select('id, name, description, image_url').is('partner_id', null).eq('is_gift', true).order('name'),
+      supabase.rpc('list_public_products').select('id, name, description, image_url').is('partner_id', null).eq('is_gift', true).order('name'),
       supabase.from('products').select('*').eq('partner_id', id).order('created_at', { ascending: false }),
       supabase.from('stock_partner').select('id, quantity, product:product_id(id, name)').eq('partner_id', id),
     ])
