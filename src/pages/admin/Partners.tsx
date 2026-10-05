@@ -27,6 +27,7 @@ const EDIT_FIELDS: { key: keyof Partner; label: string }[] = [
 
 export default function AdminPartners() {
   const [partners, setPartners] = useState<Partner[]>([])
+  const [usernames, setUsernames] = useState<Record<string, string[]>>({})
   const [creating, setCreating] = useState(false)
   const [createMsg, setCreateMsg] = useState('')
   const [form, setForm] = useState({ company_name: '', trade_name: '', category: 'bar', whatsapp: '', address: '', neighborhood: '', cep: '', email: '', logo_url: '' })
@@ -47,8 +48,19 @@ export default function AdminPartners() {
   const [statusBusyId, setStatusBusyId] = useState<string | null>(null)
 
   async function load() {
-    const { data } = await supabase.from('partners').select('*').order('created_at', { ascending: false })
+    const [{ data }, { data: staff }] = await Promise.all([
+      supabase.from('partners').select('*').order('created_at', { ascending: false }),
+      // Nome de usuário é um campo do profile de quem acessa o painel, não do
+      // parceiro em si — um parceiro pode ter mais de um staff vinculado.
+      supabase.from('partner_staff').select('partner_id, profiles(referral_code)'),
+    ])
     setPartners((data as Partner[]) ?? [])
+    const map: Record<string, string[]> = {}
+    for (const row of (staff as any[]) ?? []) {
+      const code = row.profiles?.referral_code
+      if (code) (map[row.partner_id] ??= []).push(code)
+    }
+    setUsernames(map)
   }
 
   function startEdit(p: Partner) {
@@ -84,11 +96,11 @@ export default function AdminPartners() {
 
   const filtered = useMemo(() => partners.filter((p) => {
     const q = search.trim().toLowerCase()
-    const matchesSearch = !q || p.trade_name.toLowerCase().includes(q) || p.company_name.toLowerCase().includes(q) || (p.email ?? '').toLowerCase().includes(q) || (p.neighborhood ?? '').toLowerCase().includes(q)
+    const matchesSearch = !q || p.trade_name.toLowerCase().includes(q) || p.company_name.toLowerCase().includes(q) || (p.email ?? '').toLowerCase().includes(q) || (p.neighborhood ?? '').toLowerCase().includes(q) || (usernames[p.id] ?? []).some((u) => u.toLowerCase().includes(q))
     const matchesCategory = !categoryFilter || p.category === categoryFilter
     const matchesStatus = !statusFilter || p.status === statusFilter
     return matchesSearch && matchesCategory && matchesStatus
-  }), [partners, search, categoryFilter, statusFilter])
+  }), [partners, usernames, search, categoryFilter, statusFilter])
 
   useEffect(() => { load() }, [])
 
@@ -208,7 +220,7 @@ export default function AdminPartners() {
     downloadCSV(
       `parceiros-brinde-mais-${new Date().toISOString().slice(0, 10)}.csv`,
       partners.map((p) => ({
-        nome_fantasia: p.trade_name, razao_social: p.company_name, categoria: p.category,
+        nome_fantasia: p.trade_name, razao_social: p.company_name, nome_de_usuario: (usernames[p.id] ?? []).join(', '), categoria: p.category,
         status: p.status, whatsapp: p.whatsapp ?? '', bairro: p.neighborhood ?? '', cidade: p.city ?? '',
         cadastrado_em: p.created_at,
       })),
@@ -316,8 +328,9 @@ export default function AdminPartners() {
                   <button onClick={() => setEditingId(null)} className="btn-ghost !py-2 !px-3 text-xs">Cancelar</button>
                 </div>
               </div>
-            ) : (p.responsible_name || p.email || p.phone || p.cnpj_cpf || p.address) && (
+            ) : (p.responsible_name || p.email || p.phone || p.cnpj_cpf || p.address || usernames[p.id]?.length) && (
               <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-white/50 mb-3 bg-ink-950/50 rounded-lg p-3">
+                {!!usernames[p.id]?.length && <p><span className="text-white/30">Nome de usuário:</span> <span className="font-mono">{usernames[p.id].join(', ')}</span></p>}
                 {p.responsible_name && <p><span className="text-white/30">Responsável:</span> {p.responsible_name}</p>}
                 {p.email && <p><span className="text-white/30">E-mail:</span> {p.email}</p>}
                 {p.phone && <p><span className="text-white/30">Telefone:</span> {p.phone}</p>}
