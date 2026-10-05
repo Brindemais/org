@@ -7,7 +7,7 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { downloadCSV } from '../../lib/csv'
 
-interface Row { id: string; full_name: string; cpf: string | null; email: string | null; created_at: string; sub_status: string | null; sub_expires_at: string | null; balance: number; active: boolean }
+interface Row { id: string; full_name: string; cpf: string | null; email: string | null; username: string | null; created_at: string; sub_status: string | null; sub_expires_at: string | null; balance: number; active: boolean }
 
 export default function AdminSubscribers() {
   const [rows, setRows] = useState<Row[]>([])
@@ -24,7 +24,7 @@ export default function AdminSubscribers() {
         supabase.from('subscriptions').select('status, expires_at').eq('subscriber_id', p.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
         supabase.rpc('current_wallet_balance', { p_user_id: p.id }),
       ])
-      result.push({ id: p.id, full_name: p.full_name, cpf: p.cpf, email: p.email, created_at: p.created_at, sub_status: sub?.status ?? null, sub_expires_at: sub?.expires_at ?? null, balance: Number(bal ?? 0), active: p.active })
+      result.push({ id: p.id, full_name: p.full_name, cpf: p.cpf, email: p.email, username: p.referral_code, created_at: p.created_at, sub_status: sub?.status ?? null, sub_expires_at: sub?.expires_at ?? null, balance: Number(bal ?? 0), active: p.active })
     }
     setRows(result)
     setLoading(false)
@@ -48,7 +48,7 @@ export default function AdminSubscribers() {
     downloadCSV(
       `assinantes-brinde-mais-${new Date().toISOString().slice(0, 10)}.csv`,
       filtered.map((r) => ({
-        nome: r.full_name, cpf: r.cpf ? maskCPF(r.cpf) : '', email: r.email ?? '',
+        nome: r.full_name, nome_de_usuario: r.username ?? '', cpf: r.cpf ? maskCPF(r.cpf) : '', email: r.email ?? '',
         assinatura: r.sub_status ? (isExpired(r) ? 'vencida' : r.sub_status) : 'sem_assinatura',
         vence_em: r.sub_expires_at ?? '', saldo: r.balance.toFixed(2),
         status_conta: r.active ? 'ativo' : 'suspenso', cadastrado_em: r.created_at,
@@ -56,7 +56,11 @@ export default function AdminSubscribers() {
     )
   }
 
-  const filtered = rows.filter((r) => r.full_name.toLowerCase().includes(search.toLowerCase()) || (r.cpf ?? '').includes(search.replace(/\D/g, '')))
+  const filtered = rows.filter((r) =>
+    r.full_name.toLowerCase().includes(search.toLowerCase()) ||
+    (r.username ?? '').toLowerCase().includes(search.toLowerCase()) ||
+    (r.cpf ?? '').includes(search.replace(/\D/g, '')),
+  )
 
   return (
     <div className="space-y-6">
@@ -66,22 +70,23 @@ export default function AdminSubscribers() {
           <p className="text-white/50 text-sm">{rows.length} cadastrados</p>
         </div>
         <div className="flex gap-2">
-          <input className="input !w-64" placeholder="Buscar por nome ou CPF..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="input !w-64" placeholder="Buscar por nome, usuário ou CPF..." value={search} onChange={(e) => setSearch(e.target.value)} />
           <button onClick={exportCSV} className="btn-dark !px-3 !py-2 text-xs gap-1.5 shrink-0"><Download size={14} /> Exportar CSV</button>
         </div>
       </div>
 
       <div className="card overflow-x-auto">
-        <table className="w-full text-sm min-w-[800px]">
+        <table className="w-full text-sm min-w-[900px]">
           <thead>
             <tr className="text-left text-white/40 text-xs uppercase">
-              <th className="pb-3">Nome</th><th className="pb-3">CPF</th><th className="pb-3">E-mail</th><th className="pb-3">Assinatura</th><th className="pb-3">Saldo</th><th className="pb-3">Desde</th><th className="pb-3">Conta</th><th className="pb-3">Ação</th>
+              <th className="pb-3">Nome</th><th className="pb-3">Nome de usuário</th><th className="pb-3">CPF</th><th className="pb-3">E-mail</th><th className="pb-3">Assinatura</th><th className="pb-3">Saldo</th><th className="pb-3">Desde</th><th className="pb-3">Conta</th><th className="pb-3">Ação</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((r) => (
               <tr key={r.id} className="border-t border-ink-800">
                 <td className="py-3">{r.full_name}</td>
+                <td className="py-3 text-white/50 font-mono">{r.username ?? '-'}</td>
                 <td className="py-3 text-white/50">{r.cpf ? maskCPF(r.cpf) : '-'}</td>
                 <td className="py-3 text-white/50">{r.email}</td>
                 <td className="py-3">
@@ -108,8 +113,8 @@ export default function AdminSubscribers() {
                 </td>
               </tr>
             ))}
-            {loading && <tr><td colSpan={8}><LoadingState dark label="Carregando assinantes..." className="py-8" /></td></tr>}
-            {!loading && !filtered.length && <tr><td colSpan={8}><EmptyState dark icon={Users} title="Nenhum assinante encontrado" className="py-8" /></td></tr>}
+            {loading && <tr><td colSpan={9}><LoadingState dark label="Carregando assinantes..." className="py-8" /></td></tr>}
+            {!loading && !filtered.length && <tr><td colSpan={9}><EmptyState dark icon={Users} title="Nenhum assinante encontrado" className="py-8" /></td></tr>}
           </tbody>
         </table>
       </div>
