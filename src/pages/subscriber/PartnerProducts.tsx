@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, Copy, CreditCard, MapPin, Minus, Percent, Plus, QrCode, ShoppingBag } from 'lucide-react'
+import { ChevronLeft, Copy, CreditCard, MapPin, Minus, Percent, Plus, QrCode, ShoppingBag, Wallet } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, Promotion } from '../../lib/types'
 import { formatBRL, formatDate, maskCardNumber, maskCardExpiry } from '../../lib/format'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { Modal } from '../../components/ui/Modal'
+import { useWallet } from '../../hooks/useWallet'
 
 type CatalogPartner = Pick<Partner, 'id' | 'trade_name' | 'neighborhood' | 'city' | 'logo_url'>
-type Method = 'pix' | 'credit_card'
+type Method = 'pix' | 'credit_card' | 'wallet'
 type CheckoutStep = 'form' | 'pix' | 'done'
 
 export default function SubscriberPartnerProducts() {
@@ -34,6 +35,7 @@ export default function SubscriberPartnerProducts() {
   const [cardExpiry, setCardExpiry] = useState('')
   const [cardCvv, setCardCvv] = useState('')
   const [cardAddressNumber, setCardAddressNumber] = useState('')
+  const { available: walletAvailable, reload: reloadWallet } = useWallet()
 
   function load() {
     if (!id) return
@@ -120,6 +122,23 @@ export default function SubscriberPartnerProducts() {
     load()
   }
 
+  async function submitWallet() {
+    if (!buying) return
+    setBusy(true)
+    setError(null)
+    const { data: payment, error: orderError } = await supabase.rpc('create_product_order', {
+      p_promotion_id: buying.id, p_quantity: qty, p_payment_method: 'wallet',
+    })
+    setBusy(false)
+    if (orderError || !payment) {
+      setError(orderErrorMessage(orderError?.message))
+      return
+    }
+    reloadWallet()
+    setStep('done')
+    load()
+  }
+
   function copyPix() {
     navigator.clipboard.writeText(pixCode)
     setCopied(true)
@@ -132,6 +151,7 @@ export default function SubscriberPartnerProducts() {
       PRODUCT_HAS_NO_PRICE: 'Esse produto não tem preço configurado.',
       PRODUCT_NOT_FOUND: 'Esse produto não está mais disponível.',
       ACCOUNT_SUSPENDED: 'Sua assinatura precisa estar ativa para comprar.',
+      INSUFFICIENT_BALANCE: 'Saldo insuficiente para pagar essa compra. Escolha Pix ou cartão, ou reduza a quantidade.',
     }
     return map[message ?? ''] ?? 'Não foi possível iniciar a compra. Tente novamente.'
   }
@@ -224,21 +244,26 @@ export default function SubscriberPartnerProducts() {
               <span className="text-sm text-black/50">Total</span>
               <span className="font-bold text-lg">{formatBRL(total)}</span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setMethod('pix')} className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'pix' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}>
+            <div className="grid grid-cols-3 gap-2">
+              <button type="button" onClick={() => setMethod('pix')} className={`flex flex-col items-center justify-center gap-1 rounded-lg py-2 text-xs font-medium border transition ${method === 'pix' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}>
                 <QrCode size={15} /> Pix
               </button>
-              <button type="button" onClick={() => setMethod('credit_card')} className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'credit_card' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}>
+              <button type="button" onClick={() => setMethod('credit_card')} className={`flex flex-col items-center justify-center gap-1 rounded-lg py-2 text-xs font-medium border transition ${method === 'credit_card' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}>
                 <CreditCard size={15} /> Cartão
+              </button>
+              <button type="button" onClick={() => setMethod('wallet')} className={`flex flex-col items-center justify-center gap-1 rounded-lg py-2 text-xs font-medium border transition ${method === 'wallet' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}>
+                <Wallet size={15} /> Saldo
               </button>
             </div>
 
-            {method === 'pix' ? (
+            {method === 'pix' && (
               <>
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 <button onClick={submitPix} disabled={busy} className="btn-gold w-full">{busy ? 'Gerando Pix...' : 'Pagar via Pix'}</button>
               </>
-            ) : (
+            )}
+
+            {method === 'credit_card' && (
               <div className="space-y-3">
                 <input className="input-light" placeholder="Nome no cartão" value={cardName} onChange={(e) => setCardName(e.target.value.toUpperCase())} />
                 <input className="input-light" placeholder="Número do cartão" inputMode="numeric" value={maskCardNumber(cardNumber)} onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} />
@@ -249,6 +274,22 @@ export default function SubscriberPartnerProducts() {
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 <button onClick={submitCard} disabled={busy} className="btn-gold w-full">{busy ? 'Processando...' : `Pagar ${formatBRL(total)} no cartão`}</button>
+              </div>
+            )}
+
+            {method === 'wallet' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm border-t border-black/10 pt-3">
+                  <span className="text-black/50">Saldo disponível</span>
+                  <span className="font-semibold">{formatBRL(walletAvailable)}</span>
+                </div>
+                {walletAvailable < total && (
+                  <p className="text-sm text-red-500">Saldo insuficiente para essa compra. Escolha Pix ou cartão, ou reduza a quantidade.</p>
+                )}
+                {error && <p className="text-sm text-red-500">{error}</p>}
+                <button onClick={submitWallet} disabled={busy || walletAvailable < total} className="btn-gold w-full disabled:opacity-40">
+                  {busy ? 'Processando...' : `Pagar ${formatBRL(total)} com saldo`}
+                </button>
               </div>
             )}
           </div>
