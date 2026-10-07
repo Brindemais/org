@@ -66,6 +66,7 @@ export interface Partner {
   asaas_wallet_id: string | null
   asaas_subaccount_status: string
   asaas_subaccount_error: string | null
+  asaas_verified_at: string | null
 }
 
 export interface Subscription {
