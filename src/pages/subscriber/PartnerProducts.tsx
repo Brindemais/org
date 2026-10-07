@@ -262,7 +262,7 @@ export default function SubscriberPartnerProducts() {
             </div>
             <p className="text-sm text-black/50">Escaneie ou copie o código Pix para pagar {formatBRL(total)}.</p>
             <button onClick={copyPix} className="btn-dark-light w-full !py-2.5 text-sm gap-2"><Copy size={14} /> {copied ? 'Copiado!' : 'Copiar código Pix'}</button>
-            <p className="text-xs text-black/40">A confirmação é automática. Depois de pago, o código de retirada aparece em "Minhas compras".</p>
+            <p className="text-xs text-black/40">A confirmação é automática. Acompanhe o andamento do pedido em "Minhas compras" — o código de retirada aparece depois que o parceiro confirmar o pedido.</p>
             <button onClick={() => { closeBuy(); navigate('/app/produtos/compras') }} className="btn-gold w-full">Ver minhas compras</button>
           </div>
         )}
@@ -270,7 +270,7 @@ export default function SubscriberPartnerProducts() {
         {buying && step === 'done' && (
           <div className="space-y-4 text-center text-ink-950">
             <p className="font-semibold">Pagamento aprovado!</p>
-            <p className="text-sm text-black/50">O código de retirada já está disponível em "Minhas compras".</p>
+            <p className="text-sm text-black/50">Acompanhe o andamento em "Minhas compras" — o código de retirada aparece depois que o parceiro confirmar o pedido.</p>
             <button onClick={() => { closeBuy(); navigate('/app/produtos/compras') }} className="btn-gold w-full">Ver minhas compras</button>
           </div>
         )}

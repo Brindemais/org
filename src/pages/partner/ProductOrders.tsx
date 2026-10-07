@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { ScanLine, ShoppingBag, Wallet } from 'lucide-react'
+import { PackageCheck, ScanLine, ShoppingBag, Wallet } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useWallet } from '../../hooks/useWallet'
 import { supabase } from '../../lib/supabase'
@@ -11,9 +11,13 @@ import { QrScannerModal } from '../../components/ui/QrScannerModal'
 interface OrderRow {
   order_id: string; status: string; code: string; quantity: number; unit_price: number
   total_amount: number; net_amount: number; promotion_title: string
-  subscriber_name: string; subscriber_phone: string; deadline: string | null; confirmed_at: string | null; created_at: string
+  subscriber_name: string; subscriber_phone: string; deadline: string | null
+  accepted_at: string | null; confirmed_at: string | null; created_at: string
 }
 
+// Acompanhamento estilo "iFood": pedido pago chega como 'ready' (precisa
+// o parceiro confirmar que recebeu), só depois de 'accepted' é que entra
+// o código/QR pra finalizar a entrega.
 export default function PartnerProductOrders() {
   const { partner, profile, refreshProfile } = useAuth()
   const { balance, available, reload: reloadWallet } = useWallet()
@@ -72,7 +76,19 @@ export default function PartnerProductOrders() {
 
   useEffect(() => { load() }, [partner])
 
-  async function confirm(orderId: string) {
+  async function accept(orderId: string) {
+    setBusy(orderId)
+    setErrors((e) => ({ ...e, [orderId]: '' }))
+    const { error } = await supabase.rpc('accept_product_order', { p_order_id: orderId })
+    setBusy(null)
+    if (error) {
+      setErrors((e) => ({ ...e, [orderId]: 'Não foi possível confirmar o pedido.' }))
+      return
+    }
+    load()
+  }
+
+  async function confirmDelivery(orderId: string) {
     const code = codeInput[orderId]
     if (!code) return
     setBusy(orderId)
@@ -82,8 +98,7 @@ export default function PartnerProductOrders() {
     if (error) {
       const map: Record<string, string> = {
         CODE_MISMATCH: 'Código não confere com o do pedido.',
-        OUT_OF_STOCK: 'Sem estoque suficiente para confirmar.',
-        ORDER_NOT_READY: 'Esse pedido não está pronto para retirada.',
+        ORDER_NOT_ACCEPTED: 'Confirme o pedido antes de finalizar a entrega.',
       }
       setErrors((e) => ({ ...e, [orderId]: map[error.message] ?? 'Não foi possível confirmar.' }))
       return
@@ -91,8 +106,9 @@ export default function PartnerProductOrders() {
     load()
   }
 
-  const pending = orders.filter((o) => o.status === 'ready')
-  const history = orders.filter((o) => o.status !== 'ready')
+  const incoming = orders.filter((o) => o.status === 'ready')
+  const awaitingPickup = orders.filter((o) => o.status === 'accepted')
+  const history = orders.filter((o) => o.status !== 'ready' && o.status !== 'accepted')
 
   if (loading) return <LoadingState dark label="Carregando pedidos..." />
 
@@ -100,7 +116,7 @@ export default function PartnerProductOrders() {
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-2xl font-semibold">Vendas de produtos</h1>
-        <p className="text-white/50 text-sm">Confirme a entrega com o código que o assinante apresenta no balcão.</p>
+        <p className="text-white/50 text-sm">Confirme que recebeu o pedido e, na retirada, confira o código do assinante.</p>
       </div>
 
       <section className="card space-y-4">
@@ -133,10 +149,35 @@ export default function PartnerProductOrders() {
       </section>
 
       <section>
-        <p className="font-semibold mb-3">Aguardando retirada ({pending.length})</p>
-        {!pending.length && <EmptyState dark icon={ShoppingBag} title="Nenhum pedido aguardando retirada" className="py-8" />}
+        <p className="font-semibold mb-3">Novos pedidos ({incoming.length})</p>
+        {!incoming.length && <EmptyState dark icon={ShoppingBag} title="Nenhum pedido novo" className="py-8" />}
         <div className="space-y-3">
-          {pending.map((o) => (
+          {incoming.map((o) => (
+            <div key={o.order_id} className="card space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <p className="font-medium text-sm">{o.promotion_title}{o.quantity > 1 && ` ×${o.quantity}`}</p>
+                  <p className="text-xs text-white/40">{o.subscriber_name} · {o.subscriber_phone}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold">{formatBRL(o.total_amount)}</p>
+                  <p className="text-[11px] text-white/40">líquido: {formatBRL(o.net_amount)}</p>
+                </div>
+              </div>
+              <button onClick={() => accept(o.order_id)} disabled={busy === o.order_id} className="btn-gold w-full !py-2 text-sm">
+                {busy === o.order_id ? 'Confirmando...' : 'Confirmar pedido recebido'}
+              </button>
+              {errors[o.order_id] && <p className="text-xs text-red-400">{errors[o.order_id]}</p>}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <p className="font-semibold mb-3">Aguardando retirada ({awaitingPickup.length})</p>
+        {!awaitingPickup.length && <EmptyState dark icon={PackageCheck} title="Nenhum pedido aguardando retirada" className="py-8" />}
+        <div className="space-y-3">
+          {awaitingPickup.map((o) => (
             <div key={o.order_id} className="card space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
@@ -156,7 +197,7 @@ export default function PartnerProductOrders() {
                   onChange={(e) => setCodeInput((c) => ({ ...c, [o.order_id]: e.target.value.toUpperCase() }))}
                 />
                 <button onClick={() => setScanningFor(o.order_id)} className="btn-dark !px-3" aria-label="Escanear QR Code"><ScanLine size={16} /></button>
-                <button onClick={() => confirm(o.order_id)} disabled={busy === o.order_id} className="btn-gold !px-4 text-sm">
+                <button onClick={() => confirmDelivery(o.order_id)} disabled={busy === o.order_id} className="btn-gold !px-4 text-sm">
                   {busy === o.order_id ? '...' : 'Confirmar'}
                 </button>
               </div>
@@ -184,7 +225,7 @@ export default function PartnerProductOrders() {
                     <td className="p-3 text-white/50">{o.promotion_title}{o.quantity > 1 && ` ×${o.quantity}`}</td>
                     <td className="p-3">{formatBRL(o.total_amount)}</td>
                     <td className="p-3 text-emerald-400">{formatBRL(o.net_amount)}</td>
-                    <td className="p-3 text-white/50">{o.status === 'delivered' ? 'Retirado' : o.status === 'cancelled' ? 'Cancelado' : o.status}</td>
+                    <td className="p-3 text-white/50">{o.status === 'delivered' ? 'Concluído' : o.status === 'cancelled' ? 'Cancelado' : o.status}</td>
                     <td className="p-3 text-white/40">{formatDateTime(o.confirmed_at ?? o.created_at)}</td>
                   </tr>
                 ))}

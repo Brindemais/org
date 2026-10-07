@@ -14,8 +14,8 @@ interface OrderRow {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  pending_payment: 'Aguardando pagamento', ready: 'Pronto para retirada', delivered: 'Retirado',
-  cancelled: 'Cancelado', expired: 'Expirado',
+  pending_payment: 'Aguardando pagamento', ready: 'Pedido realizado', accepted: 'Aguardando retirada',
+  delivered: 'Concluído', cancelled: 'Cancelado', expired: 'Expirado',
 }
 
 export default function AdminProductOrders() {

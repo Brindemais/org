@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { ChevronLeft, Percent, ShoppingBag } from 'lucide-react'
+import { Check, ChevronLeft, Percent, ShoppingBag } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatBRL, formatDate } from '../../lib/format'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -15,10 +15,26 @@ interface OrderRow {
 
 const STATUS_LABEL: Record<string, { label: string; className: string }> = {
   pending_payment: { label: 'Aguardando pagamento', className: 'bg-white/10 text-white/50' },
-  ready: { label: 'Pronto para retirada', className: 'bg-gold-400/15 text-gold-300' },
-  delivered: { label: 'Retirado', className: 'bg-emerald-500/15 text-emerald-400' },
+  ready: { label: 'Pedido realizado', className: 'bg-gold-400/15 text-gold-300' },
+  accepted: { label: 'Confirmado pelo parceiro', className: 'bg-gold-400/15 text-gold-300' },
+  delivered: { label: 'Concluído', className: 'bg-emerald-500/15 text-emerald-400' },
   cancelled: { label: 'Cancelado', className: 'bg-red-500/15 text-red-400' },
   expired: { label: 'Expirado', className: 'bg-red-500/15 text-red-400' },
+}
+
+// Acompanhamento estilo "iFood": pedido realizado (pagamento confirmado)
+// -> parceiro confirma que recebeu -> retirada com código finaliza.
+const STEPS = [
+  { key: 'ready', label: 'Pedido realizado' },
+  { key: 'accepted', label: 'Confirmado pelo parceiro' },
+  { key: 'delivered', label: 'Concluído' },
+] as const
+
+function stepIndex(status: string) {
+  if (status === 'delivered') return 2
+  if (status === 'accepted') return 1
+  if (status === 'ready') return 0
+  return -1
 }
 
 export default function SubscriberProductOrders() {
@@ -52,6 +68,7 @@ export default function SubscriberProductOrders() {
       <div className="space-y-3">
         {orders.map((o) => {
           const status = STATUS_LABEL[o.status] ?? { label: o.status, className: 'bg-white/10 text-white/50' }
+          const idx = stepIndex(o.status)
           return (
             <div key={o.order_id} className="card !p-0 overflow-hidden">
               <div className="flex items-center gap-3 p-4">
@@ -66,7 +83,29 @@ export default function SubscriberProductOrders() {
                 <span className={`pill shrink-0 ${status.className}`}>{status.label}</span>
               </div>
 
-              {o.status === 'ready' && (
+              {idx >= 0 && (
+                <div className="border-t border-ink-800 px-4 py-3">
+                  <div className="flex items-start justify-between">
+                    {STEPS.map((step, i) => {
+                      const done = i <= idx
+                      const isLast = i === STEPS.length - 1
+                      return (
+                        <div key={step.key} className="flex-1 flex flex-col items-center relative">
+                          {!isLast && (
+                            <div className={`absolute top-3 left-1/2 w-full h-0.5 ${i < idx ? 'bg-gold-400' : 'bg-ink-800'}`} />
+                          )}
+                          <div className={`relative z-10 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${done ? 'bg-gold-gradient text-ink-950' : 'bg-ink-800 text-white/40'}`}>
+                            {done ? <Check size={12} /> : i + 1}
+                          </div>
+                          <p className={`text-[10px] text-center mt-1.5 px-1 ${done ? 'text-white/70' : 'text-white/30'}`}>{step.label}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {o.status === 'accepted' && (
                 <div className="border-t border-ink-800 p-4 flex items-center gap-4">
                   <div className="bg-white p-2 rounded-lg shrink-0">
                     <QRCodeSVG value={o.code} size={64} />
@@ -76,6 +115,11 @@ export default function SubscriberProductOrders() {
                     <p className="font-display text-lg font-bold tracking-wider text-gold-400">{o.code}</p>
                     {o.deadline && <p className="text-[11px] text-white/30 mt-0.5">Retire até {formatDate(o.deadline)}</p>}
                   </div>
+                </div>
+              )}
+              {o.status === 'ready' && (
+                <div className="border-t border-ink-800 p-4">
+                  <p className="text-xs text-white/40">Aguardando o parceiro confirmar que recebeu seu pedido.</p>
                 </div>
               )}
             </div>
