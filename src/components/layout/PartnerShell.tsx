@@ -57,8 +57,9 @@ export function PartnerShell() {
   // a API não devolve esse link pra gente embutir direto, só dispara o
   // envio). Fica até ele mesmo confirmar, ou "dispensar" por esta sessão.
   const showAsaasBanner = partner?.asaas_subaccount_status === 'created' && !partner?.asaas_verified_at && !asaasDismissed
+  const showAsaasRejectedBanner = partner?.asaas_subaccount_status === 'rejected' && !asaasDismissed
 
-  const banner = (showExpiryBanner || showAsaasBanner) ? (
+  const banner = (showExpiryBanner || showAsaasBanner || showAsaasRejectedBanner) ? (
     <>
       {showExpiryBanner && (
         <div className="bg-red-600 text-white px-4 lg:px-8 py-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm font-medium">
@@ -73,15 +74,22 @@ export function PartnerShell() {
         <div className="bg-gold-500 text-ink-950 px-4 lg:px-8 py-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm font-medium">
           <Wallet size={15} className="shrink-0" />
           <span>
-            Falta confirmar sua conta Asaas para receber os repasses automáticos das suas vendas. A Asaas enviou um e-mail
-            de ativação para <strong>{partner?.email}</strong>.
+            Falta a Asaas aprovar sua conta pra receber os repasses automáticos e poder cadastrar produto com preço. A
+            Asaas enviou um e-mail de ativação para <strong>{partner?.email}</strong> — isso atualiza sozinho quando for aprovado.
           </span>
           <a href="https://www.asaas.com/login" target="_blank" rel="noopener noreferrer" className="underline font-semibold whitespace-nowrap">
             Acessar Asaas
           </a>
-          <button onClick={confirmAsaasVerified} disabled={confirmingAsaas} className="underline font-semibold whitespace-nowrap flex items-center gap-1">
-            <Check size={13} /> {confirmingAsaas ? 'Salvando...' : 'Já confirmei'}
+          <button onClick={confirmAsaasVerified} disabled={confirmingAsaas} className="underline font-semibold whitespace-nowrap flex items-center gap-1" title="Isso só oculta este aviso — a liberação pra cadastrar produto com preço é confirmada pela própria Asaas, automaticamente.">
+            <Check size={13} /> {confirmingAsaas ? 'Salvando...' : 'Já verifiquei (ocultar aviso)'}
           </button>
+          <button onClick={() => setAsaasDismissed(true)} className="whitespace-nowrap opacity-70 hover:opacity-100">Dispensar por agora</button>
+        </div>
+      )}
+      {showAsaasRejectedBanner && (
+        <div className="bg-red-600 text-white px-4 lg:px-8 py-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm font-medium">
+          <AlertTriangle size={15} className="shrink-0" />
+          <span>A Asaas rejeitou a verificação da sua conta — sem isso você não consegue cadastrar produto com preço. Fale com o suporte Brinde Mais.</span>
           <button onClick={() => setAsaasDismissed(true)} className="whitespace-nowrap opacity-70 hover:opacity-100">Dispensar por agora</button>
         </div>
       )}

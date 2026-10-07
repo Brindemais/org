@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Receives Asaas's payment webhooks and confirms the matching local
 // `payments` row the same way an admin manually confirming it in
@@ -26,6 +26,15 @@ const CONFIRMING_EVENTS = new Set(["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED"]);
 // um reembolso manual feito direto no painel da Asaas.
 const CHARGEBACK_EVENTS = new Set(["PAYMENT_CHARGEBACK_REQUESTED", "PAYMENT_CHARGEBACK_DISPUTE", "PAYMENT_REFUNDED"]);
 
+// Eventos de aprovação da subconta (KYC) — assim que a Asaas aprova a
+// documentação, libera o parceiro pra cadastrar produto com preço
+// (bloqueado por trigger até asaas_subaccount_status = 'approved',
+// pra nunca gerar venda com repasse num saldo que ainda não existe de
+// verdade). Esse evento precisa estar marcado no mesmo Webhook (ou em
+// outro apontando pra essa mesma URL) na Asaas: Integrações > Webhooks.
+const ACCOUNT_APPROVED_EVENT = "ACCOUNT_STATUS_GENERAL_APPROVAL_APPROVED";
+const ACCOUNT_REJECTED_EVENT = "ACCOUNT_STATUS_GENERAL_APPROVAL_REJECTED";
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
@@ -34,7 +43,8 @@ Deno.serve(async (req) => {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  let body: { event?: string; payment?: { id?: string } };
+  // deno-lint-ignore no-explicit-any
+  let body: any;
   try {
     body = await req.json();
   } catch {
@@ -42,16 +52,41 @@ Deno.serve(async (req) => {
   }
 
   const event = body.event;
+  if (!event) return new Response("Missing event", { status: 400 });
+
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+  if (event === ACCOUNT_APPROVED_EVENT || event === ACCOUNT_REJECTED_EVENT) {
+    // Formato do payload pra evento de conta não é 100% documentado em
+    // todas as versões — tenta os caminhos mais comuns antes de desistir.
+    const accountId = body.account?.id ?? body.id ?? body.accountId ?? null;
+    if (!accountId) {
+      console.warn("asaas-webhook: ACCOUNT_STATUS event without a recognizable account id", JSON.stringify(body));
+      return new Response("Missing account id", { status: 200 });
+    }
+    if (event === ACCOUNT_APPROVED_EVENT) {
+      await admin.from("partners").update({
+        asaas_subaccount_status: "approved",
+        asaas_verified_at: new Date().toISOString(),
+        asaas_subaccount_error: null,
+      }).eq("asaas_account_id", accountId);
+    } else {
+      await admin.from("partners").update({
+        asaas_subaccount_status: "rejected",
+        asaas_subaccount_error: "Documentação rejeitada pela Asaas — revise os dados cadastrados.",
+      }).eq("asaas_account_id", accountId);
+    }
+    return new Response("OK", { status: 200 });
+  }
+
   const asaasPaymentId = body.payment?.id;
-  if (!event || !asaasPaymentId) return new Response("Missing event/payment.id", { status: 400 });
+  if (!asaasPaymentId) return new Response("Missing payment.id", { status: 400 });
 
   // Ack anything we don't act on (status updates, boleto generated, etc.)
   // so Asaas doesn't keep retrying a webhook we were never going to use.
   if (!CONFIRMING_EVENTS.has(event) && !CHARGEBACK_EVENTS.has(event)) {
     return new Response("Ignored", { status: 200 });
   }
-
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
   const { data: payment } = await admin
     .from("payments")
