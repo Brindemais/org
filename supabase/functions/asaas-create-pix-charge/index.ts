@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Creates (or returns, if already created — idempotent) a real Asaas Pix
 // charge for a pending `payments` row the caller owns, and stores the
@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
 
     const { data: payment, error: payErr } = await userClient
       .from("payments")
-      .select("id, subscriber_id, amount, status, asaas_payment_id, pix_code, pix_qr_code")
+      .select("id, subscriber_id, partner_id, type, amount, status, asaas_payment_id, pix_code, pix_qr_code, product_order_id")
       .eq("id", payment_id)
       .maybeSingle();
     if (payErr || !payment) return json({ error: "PAYMENT_NOT_FOUND" }, 404);
@@ -100,6 +100,20 @@ Deno.serve(async (req) => {
       await admin.from("profiles").update({ [CUSTOMER_ID_COLUMN]: customerId }).eq("id", profile.id);
     }
 
+    // Compra de produto com parceiro já linkado a uma subconta Asaas: a
+    // parte líquida (100% - comissão) vai direto pra conta dele via
+    // split, sem passar pela carteira interna.
+    let splits: Array<{ walletId: string; percentualValue: number }> | undefined;
+    if (payment.type === "product_purchase" && payment.product_order_id) {
+      const { data: order } = await admin.from("product_orders").select("commission_pct, split_applied").eq("id", payment.product_order_id).maybeSingle();
+      if (order?.split_applied) {
+        const { data: partner } = await admin.from("partners").select("asaas_wallet_id").eq("id", payment.partner_id).maybeSingle();
+        if (partner?.asaas_wallet_id) {
+          splits = [{ walletId: partner.asaas_wallet_id, percentualValue: 100 - Number(order.commission_pct) }];
+        }
+      }
+    }
+
     const dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const charge = await asaasFetch("/payments", {
       method: "POST",
@@ -110,6 +124,7 @@ Deno.serve(async (req) => {
         dueDate,
         description: "Brinde Mais",
         externalReference: payment.id,
+        ...(splits ? { splits } : {}),
       }),
     });
 
