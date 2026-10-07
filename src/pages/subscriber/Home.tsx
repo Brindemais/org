@@ -180,8 +180,8 @@ export default function SubscriberHome() {
       {!benefitsBlocked && subscription?.status === 'active' && (
         <div className="card !p-0 overflow-hidden border-gold-400/30">
           <div className="flex items-center gap-3 p-4">
-            <div className="w-16 h-16 rounded-lg bg-ink-950 border border-ink-800 flex items-center justify-center shrink-0">
-              <Gift size={22} className="text-gold-400/60" />
+            <div className="w-16 h-16 rounded-lg bg-ink-950 border border-ink-800 overflow-hidden shrink-0">
+              <img src="/images/gift-glass.webp" alt="" className="w-full h-full object-cover object-top" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-bold uppercase tracking-wide text-gold-400">Brinde do mês</p>
