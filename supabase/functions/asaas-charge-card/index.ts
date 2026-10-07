@@ -73,9 +73,11 @@ Deno.serve(async (req) => {
     if (payErr || !payment) return json({ error: "PAYMENT_NOT_FOUND" }, 404);
     if (payment.status !== "pending") return json({ error: "PAYMENT_NOT_PENDING" }, 400);
 
-    // Regra de negócio: mensal é Pix obrigatório, só a assinatura anual
-    // pode ser paga com cartão.
-    if (payment.type !== "subscription" || payment.plan !== "annual") {
+    // Regra de negócio: assinatura mensal é Pix obrigatório, só a anual
+    // pode ser paga com cartão. Compra de produto ("Produtos e
+    // descontos") aceita cartão sempre, não tem plano.
+    const cardAllowed = payment.type === "product_purchase" || (payment.type === "subscription" && payment.plan === "annual");
+    if (!cardAllowed) {
       return json({ error: "CARD_NOT_ALLOWED_FOR_THIS_PAYMENT" }, 400);
     }
 
@@ -147,7 +149,7 @@ Deno.serve(async (req) => {
           billingType: "CREDIT_CARD",
           value: payment.amount,
           dueDate,
-          description: "Brinde Mais - assinatura anual",
+          description: payment.type === "product_purchase" ? "Brinde Mais - compra de produto" : "Brinde Mais - assinatura anual",
           externalReference: payment.id,
           creditCardToken: tokenized.creditCardToken,
         }),
