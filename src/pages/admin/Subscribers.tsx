@@ -1,19 +1,22 @@
 import { useEffect, useState } from 'react'
-import { Download, Users } from 'lucide-react'
+import { Download, Users, AlertTriangle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import { formatBRL, formatDate, maskCPF } from '../../lib/format'
+import { formatBRL, formatDate, formatDateTime, maskCPF } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { downloadCSV } from '../../lib/csv'
 
 interface Row { id: string; full_name: string; cpf: string | null; email: string | null; username: string | null; created_at: string; sub_status: string | null; sub_expires_at: string | null; balance: number; active: boolean }
+interface PendingRow { id: string; email: string; created_at: string }
 
 export default function AdminSubscribers() {
   const [rows, setRows] = useState<Row[]>([])
+  const [pending, setPending] = useState<PendingRow[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
+  const [deletingPendingId, setDeletingPendingId] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
@@ -30,7 +33,28 @@ export default function AdminSubscribers() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  async function loadPending() {
+    const { data } = await supabase.rpc('admin_list_pending_signups')
+    setPending((data as PendingRow[]) ?? [])
+  }
+
+  useEffect(() => { load(); loadPending() }, [])
+
+  // Cadastro que ficou travado no meio: código de confirmação nunca
+  // chegou ou nunca foi digitado. Fica em auth.users sem profile — some
+  // de qualquer listagem normal (que sempre parte de profiles), e sem
+  // isso aqui não tinha jeito de localizar nem liberar o e-mail travado.
+  async function deletePending(p: PendingRow) {
+    if (!window.confirm(`Remover o cadastro pendente de ${p.email}? O e-mail fica livre para tentar de novo.`)) return
+    setDeletingPendingId(p.id)
+    const { data: sessionData } = await supabase.auth.getSession()
+    const { error } = await supabase.functions.invoke('admin-delete-pending-signup', {
+      body: { user_id: p.id },
+      headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+    })
+    setDeletingPendingId(null)
+    if (!error) setPending((prev) => prev.filter((x) => x.id !== p.id))
+  }
 
   async function toggleActive(r: Row) {
     setBusy(r.id)
@@ -74,6 +98,31 @@ export default function AdminSubscribers() {
           <button onClick={exportCSV} className="btn-dark !px-3 !py-2 text-xs gap-1.5 shrink-0"><Download size={14} /> Exportar CSV</button>
         </div>
       </div>
+
+      {pending.length > 0 && (
+        <details className="card border-amber-500/30 bg-amber-500/5">
+          <summary className="font-semibold cursor-pointer flex items-center gap-2 text-amber-400">
+            <AlertTriangle size={16} /> {pending.length} cadastro{pending.length === 1 ? '' : 's'} pendente{pending.length === 1 ? '' : 's'} (código de confirmação nunca foi digitado)
+          </summary>
+          <div className="mt-3 divide-y divide-ink-800">
+            {pending.map((p) => (
+              <div key={p.id} className="py-2.5 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm">{p.email}</p>
+                  <p className="text-xs text-white/40">cadastrado em {formatDateTime(p.created_at)}</p>
+                </div>
+                <button
+                  onClick={() => deletePending(p)}
+                  disabled={deletingPendingId === p.id}
+                  className="btn-ghost !py-1.5 !px-3 text-xs !border-red-500/40 text-red-400 shrink-0"
+                >
+                  {deletingPendingId === p.id ? 'Removendo...' : 'Remover e liberar e-mail'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
 
       <div className="card overflow-x-auto">
         <table className="w-full text-sm min-w-[900px]">

@@ -28,6 +28,7 @@ const STEPS = [
 
 function signupErrorMessage(message: string): string {
   if (message.includes('CPF_ALREADY_REGISTERED')) return 'Este CPF/CNPJ já possui cadastro na Brinde Mais.'
+  if (message.includes('EMAIL_DOMAIN_NOT_FOUND')) return 'Este e-mail não existe. Confira se digitou certo (principalmente o domínio, depois do @).'
   if (message.includes('INVALID_EMAIL')) return 'Digite um e-mail válido.'
   if (message.includes('FULL_NAME_ALREADY_REGISTERED')) return 'Já existe um cadastro com esse nome completo.'
   if (message.includes('MINOR_NOT_ALLOWED')) return 'É necessário ser maior de 18 anos para se cadastrar.'
@@ -119,6 +120,25 @@ export default function Signup() {
     if (!accepted) return setError('É necessário aceitar os Termos de Uso e a Política de Privacidade.')
 
     setLoading(true)
+
+    // Confere CPF/telefone/nome duplicado e se o e-mail existe de verdade
+    // (tem domínio com registro MX) ANTES de criar a conta — essas
+    // checagens antes só rolavam depois, na confirmação do código, e
+    // deixavam pra trás uma conta travada em auth.users sem jeito de
+    // tentar de novo com o mesmo e-mail/CPF.
+    const { error: precheckError } = await supabase.rpc('precheck_subscriber_signup', {
+      p_full_name: fullName,
+      p_cpf: cpf.replace(/\D/g, ''),
+      p_birth_date: birthDate,
+      p_phone: phone.replace(/\D/g, ''),
+      p_email: email,
+    })
+    if (precheckError) {
+      setLoading(false)
+      setError(signupErrorMessage(precheckError.message))
+      return
+    }
+
     const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
     if (signUpError || !data.user) {
       setLoading(false)

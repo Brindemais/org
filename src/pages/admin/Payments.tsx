@@ -42,8 +42,8 @@ export default function AdminPayments() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold">Pagamentos Pix</h1>
-          <p className="text-white/50 text-sm">Confirmação manual da plataforma de pagamentos (MVP piloto).</p>
+          <h1 className="font-display text-2xl font-semibold">Pagamentos</h1>
+          <p className="text-white/50 text-sm">Pix e cartão confirmam automaticamente via Asaas. Confirmação manual só existe para pagamentos combinados por fora (veja Ativação manual).</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setFilter('pending')} className={`pill ${filter === 'pending' ? 'bg-gold-400/15 text-gold-300' : 'bg-ink-900 text-white/50'}`}>Pendentes</button>
@@ -84,10 +84,14 @@ export default function AdminPayments() {
                 <td className="py-3"><StatusBadge status={p.status} /></td>
                 <td className="py-3 text-white/50">{formatDateTime(p.created_at)}</td>
                 <td className="py-3">
-                  {p.status === 'pending' ? (
+                  {p.status === 'pending' && p.payment_method === 'manual' ? (
                     <button onClick={() => confirm(p.id)} disabled={busy === p.id} className="btn-gold !py-1.5 !px-3 text-xs">
                       {busy === p.id ? '...' : 'Confirmar pagamento'}
                     </button>
+                  ) : p.status === 'pending' ? (
+                    <span className="text-white/30 text-xs" title="Pix e cartão confirmam sozinhos quando a Asaas identifica o pagamento. Forçar aqui sem o dinheiro ter entrado de verdade gera inconsistência no financeiro — use Ativação manual só pra cortesia/migração.">
+                      Aguardando Asaas
+                    </span>
                   ) : (
                     <span className="text-white/30 text-xs">-</span>
                   )}

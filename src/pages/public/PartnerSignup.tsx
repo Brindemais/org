@@ -6,7 +6,7 @@ import { LogoBadge } from '../../components/layout/Logo'
 import { ReferralFields } from '../../components/ui/ReferralFields'
 import { ImageUpload } from '../../components/ui/ImageUpload'
 import { PARTNER_CATEGORIES } from '../../lib/types'
-import { isValidEmail, isValidPhone, maskCEP, maskPhone, formatBRL } from '../../lib/format'
+import { isValidEmail, isValidPhone, isValidCpfCnpj, maskCEP, maskPhone, formatBRL } from '../../lib/format'
 
 type Step = 1 | 2 | 3
 
@@ -19,6 +19,7 @@ const STEPS = [
 ]
 
 function partnerSignupErrorMessage(message: string): string {
+  if (message.includes('EMAIL_DOMAIN_NOT_FOUND')) return 'Este e-mail não existe. Confira se digitou certo (principalmente o domínio, depois do @).'
   if (message.includes('INVALID_EMAIL')) return 'Digite um e-mail válido.'
   if (message.includes('FULL_NAME_ALREADY_REGISTERED')) return 'Já existe um cadastro com esse nome de responsável.'
   if (message.includes('CNPJ_ALREADY_REGISTERED')) return 'Já existe um parceiro cadastrado com esse CNPJ/CPF.'
@@ -127,12 +128,29 @@ export default function PartnerSignup() {
   async function handleStep1(e: FormEvent) {
     e.preventDefault()
     setError(null)
+    if (cnpjCpf && !isValidCpfCnpj(cnpjCpf)) return setError('CNPJ/CPF inválido. Confira os números digitados.')
     if (!isValidEmail(email)) return setError('Digite um e-mail válido.')
     if (!isValidPhone(phone)) return setError('Digite um telefone válido, com DDD.')
     if (!referralValid) return setError('Preencha quem indicou você e escolha seu link de indicação antes de continuar.')
     if (!accepted) return setError('É necessário aceitar os Termos de Uso e a Política de Privacidade.')
 
     setLoading(true)
+
+    // Mesma lógica do cadastro de assinante: confere CNPJ/CPF, telefone e
+    // nome duplicado, e se o e-mail existe de verdade, antes de criar a
+    // conta — não depois, na confirmação do código.
+    const { error: precheckError } = await supabase.rpc('precheck_partner_signup', {
+      p_cnpj_cpf: cnpjCpf.replace(/\D/g, '') || null,
+      p_responsible_name: responsibleName,
+      p_phone: phone.replace(/\D/g, ''),
+      p_email: email,
+    })
+    if (precheckError) {
+      setLoading(false)
+      setError(partnerSignupErrorMessage(precheckError.message))
+      return
+    }
+
     const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
     if (signUpError || !data.user) {
       setLoading(false)
