@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Percent, Trash2 } from 'lucide-react'
+import { Percent, Trash2, Wallet } from 'lucide-react'
 import { formatDate } from '../../lib/format'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -13,9 +13,27 @@ export default function PartnerPromotions() {
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [form, setForm] = useState({ title: '', description: '', image_url: '', normal_price: '', subscriber_price: '', valid_until: '', quantity: '' })
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [editingQtyId, setEditingQtyId] = useState<string | null>(null)
   const [editQty, setEditQty] = useState('')
+  const [linking, setLinking] = useState(false)
+
+  // Produto com preço só pode ser publicado com a subconta Asaas já
+  // aprovada (trigger no banco bloqueia de qualquer forma) — pra nunca
+  // gerar venda com repasse num saldo que ainda não existe de verdade.
+  const asaasApproved = partner?.asaas_subaccount_status === 'approved'
+
+  async function requestAsaasLink() {
+    if (!partner) return
+    setLinking(true)
+    const { data: sessionData } = await supabase.auth.getSession()
+    await supabase.functions.invoke('asaas-create-subaccount', {
+      body: { partner_id: partner.id },
+      headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+    }).catch(() => null)
+    setLinking(false)
+  }
 
   async function load() {
     if (!partner) return
@@ -28,8 +46,9 @@ export default function PartnerPromotions() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!partner || !form.valid_until) return
+    setError(null)
     setSaving(true)
-    await supabase.from('promotions').insert({
+    const { error: insertError } = await supabase.from('promotions').insert({
       partner_id: partner.id,
       title: form.title,
       description: form.description,
@@ -43,20 +62,14 @@ export default function PartnerPromotions() {
       status: 'approved',
     })
     setSaving(false)
+    if (insertError) {
+      setError(insertError.message.includes('ASAAS_SUBACCOUNT_NOT_APPROVED')
+        ? 'Sua conta Asaas ainda não foi aprovada — isso é obrigatório pra cadastrar produto com preço, pra garantir que o repasse é de verdade.'
+        : 'Não foi possível publicar o produto. Tente novamente.')
+      return
+    }
     setForm({ title: '', description: '', image_url: '', normal_price: '', subscriber_price: '', valid_until: '', quantity: '' })
     load()
-
-    // Produto com preço de verdade e parceiro ainda sem subconta Asaas:
-    // tenta vincular agora (melhor esforço — se faltar dado ou falhar,
-    // não trava nada, o produto já foi salvo; venda cai na carteira
-    // interna até ficar vinculado).
-    if (Number(form.subscriber_price) > 0 && partner && !partner.asaas_wallet_id) {
-      const { data: sessionData } = await supabase.auth.getSession()
-      supabase.functions.invoke('asaas-create-subaccount', {
-        body: { partner_id: partner.id },
-        headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
-      }).catch(() => null)
-    }
   }
 
   async function remove(id: string) {
@@ -79,6 +92,23 @@ export default function PartnerPromotions() {
         <h1 className="font-display text-2xl font-semibold">Produtos e descontos</h1>
         <p className="text-white/50 text-sm">Cadastre produtos com preço normal e preço assinante. Publicados aqui ficam visíveis para assinantes imediatamente.</p>
       </div>
+
+      {!asaasApproved && (
+        <div className="card border-gold-500/30 bg-gold-500/5 space-y-2">
+          <p className="font-semibold flex items-center gap-1.5"><Wallet size={16} className="text-gold-400" /> Falta aprovar sua conta Asaas</p>
+          <p className="text-sm text-white/60">
+            Pra cadastrar um produto com preço é obrigatório ter a subconta Asaas aprovada — assim garantimos que o
+            repasse das vendas é de verdade, sem saldo fictício. {partner?.asaas_subaccount_status === 'created' && 'A Asaas já recebeu seus dados e está analisando; você recebe um e-mail quando aprovar.'}
+            {partner?.asaas_subaccount_status === 'rejected' && 'A Asaas rejeitou a verificação — revise seus dados com o suporte.'}
+            {(!partner?.asaas_subaccount_status || partner.asaas_subaccount_status === 'pending' || partner.asaas_subaccount_status === 'failed') && 'Ainda não iniciamos essa vinculação com seus dados.'}
+          </p>
+          {(!partner?.asaas_subaccount_status || partner.asaas_subaccount_status === 'pending' || partner.asaas_subaccount_status === 'failed') && (
+            <button onClick={requestAsaasLink} disabled={linking} className="btn-gold !py-2 !px-4 text-sm">
+              {linking ? 'Enviando...' : 'Vincular conta Asaas agora'}
+            </button>
+          )}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="card grid sm:grid-cols-2 gap-3">
         <div className="sm:col-span-2">
@@ -108,7 +138,13 @@ export default function PartnerPromotions() {
           <label className="label">Válida até</label>
           <input className="input" type="date" required value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} />
         </div>
+        {error && <p className="text-sm text-red-400 sm:col-span-2">{error}</p>}
         <button type="submit" disabled={saving} className="btn-gold sm:col-span-2">{saving ? 'Publicando...' : 'Publicar produto'}</button>
+        {!asaasApproved && (
+          <p className="text-xs text-white/40 sm:col-span-2">
+            Produto sem preço (campo "Preço assinante" em 0) pode ser publicado mesmo sem a Asaas aprovada.
+          </p>
+        )}
       </form>
 
       <div className="space-y-2">

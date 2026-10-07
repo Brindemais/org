@@ -233,6 +233,17 @@ export default function AdminPartners() {
     load()
   }
 
+  // Fallback manual: normalmente o status vira 'approved' sozinho via
+  // webhook (ACCOUNT_STATUS_GENERAL_APPROVAL_APPROVED) quando a Asaas
+  // aprova a documentação. Usar só se tiver certeza fora daqui (ex.: já
+  // confirmou com o parceiro, webhook ainda não configurado na Asaas).
+  async function markAsaasApprovedManually(partner: Partner) {
+    if (!partner.asaas_wallet_id) return
+    if (!window.confirm('Marcar a conta Asaas deste parceiro como aprovada manualmente? Só faça isso se tiver certeza de que a verificação foi concluída de verdade na Asaas.')) return
+    await supabase.from('partners').update({ asaas_subaccount_status: 'approved', asaas_verified_at: new Date().toISOString(), asaas_subaccount_error: null }).eq('id', partner.id)
+    load()
+  }
+
   async function linkStaff(partnerId: string) {
     setLinkMsg('')
     const { data: profile } = await supabase.from('profiles').select('id, role').eq('email', linkEmail.trim()).maybeSingle()
@@ -315,8 +326,15 @@ export default function AdminPartners() {
                 <StatusBadge status={p.status} />
                 {p.is_advertiser && <span className="pill bg-gold-400/15 text-gold-300">Anunciante</span>}
                 {p.requires_fee && !p.is_advertiser && <span className="pill bg-white/10 text-white/40">Taxa pendente</span>}
-                {p.asaas_wallet_id ? (
+                {p.asaas_subaccount_status === 'approved' ? (
                   <span className="pill bg-emerald-500/15 text-emerald-400">Repasse automático (Asaas)</span>
+                ) : p.asaas_subaccount_status === 'created' ? (
+                  <span className="pill bg-gold-400/15 text-gold-300 flex items-center gap-1">
+                    Asaas: aguardando aprovação
+                    <button onClick={() => markAsaasApprovedManually(p)} className="underline" title="Marcar manualmente como aprovado (só se tiver certeza)">aprovar manualmente</button>
+                  </span>
+                ) : p.asaas_subaccount_status === 'rejected' ? (
+                  <span className="pill bg-red-500/15 text-red-400">Asaas: documentação rejeitada</span>
                 ) : (
                   <button onClick={() => linkAsaas(p)} disabled={asaasLinking === p.id} className="pill bg-white/10 text-white/40 hover:text-white/70">
                     {asaasLinking === p.id ? 'Vinculando...' : 'Vincular à Asaas'}
