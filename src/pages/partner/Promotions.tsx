@@ -57,15 +57,18 @@ export default function PartnerPromotions() {
       subscriber_price: Number(form.subscriber_price || 0),
       valid_until: form.valid_until,
       quantity: Math.max(0, Number(form.quantity || 0)),
-      // Partner-created promotions go live immediately — no admin approval
-      // step. The admin panel can still suspend one after the fact if needed.
-      status: 'approved',
+      // Produto enviado pelo parceiro entra em fila de aprovação — só
+      // fica visível pro assinante depois que o admin aprovar
+      // (admin/Promotions.tsx). Um trigger no banco força esse status
+      // independente do que mandar aqui, então nem adianta tentar enviar
+      // 'approved' direto.
+      status: 'pending_approval',
     })
     setSaving(false)
     if (insertError) {
       setError(insertError.message.includes('ASAAS_SUBACCOUNT_NOT_APPROVED')
         ? 'Sua conta Asaas ainda não foi aprovada — isso é obrigatório pra cadastrar produto com preço, pra garantir que o repasse é de verdade.'
-        : 'Não foi possível publicar o produto. Tente novamente.')
+        : 'Não foi possível enviar o produto. Tente novamente.')
       return
     }
     setForm({ title: '', description: '', image_url: '', normal_price: '', subscriber_price: '', valid_until: '', quantity: '' })
@@ -90,7 +93,7 @@ export default function PartnerPromotions() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold">Produtos e descontos</h1>
-        <p className="text-white/50 text-sm">Cadastre produtos com preço normal e preço assinante. Publicados aqui ficam visíveis para assinantes imediatamente.</p>
+        <p className="text-white/50 text-sm">Cadastre produtos com preço normal e preço assinante. Cada envio entra em análise e só fica visível para assinantes depois que o admin aprovar.</p>
       </div>
 
       {!asaasApproved && (
@@ -139,7 +142,7 @@ export default function PartnerPromotions() {
           <input className="input" type="date" required value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} />
         </div>
         {error && <p className="text-sm text-red-400 sm:col-span-2">{error}</p>}
-        <button type="submit" disabled={saving} className="btn-gold sm:col-span-2">{saving ? 'Publicando...' : 'Publicar produto'}</button>
+        <button type="submit" disabled={saving} className="btn-gold sm:col-span-2">{saving ? 'Enviando...' : 'Enviar para aprovação'}</button>
         {!asaasApproved && (
           <p className="text-xs text-white/40 sm:col-span-2">
             Produto sem preço (campo "Preço assinante" em 0) pode ser publicado mesmo sem a Asaas aprovada.
