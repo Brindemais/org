@@ -21,6 +21,7 @@ interface OfferRow { id: string; title: string; discount_pct: number | null; sub
 
 const TX_LABELS: Record<string, string> = {
   bonus_subscription: 'Bonificação de assinatura',
+  bonus_partner_fee: 'Bonificação de indicação de parceiro',
   bonus_consumption: 'Bonificação de consumo',
   cashback: 'Cashback',
   withdrawal: 'Saque',
