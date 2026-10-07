@@ -85,7 +85,7 @@ export default function PartnerReferrals() {
 
       <div className="card space-y-3">
         <p className="text-sm font-semibold flex items-center gap-1.5"><Users size={15} className="text-gold-400" /> Indique assinantes</p>
-        <p className="text-sm text-white/60">Compartilhe seu link exclusivo e ganhe 10% sobre a assinatura de quem você indicar, mais bonificação em até 4 níveis da sua rede.</p>
+        <p className="text-sm text-white/60">Compartilhe seu link exclusivo e ganhe 10% sobre a assinatura de quem você indicar e mais 10% sobre a assinatura dos indicados deles — com bonificação em até 4 níveis da sua rede, mais 1% por nível sobre o consumo deles.</p>
         <div className="rounded-lg bg-ink-950 border border-ink-800 px-3 py-2.5 text-xs text-gold-300 break-all">{link}</div>
         <div className="flex gap-2">
           <button onClick={copyLink} className="btn-dark flex-1 !py-2.5 text-sm gap-2"><Copy size={14} /> {copied ? 'Copiado!' : 'Copiar link'}</button>
@@ -95,7 +95,7 @@ export default function PartnerReferrals() {
 
       <div className="card space-y-3">
         <p className="text-sm font-semibold flex items-center gap-1.5"><Store size={15} className="text-gold-400" /> Indique parceiros</p>
-        <p className="text-sm text-white/60">Indique outro estabelecimento e ganhe bonificação de 1% por nível (até 4 níveis) sobre a taxa de anunciante paga por ele.</p>
+        <p className="text-sm text-white/60">Indique outro estabelecimento e ganhe 10% sobre a taxa paga por ele e mais 10% sobre a taxa de quem ele indicar — com bonificação em até 4 níveis, mais 1% por nível sobre o consumo da rede.</p>
         <div className="rounded-lg bg-ink-950 border border-ink-800 px-3 py-2.5 text-xs text-gold-300 break-all">{partnerLink}</div>
         <div className="flex gap-2">
           <button onClick={copyPartnerLink} className="btn-dark flex-1 !py-2.5 text-sm gap-2"><Copy size={14} /> {copiedPartner ? 'Copiado!' : 'Copiar link'}</button>
