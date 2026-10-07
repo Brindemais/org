@@ -86,10 +86,19 @@ export default function AdminManualActivation() {
       return
     }
     const { error: rpcError } = await supabase.rpc('admin_activate_advertiser_manually', {
-      p_partner_id: staff.partner_id, p_note: note.trim(), p_award_bonus: awardBonus,
+      p_partner_id: staff.partner_id, p_note: note.trim(), p_award_bonus: awardBonus, p_force: force,
     })
     setBusy(false)
-    if (rpcError) { setError('Não foi possível ativar. Tente novamente.'); return }
+    if (rpcError) {
+      if (rpcError.message.includes('ALREADY_ACTIVE')) {
+        setConfirmForce(true)
+        setError('Esse parceiro já está ativo como anunciante. Confirme abaixo se quiser ativar mesmo assim (evita duplicar bônus de indicação por engano).')
+        return
+      }
+      setError('Não foi possível ativar. Tente novamente.')
+      return
+    }
+    setConfirmForce(false)
     setDone(`Status de anunciante ativado para ${selected.full_name}.`)
   }
 
