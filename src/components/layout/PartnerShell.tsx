@@ -1,7 +1,9 @@
-import { LayoutDashboard, PackageCheck, Boxes, Gift, Percent, CalendarCheck, Bell, History, Store, Megaphone, Users, AlertTriangle, ShoppingBag } from 'lucide-react'
+import { useState } from 'react'
+import { LayoutDashboard, PackageCheck, Boxes, Gift, Percent, CalendarCheck, Bell, History, Store, Megaphone, Users, AlertTriangle, ShoppingBag, Wallet, Check } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { DashboardShell, type DashNavItem } from './DashboardShell'
 import { useAuth } from '../../contexts/AuthContext'
+import { supabase } from '../../lib/supabase'
 import { PartnerFeeGate } from '../partner/PartnerFeeGate'
 
 const NAV: DashNavItem[] = [
@@ -20,7 +22,17 @@ const NAV: DashNavItem[] = [
 ]
 
 export function PartnerShell() {
-  const { partner } = useAuth()
+  const { partner, refreshProfile } = useAuth()
+  const [confirmingAsaas, setConfirmingAsaas] = useState(false)
+  const [asaasDismissed, setAsaasDismissed] = useState(false)
+
+  async function confirmAsaasVerified() {
+    if (!partner) return
+    setConfirmingAsaas(true)
+    await supabase.from('partners').update({ asaas_verified_at: new Date().toISOString() }).eq('id', partner.id)
+    await refreshProfile()
+    setConfirmingAsaas(false)
+  }
 
   // Only new-signup partners carry requires_fee (see 0035) — existing
   // approved partners never see this, and it lifts on its own once
@@ -40,14 +52,40 @@ export function PartnerShell() {
     : null
   const showExpiryBanner = daysLeft !== null && daysLeft <= 7
 
-  const banner = showExpiryBanner ? (
-    <div className="bg-red-600 text-white px-4 lg:px-8 py-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm font-medium">
-      <AlertTriangle size={15} className="shrink-0" />
-      <span>
-        {daysLeft === 0 ? 'Sua taxa de anunciante vence hoje.' : daysLeft === 1 ? 'Sua taxa de anunciante vence amanhã.' : `Sua taxa de anunciante vence em ${daysLeft} dias.`}
-      </span>
-      <Link to="/parceiro/anunciante" className="underline font-semibold whitespace-nowrap">Renovar agora</Link>
-    </div>
+  // Subconta Asaas criada mas ainda sem confirmação de que o parceiro
+  // terminou a verificação (link que a própria Asaas manda por e-mail —
+  // a API não devolve esse link pra gente embutir direto, só dispara o
+  // envio). Fica até ele mesmo confirmar, ou "dispensar" por esta sessão.
+  const showAsaasBanner = partner?.asaas_subaccount_status === 'created' && !partner?.asaas_verified_at && !asaasDismissed
+
+  const banner = (showExpiryBanner || showAsaasBanner) ? (
+    <>
+      {showExpiryBanner && (
+        <div className="bg-red-600 text-white px-4 lg:px-8 py-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm font-medium">
+          <AlertTriangle size={15} className="shrink-0" />
+          <span>
+            {daysLeft === 0 ? 'Sua taxa de anunciante vence hoje.' : daysLeft === 1 ? 'Sua taxa de anunciante vence amanhã.' : `Sua taxa de anunciante vence em ${daysLeft} dias.`}
+          </span>
+          <Link to="/parceiro/anunciante" className="underline font-semibold whitespace-nowrap">Renovar agora</Link>
+        </div>
+      )}
+      {showAsaasBanner && (
+        <div className="bg-gold-500 text-ink-950 px-4 lg:px-8 py-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm font-medium">
+          <Wallet size={15} className="shrink-0" />
+          <span>
+            Falta confirmar sua conta Asaas para receber os repasses automáticos das suas vendas. A Asaas enviou um e-mail
+            de ativação para <strong>{partner?.email}</strong>.
+          </span>
+          <a href="https://www.asaas.com/login" target="_blank" rel="noopener noreferrer" className="underline font-semibold whitespace-nowrap">
+            Acessar Asaas
+          </a>
+          <button onClick={confirmAsaasVerified} disabled={confirmingAsaas} className="underline font-semibold whitespace-nowrap flex items-center gap-1">
+            <Check size={13} /> {confirmingAsaas ? 'Salvando...' : 'Já confirmei'}
+          </button>
+          <button onClick={() => setAsaasDismissed(true)} className="whitespace-nowrap opacity-70 hover:opacity-100">Dispensar por agora</button>
+        </div>
+      )}
+    </>
   ) : undefined
 
   return (
