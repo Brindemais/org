@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Network, Store, Wallet, Boxes, Percent, Landmark, LifeBuoy, UserCog, History, PiggyBank, KeyRound, Gift } from 'lucide-react'
+import { LayoutDashboard, Users, Network, Store, Wallet, Boxes, Percent, Landmark, LifeBuoy, UserCog, History, PiggyBank, KeyRound, Gift, ShoppingBag } from 'lucide-react'
 import { DashboardShell, type DashNavItem } from './DashboardShell'
 
 const NAV: DashNavItem[] = [
@@ -8,10 +8,11 @@ const NAV: DashNavItem[] = [
   { to: '/admin/ativacao-manual', label: 'Ativação manual', icon: KeyRound },
   { to: '/admin/indicacoes', label: 'Indicações', icon: Network },
   { to: '/admin/parceiros', label: 'Parceiros', icon: Store },
-  { to: '/admin/pagamentos', label: 'Pagamentos Pix', icon: Wallet },
+  { to: '/admin/pagamentos', label: 'Pagamentos', icon: Wallet },
   { to: '/admin/cadastrar-brinde', label: 'Cadastrar brinde', icon: Gift },
   { to: '/admin/estoque', label: 'Estoque', icon: Boxes },
   { to: '/admin/promocoes', label: 'Produtos e descontos', icon: Percent },
+  { to: '/admin/vendas', label: 'Vendas de produtos', icon: ShoppingBag },
   { to: '/admin/saques', label: 'Saques', icon: Landmark },
   { to: '/admin/suporte', label: 'Suporte', icon: LifeBuoy },
   { to: '/admin/equipe', label: 'Equipe', icon: UserCog },

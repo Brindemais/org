@@ -34,6 +34,7 @@ const SubscriberPartners = lazy(() => import('./pages/subscriber/Partners'))
 const SubscriberPartnerDetail = lazy(() => import('./pages/subscriber/PartnerDetail'))
 const SubscriberProductsHub = lazy(() => import('./pages/subscriber/ProductsHub'))
 const SubscriberPartnerProducts = lazy(() => import('./pages/subscriber/PartnerProducts'))
+const SubscriberProductOrders = lazy(() => import('./pages/subscriber/ProductOrders'))
 const SubscriberNotifications = lazy(() => import('./pages/subscriber/Notifications'))
 const SubscriberSupport = lazy(() => import('./pages/subscriber/Support'))
 const SubscriberProfile = lazy(() => import('./pages/subscriber/Profile'))
@@ -46,6 +47,7 @@ const PartnerPickups = lazy(() => import('./pages/partner/Pickups'))
 const PartnerStock = lazy(() => import('./pages/partner/Stock'))
 const PartnerProducts = lazy(() => import('./pages/partner/Products'))
 const PartnerPromotions = lazy(() => import('./pages/partner/Promotions'))
+const PartnerProductOrders = lazy(() => import('./pages/partner/ProductOrders'))
 const PartnerAdvertiser = lazy(() => import('./pages/partner/Advertiser'))
 const PartnerReservations = lazy(() => import('./pages/partner/Reservations'))
 const PartnerNotifications = lazy(() => import('./pages/partner/Notifications'))
@@ -62,6 +64,7 @@ const AdminPartnerManage = lazy(() => import('./pages/admin/PartnerManage'))
 const AdminPayments = lazy(() => import('./pages/admin/Payments'))
 const AdminStock = lazy(() => import('./pages/admin/Stock'))
 const AdminPromotions = lazy(() => import('./pages/admin/Promotions'))
+const AdminProductOrders = lazy(() => import('./pages/admin/ProductOrders'))
 const AdminWithdrawals = lazy(() => import('./pages/admin/Withdrawals'))
 const AdminSupport = lazy(() => import('./pages/admin/Support'))
 const AdminTeam = lazy(() => import('./pages/admin/Team'))
@@ -112,6 +115,7 @@ export default function App() {
           <Route path="parceiros" element={<SubscriberPartners />} />
           <Route path="parceiros/:id" element={<SubscriberPartnerDetail />} />
           <Route path="produtos" element={<SubscriberProductsHub />} />
+          <Route path="produtos/compras" element={<SubscriberProductOrders />} />
           <Route path="produtos/:id" element={<SubscriberPartnerProducts />} />
           <Route path="notificacoes" element={<SubscriberNotifications />} />
           <Route path="suporte" element={<SubscriberSupport />} />
@@ -131,6 +135,7 @@ export default function App() {
           <Route path="estoque" element={<PartnerStock />} />
           <Route path="brindes" element={<PartnerProducts />} />
           <Route path="promocoes" element={<PartnerPromotions />} />
+          <Route path="vendas" element={<PartnerProductOrders />} />
           <Route path="anunciante" element={<PartnerAdvertiser />} />
           <Route path="indicacoes" element={<PartnerReferrals />} />
           <Route path="reservas" element={<PartnerReservations />} />
@@ -157,6 +162,7 @@ export default function App() {
           <Route path="estoque" element={<AdminStock />} />
           <Route path="cadastrar-brinde" element={<AdminRegisterGift />} />
           <Route path="promocoes" element={<AdminPromotions />} />
+          <Route path="vendas" element={<AdminProductOrders />} />
           <Route path="saques" element={<AdminWithdrawals />} />
           <Route path="suporte" element={<AdminSupport />} />
           <Route path="equipe" element={<AdminTeam />} />
