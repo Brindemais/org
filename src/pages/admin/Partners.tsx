@@ -21,8 +21,12 @@ const EDIT_FIELDS: { key: keyof Partner; label: string }[] = [
   { key: 'phone', label: 'Telefone' },
   { key: 'whatsapp', label: 'WhatsApp' },
   { key: 'address', label: 'Endereço' },
+  { key: 'address_number', label: 'Número' },
   { key: 'neighborhood', label: 'Bairro' },
   { key: 'city', label: 'Cidade' },
+  { key: 'income_value', label: 'Faturamento mensal estimado (Asaas)' },
+  { key: 'company_type', label: 'Tipo de empresa: MEI, LIMITED, INDIVIDUAL ou ASSOCIATION (Asaas)' },
+  { key: 'birth_date', label: 'Data de nascimento se CPF, AAAA-MM-DD (Asaas)' },
 ]
 
 export default function AdminPartners() {
@@ -46,6 +50,8 @@ export default function AdminPartners() {
   const [editError, setEditError] = useState<string | null>(null)
   const [logoSavedId, setLogoSavedId] = useState<string | null>(null)
   const [statusBusyId, setStatusBusyId] = useState<string | null>(null)
+  const [asaasLinking, setAsaasLinking] = useState<string | null>(null)
+  const [asaasMsg, setAsaasMsg] = useState<Record<string, string>>({})
 
   async function load() {
     const [{ data }, { data: staff }] = await Promise.all([
@@ -206,6 +212,27 @@ export default function AdminPartners() {
     load()
   }
 
+  async function linkAsaas(partner: Partner) {
+    if (asaasLinking) return
+    setAsaasLinking(partner.id)
+    setAsaasMsg((m) => ({ ...m, [partner.id]: '' }))
+    const { data: sessionData } = await supabase.auth.getSession()
+    const { data, error } = await supabase.functions.invoke('asaas-create-subaccount', {
+      body: { partner_id: partner.id },
+      headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+    })
+    setAsaasLinking(null)
+    if (error || data?.error) {
+      const detail = data?.error === 'MISSING_KYC_FIELDS'
+        ? `Faltam dados: ${(data.missing ?? []).join(', ')}. Edite o parceiro e preencha antes de tentar de novo.`
+        : (data?.detail ?? error?.message ?? 'Erro desconhecido')
+      setAsaasMsg((m) => ({ ...m, [partner.id]: `Não foi possível vincular: ${detail}` }))
+      return
+    }
+    setAsaasMsg((m) => ({ ...m, [partner.id]: data?.already_linked ? 'Esse parceiro já estava vinculado.' : 'Vinculado à Asaas! As vendas dele já passam a ser repassadas automaticamente.' }))
+    load()
+  }
+
   async function linkStaff(partnerId: string) {
     setLinkMsg('')
     const { data: profile } = await supabase.from('profiles').select('id, role').eq('email', linkEmail.trim()).maybeSingle()
@@ -288,6 +315,13 @@ export default function AdminPartners() {
                 <StatusBadge status={p.status} />
                 {p.is_advertiser && <span className="pill bg-gold-400/15 text-gold-300">Anunciante</span>}
                 {p.requires_fee && !p.is_advertiser && <span className="pill bg-white/10 text-white/40">Taxa pendente</span>}
+                {p.asaas_wallet_id ? (
+                  <span className="pill bg-emerald-500/15 text-emerald-400">Repasse automático (Asaas)</span>
+                ) : (
+                  <button onClick={() => linkAsaas(p)} disabled={asaasLinking === p.id} className="pill bg-white/10 text-white/40 hover:text-white/70">
+                    {asaasLinking === p.id ? 'Vinculando...' : 'Vincular à Asaas'}
+                  </button>
+                )}
                 {editingId !== p.id && (
                   <button onClick={() => startEdit(p)} className="text-xs text-gold-400 font-medium">Editar</button>
                 )}
@@ -364,6 +398,7 @@ export default function AdminPartners() {
               </button>
             )}
             {inviteMsg[p.id] && <p className="text-xs text-white/50 mb-3">{inviteMsg[p.id]}</p>}
+            {asaasMsg[p.id] && <p className="text-xs text-white/50 mb-3">{asaasMsg[p.id]}</p>}
             {linking === p.id ? (
               <div className="flex gap-2 items-center">
                 <input className="input !py-2 text-xs flex-1" placeholder="E-mail do responsável já cadastrado" value={linkEmail} onChange={(e) => setLinkEmail(e.target.value)} />

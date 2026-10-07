@@ -45,6 +45,18 @@ export default function PartnerPromotions() {
     setSaving(false)
     setForm({ title: '', description: '', image_url: '', normal_price: '', subscriber_price: '', valid_until: '', quantity: '' })
     load()
+
+    // Produto com preço de verdade e parceiro ainda sem subconta Asaas:
+    // tenta vincular agora (melhor esforço — se faltar dado ou falhar,
+    // não trava nada, o produto já foi salvo; venda cai na carteira
+    // interna até ficar vinculado).
+    if (Number(form.subscriber_price) > 0 && partner && !partner.asaas_wallet_id) {
+      const { data: sessionData } = await supabase.auth.getSession()
+      supabase.functions.invoke('asaas-create-subaccount', {
+        body: { partner_id: partner.id },
+        headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+      }).catch(() => null)
+    }
   }
 
   async function remove(id: string) {

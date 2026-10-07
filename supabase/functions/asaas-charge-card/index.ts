@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Cartão de crédito, só pra assinatura anual (mensal continua Pix-only,
 // forçado abaixo). Fluxo: tokeniza o cartão na Asaas (POST
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
 
     const { data: payment, error: payErr } = await userClient
       .from("payments")
-      .select("id, subscriber_id, amount, status, type, plan, asaas_payment_id")
+      .select("id, subscriber_id, partner_id, amount, status, type, plan, asaas_payment_id, product_order_id")
       .eq("id", input.payment_id)
       .maybeSingle();
     if (payErr || !payment) return json({ error: "PAYMENT_NOT_FOUND" }, 404);
@@ -139,6 +139,17 @@ Deno.serve(async (req) => {
       asaas_card_brand: tokenized.creditCardBrand,
     }).eq("id", profile.id);
 
+    let splits: Array<{ walletId: string; percentualValue: number }> | undefined;
+    if (payment.type === "product_purchase" && payment.product_order_id) {
+      const { data: order } = await admin.from("product_orders").select("commission_pct, split_applied").eq("id", payment.product_order_id).maybeSingle();
+      if (order?.split_applied) {
+        const { data: sellerPartner } = await admin.from("partners").select("asaas_wallet_id").eq("id", payment.partner_id).maybeSingle();
+        if (sellerPartner?.asaas_wallet_id) {
+          splits = [{ walletId: sellerPartner.asaas_wallet_id, percentualValue: 100 - Number(order.commission_pct) }];
+        }
+      }
+    }
+
     const dueDate = new Date().toISOString().slice(0, 10);
     let charge;
     try {
@@ -152,6 +163,7 @@ Deno.serve(async (req) => {
           description: payment.type === "product_purchase" ? "Brinde Mais - compra de produto" : "Brinde Mais - assinatura anual",
           externalReference: payment.id,
           creditCardToken: tokenized.creditCardToken,
+          ...(splits ? { splits } : {}),
         }),
       });
     } catch (e) {

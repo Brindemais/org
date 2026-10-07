@@ -60,8 +60,16 @@ export default function PartnerSignup() {
   const [city, setCity] = useState('')
   const [neighborhood, setNeighborhood] = useState('')
   const [address, setAddress] = useState('')
+  const [addressNumber, setAddressNumber] = useState('')
+  const [incomeValue, setIncomeValue] = useState('')
+  const [companyType, setCompanyType] = useState('MEI')
+  const [birthDate, setBirthDate] = useState('')
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [accepted, setAccepted] = useState(false)
+
+  // CPF (pessoa física) pede data de nascimento pra Asaas; CNPJ pede o
+  // tipo de empresa — nunca os dois ao mesmo tempo.
+  const isCpf = cnpjCpf.replace(/\D/g, '').length === 11
 
   const [code, setCode] = useState('')
   const [resent, setResent] = useState(false)
@@ -85,6 +93,10 @@ export default function PartnerSignup() {
       p_address: address || null,
       p_referral_code: referralCode,
       p_my_referral_code: myReferralCode,
+      p_address_number: addressNumber || null,
+      p_income_value: incomeValue ? Number(incomeValue.replace(',', '.')) : null,
+      p_company_type: isCpf ? null : companyType,
+      p_birth_date: isCpf ? (birthDate || null) : null,
     })
     if (rpcError || !data) {
       setError(partnerSignupErrorMessage(rpcError?.message ?? ''))
@@ -96,6 +108,19 @@ export default function PartnerSignup() {
   async function saveExtras(partnerId: string) {
     if (!cep && !logoUrl) return
     await supabase.from('partners').update({ cep: cep.replace(/\D/g, '') || null, logo_url: logoUrl }).eq('id', partnerId)
+  }
+
+  // Dispara a criação da subconta Asaas pro parceiro (split automático
+  // de pagamento, em vez de carteira interna + saque manual). Melhor
+  // esforço: se faltar algum dado ou a Asaas recusar, não trava o
+  // cadastro — fica como 'pending'/'failed' e dá pra tentar de novo
+  // depois (ex.: na primeira vez que ele cadastrar um produto com preço).
+  async function linkAsaasSubaccount(partnerId: string) {
+    const { data: sessionData } = await supabase.auth.getSession()
+    await supabase.functions.invoke('asaas-create-subaccount', {
+      body: { partner_id: partnerId },
+      headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+    }).catch(() => null)
   }
 
   async function activateFeePayment(partnerId: string) {
@@ -162,6 +187,7 @@ export default function PartnerSignup() {
       const partnerId = await runCompletePartnerSignup()
       if (!partnerId) { setLoading(false); return }
       await saveExtras(partnerId)
+      await linkAsaasSubaccount(partnerId)
       const paid = await activateFeePayment(partnerId)
       setLoading(false)
       if (!paid) return
@@ -185,6 +211,7 @@ export default function PartnerSignup() {
     const partnerId = await runCompletePartnerSignup()
     if (!partnerId) { setLoading(false); return }
     await saveExtras(partnerId)
+    await linkAsaasSubaccount(partnerId)
     const paid = await activateFeePayment(partnerId)
     setLoading(false)
     if (!paid) return
@@ -326,6 +353,35 @@ export default function PartnerSignup() {
                 <input className="input-light" value={address} onChange={(e) => setAddress(e.target.value)} />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label-light">Número</label>
+                <input className="input-light" value={addressNumber} onChange={(e) => setAddressNumber(e.target.value)} placeholder="123" />
+              </div>
+              <div>
+                <label className="label-light">Faturamento mensal estimado</label>
+                <input className="input-light" inputMode="decimal" value={incomeValue} onChange={(e) => setIncomeValue(e.target.value)} placeholder="0,00" />
+              </div>
+            </div>
+            {isCpf ? (
+              <div>
+                <label className="label-light">Data de nascimento</label>
+                <input className="input-light" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+              </div>
+            ) : (
+              <div>
+                <label className="label-light">Tipo de empresa</label>
+                <select className="input-light" value={companyType} onChange={(e) => setCompanyType(e.target.value)}>
+                  <option value="MEI">MEI</option>
+                  <option value="LIMITED">Limitada</option>
+                  <option value="INDIVIDUAL">Empresário individual</option>
+                  <option value="ASSOCIATION">Associação</option>
+                </select>
+              </div>
+            )}
+            <p className="text-[11px] text-black/40 -mt-2">
+              Esses dados são usados pra liberar os repasses das suas vendas automaticamente (Asaas).
+            </p>
 
             <label className="flex items-start gap-2.5 text-xs text-black/60">
               <input type="checkbox" className="mt-0.5" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />

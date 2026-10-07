@@ -120,7 +120,14 @@ export default function PartnerProductOrders() {
       </div>
 
       <section className="card space-y-4">
-        <p className="font-semibold flex items-center gap-1.5"><Wallet size={16} className="text-gold-400" /> Saldo de vendas</p>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <p className="font-semibold flex items-center gap-1.5"><Wallet size={16} className="text-gold-400" /> Saldo de vendas</p>
+          {partner?.asaas_wallet_id ? (
+            <span className="pill bg-emerald-500/15 text-emerald-400 text-[11px]">Repasse automático ativo</span>
+          ) : (
+            <span className="pill bg-white/10 text-white/40 text-[11px]">Repasse pela carteira interna (peça pro admin vincular sua conta à Asaas)</span>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <p className="text-xs text-white/40">Saldo total</p>

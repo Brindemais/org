@@ -58,6 +58,14 @@ export interface Partner {
   requires_fee: boolean
   is_advertiser: boolean
   advertiser_expires_at: string | null
+  address_number: string | null
+  income_value: number | null
+  company_type: string | null
+  birth_date: string | null
+  asaas_account_id: string | null
+  asaas_wallet_id: string | null
+  asaas_subaccount_status: string
+  asaas_subaccount_error: string | null
 }
 
 export interface Subscription {
