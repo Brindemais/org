@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { PackageCheck, ScanLine, ShoppingBag, Wallet } from 'lucide-react'
+import { PackageCheck, ScanLine, ShoppingBag, Wallet, Gift } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useWallet } from '../../hooks/useWallet'
 import { supabase } from '../../lib/supabase'
@@ -20,7 +20,8 @@ interface OrderRow {
 // o código/QR pra finalizar a entrega.
 export default function PartnerProductOrders() {
   const { partner, profile, refreshProfile } = useAuth()
-  const { balance, available, reload: reloadWallet } = useWallet()
+  const { balance, reload: reloadWallet } = useWallet()
+  const [bonusAvailable, setBonusAvailable] = useState(0)
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [loading, setLoading] = useState(true)
   const [codeInput, setCodeInput] = useState<Record<string, string>>({})
@@ -34,11 +35,20 @@ export default function PartnerProductOrders() {
   const [withdrawDone, setWithdrawDone] = useState(false)
   const [withdrawBusy, setWithdrawBusy] = useState(false)
 
+  function loadBonusAvailable() {
+    if (!profile) return
+    supabase.rpc('available_bonus_balance', { p_user_id: profile.id }).then(({ data }) => {
+      setBonusAvailable(Number(data ?? 0))
+    })
+  }
+
+  useEffect(() => { loadBonusAvailable() }, [profile])
+
   async function submitWithdraw(e: FormEvent) {
     e.preventDefault()
     setWithdrawError(null)
     const amount = Number(withdrawAmount.replace(',', '.'))
-    if (amount > available) return setWithdrawError('Saldo disponível insuficiente para este saque.')
+    if (amount > bonusAvailable) return setWithdrawError('Saldo de bônus disponível insuficiente para este saque.')
     if (!withdrawPixKey.trim()) return setWithdrawError('Informe uma chave Pix válida.')
 
     setWithdrawBusy(true)
@@ -62,6 +72,7 @@ export default function PartnerProductOrders() {
     setWithdrawAmount('')
     setWithdrawDone(true)
     await reloadWallet()
+    loadBonusAvailable()
     setTimeout(() => setWithdrawDone(false), 4000)
   }
 
@@ -119,15 +130,24 @@ export default function PartnerProductOrders() {
         <p className="text-white/50 text-sm">Confirme que recebeu o pedido e, na retirada, confira o código do assinante.</p>
       </div>
 
+      <section className="card space-y-3">
+        <p className="font-semibold flex items-center gap-1.5"><Wallet size={16} className="text-gold-400" /> Repasse de vendas</p>
+        {partner?.asaas_wallet_id ? (
+          <p className="text-sm text-white/60">
+            Repasse automático ativo — o valor líquido de cada venda já cai direto na sua conta Asaas, sem passar pela
+            Brinde Mais. Pra sacar, acesse sua conta Asaas diretamente.
+          </p>
+        ) : (
+          <p className="text-sm text-white/60">
+            O repasse das vendas é feito direto na sua conta Asaas (split automático), não pela Brinde Mais. Vincule e
+            aguarde a aprovação da sua subconta em "Produtos e descontos" pra poder vender produtos com preço — depois
+            disso, o dinheiro de cada venda já cai direto na sua Asaas.
+          </p>
+        )}
+      </section>
+
       <section className="card space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <p className="font-semibold flex items-center gap-1.5"><Wallet size={16} className="text-gold-400" /> Saldo de vendas</p>
-          {partner?.asaas_wallet_id ? (
-            <span className="pill bg-emerald-500/15 text-emerald-400 text-[11px]">Repasse automático ativo</span>
-          ) : (
-            <span className="pill bg-white/10 text-white/40 text-[11px]">Repasse pela carteira interna (peça pro admin vincular sua conta à Asaas)</span>
-          )}
-        </div>
+        <p className="font-semibold flex items-center gap-1.5"><Gift size={16} className="text-gold-400" /> Bônus de indicação</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <p className="text-xs text-white/40">Saldo total</p>
@@ -135,7 +155,7 @@ export default function PartnerProductOrders() {
           </div>
           <div>
             <p className="text-xs text-white/40">Disponível para saque</p>
-            <p className="text-xl font-bold text-emerald-400">{formatBRL(available)}</p>
+            <p className="text-xl font-bold text-emerald-400">{formatBRL(bonusAvailable)}</p>
           </div>
         </div>
         <form onSubmit={submitWithdraw} className="flex flex-wrap gap-2 items-end">
