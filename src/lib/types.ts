@@ -67,6 +67,7 @@ export interface Partner {
   asaas_subaccount_status: string
   asaas_subaccount_error: string | null
   asaas_verified_at: string | null
+  commission_pct: number
 }
 
 export interface Subscription {

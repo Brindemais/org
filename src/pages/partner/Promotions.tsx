@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { Percent, Trash2, Wallet } from 'lucide-react'
 import { formatDate } from '../../lib/format'
 import { useAuth } from '../../contexts/AuthContext'
@@ -7,6 +8,19 @@ import type { Promotion } from '../../lib/types'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { ImageUpload } from '../../components/ui/ImageUpload'
+
+const MISSING_FIELD_LABELS: Record<string, string> = {
+  trade_name: 'nome fantasia',
+  email: 'e-mail',
+  cnpj_cpf: 'CNPJ/CPF',
+  address: 'endereço',
+  address_number: 'número do endereço',
+  neighborhood: 'bairro',
+  cep: 'CEP',
+  income_value: 'faturamento mensal estimado',
+  birth_date: 'data de nascimento',
+  company_type: 'tipo de empresa',
+}
 
 export default function PartnerPromotions() {
   const { partner } = useAuth()
@@ -18,6 +32,7 @@ export default function PartnerPromotions() {
   const [editingQtyId, setEditingQtyId] = useState<string | null>(null)
   const [editQty, setEditQty] = useState('')
   const [linking, setLinking] = useState(false)
+  const [linkError, setLinkError] = useState<string | null>(null)
 
   // Produto com preço só pode ser publicado com a subconta Asaas já
   // aprovada (trigger no banco bloqueia de qualquer forma) — pra nunca
@@ -27,12 +42,21 @@ export default function PartnerPromotions() {
   async function requestAsaasLink() {
     if (!partner) return
     setLinking(true)
+    setLinkError(null)
     const { data: sessionData } = await supabase.auth.getSession()
-    await supabase.functions.invoke('asaas-create-subaccount', {
+    const { data, error: fnError } = await supabase.functions.invoke('asaas-create-subaccount', {
       body: { partner_id: partner.id },
       headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
-    }).catch(() => null)
+    }).catch((e) => ({ data: null, error: e }))
     setLinking(false)
+    if (fnError || data?.error) {
+      if (data?.error === 'MISSING_KYC_FIELDS') {
+        const labels = (data.missing ?? []).map((f: string) => MISSING_FIELD_LABELS[f] ?? f)
+        setLinkError(`Complete em "Meu estabelecimento": ${labels.join(', ')}.`)
+      } else {
+        setLinkError('Não foi possível vincular agora. Tente novamente em instantes.')
+      }
+    }
   }
 
   async function load() {
@@ -106,9 +130,16 @@ export default function PartnerPromotions() {
             {(!partner?.asaas_subaccount_status || partner.asaas_subaccount_status === 'pending' || partner.asaas_subaccount_status === 'failed') && 'Ainda não iniciamos essa vinculação com seus dados.'}
           </p>
           {(!partner?.asaas_subaccount_status || partner.asaas_subaccount_status === 'pending' || partner.asaas_subaccount_status === 'failed') && (
-            <button onClick={requestAsaasLink} disabled={linking} className="btn-gold !py-2 !px-4 text-sm">
-              {linking ? 'Enviando...' : 'Vincular conta Asaas agora'}
-            </button>
+            <>
+              <button onClick={requestAsaasLink} disabled={linking} className="btn-gold !py-2 !px-4 text-sm">
+                {linking ? 'Enviando...' : 'Vincular conta Asaas agora'}
+              </button>
+              {linkError && (
+                <p className="text-sm text-red-400">
+                  {linkError} <Link to="/parceiro/perfil" className="underline">Ir pra "Meu estabelecimento"</Link>
+                </p>
+              )}
+            </>
           )}
         </div>
       )}
