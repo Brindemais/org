@@ -21,10 +21,25 @@ const NAV: DashNavItem[] = [
   { to: '/parceiro/perfil', label: 'Meu estabelecimento', icon: Store },
 ]
 
+const MISSING_FIELD_LABELS: Record<string, string> = {
+  trade_name: 'nome fantasia',
+  email: 'e-mail',
+  cnpj_cpf: 'CNPJ/CPF',
+  address: 'endereço',
+  address_number: 'número do endereço',
+  neighborhood: 'bairro',
+  cep: 'CEP',
+  income_value: 'faturamento mensal estimado',
+  birth_date: 'data de nascimento',
+  company_type: 'tipo de empresa',
+}
+
 export function PartnerShell() {
   const { partner, refreshProfile } = useAuth()
   const [confirmingAsaas, setConfirmingAsaas] = useState(false)
   const [asaasDismissed, setAsaasDismissed] = useState(false)
+  const [linkingAsaas, setLinkingAsaas] = useState(false)
+  const [asaasLinkError, setAsaasLinkError] = useState<string | null>(null)
 
   async function confirmAsaasVerified() {
     if (!partner) return
@@ -32,6 +47,28 @@ export function PartnerShell() {
     await supabase.from('partners').update({ asaas_verified_at: new Date().toISOString() }).eq('id', partner.id)
     await refreshProfile()
     setConfirmingAsaas(false)
+  }
+
+  async function startAsaasLink() {
+    if (!partner) return
+    setLinkingAsaas(true)
+    setAsaasLinkError(null)
+    const { data: sessionData } = await supabase.auth.getSession()
+    const { data, error } = await supabase.functions.invoke('asaas-create-subaccount', {
+      body: { partner_id: partner.id },
+      headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+    }).catch((e) => ({ data: null, error: e }))
+    setLinkingAsaas(false)
+    if (error || data?.error) {
+      if (data?.error === 'MISSING_KYC_FIELDS') {
+        const labels = (data.missing ?? []).map((f: string) => MISSING_FIELD_LABELS[f] ?? f)
+        setAsaasLinkError(`Complete em "Meu estabelecimento": ${labels.join(', ')}.`)
+      } else {
+        setAsaasLinkError('Não foi possível vincular agora. Tente novamente em instantes.')
+      }
+      return
+    }
+    await refreshProfile()
   }
 
   // Only new-signup partners carry requires_fee (see 0035) — existing
@@ -58,8 +95,12 @@ export function PartnerShell() {
   // envio). Fica até ele mesmo confirmar, ou "dispensar" por esta sessão.
   const showAsaasBanner = partner?.asaas_subaccount_status === 'created' && !partner?.asaas_verified_at && !asaasDismissed
   const showAsaasRejectedBanner = partner?.asaas_subaccount_status === 'rejected' && !asaasDismissed
+  // Parceiro que nunca iniciou o vínculo (ou tentou e falhou) — sem isso
+  // não sai nenhum repasse automático nem dá pra cadastrar produto com
+  // preço. Separado do banner de "criada mas não verificada" acima.
+  const showAsaasPendingBanner = (!partner?.asaas_subaccount_status || partner?.asaas_subaccount_status === 'pending' || partner?.asaas_subaccount_status === 'failed') && !asaasDismissed
 
-  const banner = (showExpiryBanner || showAsaasBanner || showAsaasRejectedBanner) ? (
+  const banner = (showExpiryBanner || showAsaasPendingBanner || showAsaasBanner || showAsaasRejectedBanner) ? (
     <>
       {showExpiryBanner && (
         <div className="bg-red-600 text-white px-4 lg:px-8 py-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm font-medium">
@@ -68,6 +109,18 @@ export function PartnerShell() {
             {daysLeft === 0 ? 'Sua taxa de anunciante vence hoje.' : daysLeft === 1 ? 'Sua taxa de anunciante vence amanhã.' : `Sua taxa de anunciante vence em ${daysLeft} dias.`}
           </span>
           <Link to="/parceiro/anunciante" className="underline font-semibold whitespace-nowrap">Renovar agora</Link>
+        </div>
+      )}
+      {showAsaasPendingBanner && (
+        <div className="bg-red-600 text-white px-4 lg:px-8 py-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm font-medium">
+          <AlertTriangle size={15} className="shrink-0" />
+          <span>Sua conta Asaas ainda não foi vinculada — sem ela não sai repasse automático nem dá pra cadastrar produto com preço.</span>
+          <button onClick={startAsaasLink} disabled={linkingAsaas} className="underline font-semibold whitespace-nowrap">
+            {linkingAsaas ? 'Vinculando...' : 'Vincular Asaas agora'}
+          </button>
+          {asaasLinkError && <span className="whitespace-nowrap">{asaasLinkError}</span>}
+          <Link to="/parceiro/perfil" className="underline font-semibold whitespace-nowrap">Meu estabelecimento</Link>
+          <button onClick={() => setAsaasDismissed(true)} className="whitespace-nowrap opacity-70 hover:opacity-100">Dispensar por agora</button>
         </div>
       )}
       {showAsaasBanner && (
