@@ -46,6 +46,7 @@ export default function AdminPartners() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Record<string, string>>({})
   const [editCategory, setEditCategory] = useState('bar')
+  const [editCommission, setEditCommission] = useState('15')
   const [savingEdit, setSavingEdit] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
   const [logoSavedId, setLogoSavedId] = useState<string | null>(null)
@@ -72,6 +73,7 @@ export default function AdminPartners() {
   function startEdit(p: Partner) {
     setEditingId(p.id)
     setEditCategory(p.category)
+    setEditCommission(String(p.commission_pct))
     setEditError(null)
     const initial: Record<string, string> = {}
     for (const f of EDIT_FIELDS) initial[f.key] = (p[f.key] as string) ?? ''
@@ -79,9 +81,14 @@ export default function AdminPartners() {
   }
 
   async function saveEdit(id: string) {
+    const commission = Number(editCommission.replace(',', '.'))
+    if (!commission || commission < 15) {
+      setEditError('A comissão mínima por produto é 15%.')
+      return
+    }
     setSavingEdit(true)
     setEditError(null)
-    const payload: Record<string, string | null> = { category: editCategory }
+    const payload: Record<string, string | number | null> = { category: editCategory, commission_pct: commission }
     for (const f of EDIT_FIELDS) payload[f.key] = editForm[f.key]?.trim() || null
     const { error } = await supabase.from('partners').update(payload).eq('id', id)
     setSavingEdit(false)
@@ -324,6 +331,7 @@ export default function AdminPartners() {
               </div>
               <div className="flex items-center gap-2">
                 <StatusBadge status={p.status} />
+                <span className="pill bg-white/10 text-white/50">Comissão: {p.commission_pct}%</span>
                 {p.is_advertiser && <span className="pill bg-gold-400/15 text-gold-300">Anunciante</span>}
                 {p.requires_fee && !p.is_advertiser && <span className="pill bg-white/10 text-white/40">Taxa pendente</span>}
                 {p.asaas_subaccount_status === 'approved' ? (
@@ -374,6 +382,15 @@ export default function AdminPartners() {
                 <select className="input !py-2 text-xs" value={editCategory} onChange={(e) => setEditCategory(e.target.value)}>
                   {PARTNER_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
+                <input
+                  className="input !py-2 text-xs"
+                  type="number"
+                  min={15}
+                  step="0.1"
+                  placeholder="Comissão sobre produtos (mín. 15%)"
+                  value={editCommission}
+                  onChange={(e) => setEditCommission(e.target.value)}
+                />
                 {editError && <p className="sm:col-span-2 text-xs text-red-400">{editError}</p>}
                 <div className="sm:col-span-2 flex gap-2">
                   <button onClick={() => saveEdit(p.id)} disabled={savingEdit} className="btn-gold !py-2 !px-3 text-xs">{savingEdit ? 'Salvando...' : 'Salvar alterações'}</button>
