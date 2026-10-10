@@ -28,6 +28,13 @@ function partnerSignupErrorMessage(message: string): string {
   if (message.includes('REFERRAL_REQUIRED') || message.includes('REFERRER_NOT_FOUND')) return 'Código de indicação inválido ou não encontrado.'
   if (message.includes('REFERRAL_LOGIN_TAKEN')) return 'Seu link de indicação já está em uso, escolha outro.'
   if (message.includes('REFERRAL_LOGIN_TOO_SHORT')) return 'Seu link de indicação precisa ter pelo menos 3 letras ou números.'
+  if (message.includes('MISSING_ADDRESS_NUMBER')) return 'Informe o número do endereço.'
+  if (message.includes('MISSING_ADDRESS')) return 'Informe o endereço.'
+  if (message.includes('MISSING_NEIGHBORHOOD')) return 'Informe o bairro.'
+  if (message.includes('MISSING_CEP')) return 'Informe o CEP.'
+  if (message.includes('MISSING_INCOME_VALUE')) return 'Informe o faturamento mensal estimado.'
+  if (message.includes('MISSING_BIRTH_DATE')) return 'Informe a data de nascimento.'
+  if (message.includes('MISSING_COMPANY_TYPE')) return 'Informe o tipo de empresa.'
   return 'Erro ao concluir cadastro: ' + message
 }
 
@@ -97,6 +104,7 @@ export default function PartnerSignup() {
       p_income_value: incomeValue ? Number(incomeValue.replace(',', '.')) : null,
       p_company_type: isCpf ? null : companyType,
       p_birth_date: isCpf ? (birthDate || null) : null,
+      p_cep: cep.replace(/\D/g, '') || null,
     })
     if (rpcError || !data) {
       setError(partnerSignupErrorMessage(rpcError?.message ?? ''))
@@ -106,8 +114,8 @@ export default function PartnerSignup() {
   }
 
   async function saveExtras(partnerId: string) {
-    if (!cep && !logoUrl) return
-    await supabase.from('partners').update({ cep: cep.replace(/\D/g, '') || null, logo_url: logoUrl }).eq('id', partnerId)
+    if (!logoUrl) return
+    await supabase.from('partners').update({ logo_url: logoUrl }).eq('id', partnerId)
   }
 
   // Dispara a criação da subconta Asaas pro parceiro (split automático
@@ -336,11 +344,11 @@ export default function PartnerSignup() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="label-light">CEP</label>
-                <input className="input-light" value={cep} onChange={(e) => setCep(maskCEP(e.target.value))} placeholder="00000-000" />
+                <input className="input-light" required value={cep} onChange={(e) => setCep(maskCEP(e.target.value))} placeholder="00000-000" />
               </div>
               <div>
                 <label className="label-light">Bairro</label>
-                <input className="input-light" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
+                <input className="input-light" required value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -350,23 +358,23 @@ export default function PartnerSignup() {
               </div>
               <div>
                 <label className="label-light">Endereço</label>
-                <input className="input-light" value={address} onChange={(e) => setAddress(e.target.value)} />
+                <input className="input-light" required value={address} onChange={(e) => setAddress(e.target.value)} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="label-light">Número</label>
-                <input className="input-light" value={addressNumber} onChange={(e) => setAddressNumber(e.target.value)} placeholder="123" />
+                <input className="input-light" required value={addressNumber} onChange={(e) => setAddressNumber(e.target.value)} placeholder="123" />
               </div>
               <div>
                 <label className="label-light">Faturamento mensal estimado</label>
-                <input className="input-light" inputMode="decimal" value={incomeValue} onChange={(e) => setIncomeValue(e.target.value)} placeholder="0,00" />
+                <input className="input-light" required inputMode="decimal" value={incomeValue} onChange={(e) => setIncomeValue(e.target.value)} placeholder="0,00" />
               </div>
             </div>
             {isCpf ? (
               <div>
                 <label className="label-light">Data de nascimento</label>
-                <input className="input-light" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+                <input className="input-light" required type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
               </div>
             ) : (
               <div>
@@ -380,7 +388,7 @@ export default function PartnerSignup() {
               </div>
             )}
             <p className="text-[11px] text-black/40 -mt-2">
-              Esses dados são usados pra liberar os repasses das suas vendas automaticamente (Asaas).
+              Esses dados são obrigatórios: liberam o repasse automático das suas vendas (Asaas).
             </p>
 
             <label className="flex items-start gap-2.5 text-xs text-black/60">
