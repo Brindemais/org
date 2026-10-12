@@ -1,8 +1,6 @@
-// Admin edita nome, e-mail de login e apelido (referral_code) de
-// qualquer assinante ou parceiro. Trocar e-mail de login precisa da
-// Admin API (auth.admin.updateUserById) — não dá pra fazer só com um
-// update na tabela profiles, porque quem autentica de verdade é o
-// auth.users.email, não o profiles.email (que é só um espelho).
+// Admin edita nome e apelido (referral_code) de qualquer assinante ou
+// parceiro. Edição de e-mail de login foi removida de propósito — não é
+// mais uma opção aqui.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -22,7 +20,7 @@ Deno.serve(async (req) => {
     // JSON pra `data` em respostas 2xx — em 4xx/5xx `data` fica null e o
     // front nunca enxerga o código do erro. Status HTTP de erro de
     // verdade fica só pro catch-all final, inesperado.
-    const { profile_id, full_name, email, referral_code } = await req.json().catch(() => ({}))
+    const { profile_id, full_name, referral_code } = await req.json().catch(() => ({}))
     if (!profile_id) return json({ error: 'MISSING_PARAMS' })
 
     const authHeader = req.headers.get('Authorization')
@@ -60,17 +58,6 @@ Deno.serve(async (req) => {
         if (taken) return json({ error: 'REFERRAL_TAKEN' })
         updates.referral_code = normalized
       }
-    }
-
-    if (typeof email === 'string' && email.trim() && email.trim().toLowerCase() !== (target.email ?? '').toLowerCase()) {
-      const newEmail = email.trim().toLowerCase()
-      const { error: authUpdateError } = await admin.auth.admin.updateUserById(profile_id, { email: newEmail, email_confirm: true })
-      if (authUpdateError) {
-        const msg = String(authUpdateError.message ?? authUpdateError)
-        const code = msg.toLowerCase().includes('already been registered') || msg.toLowerCase().includes('already exists') ? 'EMAIL_TAKEN' : 'EMAIL_UPDATE_FAILED'
-        return json({ error: code, detail: msg })
-      }
-      updates.email = newEmail
     }
 
     if (Object.keys(updates).length) {

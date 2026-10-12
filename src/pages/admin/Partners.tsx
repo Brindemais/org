@@ -56,7 +56,7 @@ export default function AdminPartners() {
   const [existingWalletInput, setExistingWalletInput] = useState<Record<string, string>>({})
   const [staffByPartner, setStaffByPartner] = useState<Record<string, { id: string; full_name: string; email: string | null; referral_code: string }[]>>({})
   const [editingStaffId, setEditingStaffId] = useState<string | null>(null)
-  const [staffEditForm, setStaffEditForm] = useState({ full_name: '', email: '', username: '' })
+  const [staffEditForm, setStaffEditForm] = useState({ full_name: '', username: '' })
   const [savingStaffEdit, setSavingStaffEdit] = useState(false)
   const [staffEditError, setStaffEditError] = useState<string | null>(null)
 
@@ -82,7 +82,7 @@ export default function AdminPartners() {
   function startStaffEdit(s: { id: string; full_name: string; email: string | null; referral_code: string }) {
     setEditingStaffId(s.id)
     setStaffEditError(null)
-    setStaffEditForm({ full_name: s.full_name, email: s.email ?? '', username: s.referral_code })
+    setStaffEditForm({ full_name: s.full_name, username: s.referral_code })
   }
 
   async function saveStaffEdit(profileId: string) {
@@ -90,15 +90,13 @@ export default function AdminPartners() {
     setStaffEditError(null)
     const { data: sessionData } = await supabase.auth.getSession()
     const { data, error } = await supabase.functions.invoke('admin-update-profile', {
-      body: { profile_id: profileId, full_name: staffEditForm.full_name, email: staffEditForm.email, referral_code: staffEditForm.username },
+      body: { profile_id: profileId, full_name: staffEditForm.full_name, referral_code: staffEditForm.username },
       headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
     }).catch((e) => ({ data: null, error: e }))
     setSavingStaffEdit(false)
     const labels: Record<string, string> = {
       REFERRAL_TOO_SHORT: 'O apelido precisa ter pelo menos 3 letras ou números.',
       REFERRAL_TAKEN: 'Esse apelido já está em uso por outra pessoa.',
-      EMAIL_TAKEN: 'Esse e-mail já está em uso por outra conta.',
-      EMAIL_UPDATE_FAILED: 'Não foi possível trocar o e-mail. Confira se é um e-mail válido.',
     }
     if (error || data?.error) {
       setStaffEditError(labels[data?.error] ?? 'Não foi possível salvar as alterações.')
@@ -465,9 +463,8 @@ export default function AdminPartners() {
                       <div key={s.id} className="bg-ink-950 rounded-lg p-2.5">
                         {editingStaffId === s.id ? (
                           <div className="space-y-2">
-                            <div className="grid sm:grid-cols-3 gap-2">
+                            <div className="grid sm:grid-cols-2 gap-2">
                               <input className="input !py-1.5 text-xs" placeholder="Nome" value={staffEditForm.full_name} onChange={(e) => setStaffEditForm({ ...staffEditForm, full_name: e.target.value })} />
-                              <input className="input !py-1.5 text-xs" type="email" placeholder="E-mail de login" value={staffEditForm.email} onChange={(e) => setStaffEditForm({ ...staffEditForm, email: e.target.value })} />
                               <input className="input !py-1.5 text-xs" placeholder="Apelido" value={staffEditForm.username} onChange={(e) => setStaffEditForm({ ...staffEditForm, username: e.target.value })} />
                             </div>
                             {staffEditError && <p className="text-xs text-red-400">{staffEditError}</p>}

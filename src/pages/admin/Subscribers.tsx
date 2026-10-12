@@ -10,8 +10,6 @@ import { downloadCSV } from '../../lib/csv'
 const EDIT_ERROR_LABELS: Record<string, string> = {
   REFERRAL_TOO_SHORT: 'O apelido precisa ter pelo menos 3 letras ou números.',
   REFERRAL_TAKEN: 'Esse apelido já está em uso por outra pessoa.',
-  EMAIL_TAKEN: 'Esse e-mail já está em uso por outra conta.',
-  EMAIL_UPDATE_FAILED: 'Não foi possível trocar o e-mail. Confira se é um e-mail válido.',
 }
 
 interface Row { id: string; full_name: string; cpf: string | null; email: string | null; username: string | null; created_at: string; sub_status: string | null; sub_expires_at: string | null; balance: number; active: boolean }
@@ -25,7 +23,7 @@ export default function AdminSubscribers() {
   const [busy, setBusy] = useState<string | null>(null)
   const [deletingPendingId, setDeletingPendingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState({ full_name: '', email: '', username: '' })
+  const [editForm, setEditForm] = useState({ full_name: '', username: '' })
   const [savingEdit, setSavingEdit] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
 
@@ -78,7 +76,7 @@ export default function AdminSubscribers() {
   function startEdit(r: Row) {
     setEditingId(r.id)
     setEditError(null)
-    setEditForm({ full_name: r.full_name, email: r.email ?? '', username: r.username ?? '' })
+    setEditForm({ full_name: r.full_name, username: r.username ?? '' })
   }
 
   async function saveEdit(r: Row) {
@@ -86,7 +84,7 @@ export default function AdminSubscribers() {
     setEditError(null)
     const { data: sessionData } = await supabase.auth.getSession()
     const { data, error } = await supabase.functions.invoke('admin-update-profile', {
-      body: { profile_id: r.id, full_name: editForm.full_name, email: editForm.email, referral_code: editForm.username },
+      body: { profile_id: r.id, full_name: editForm.full_name, referral_code: editForm.username },
       headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
     }).catch((e) => ({ data: null, error: e }))
     setSavingEdit(false)
@@ -200,14 +198,10 @@ export default function AdminSubscribers() {
             {filtered.map((r) => editingId === r.id && (
               <tr key={`${r.id}-edit`} className="border-t border-ink-800 bg-ink-950/50">
                 <td colSpan={9} className="py-3">
-                  <div className="grid sm:grid-cols-3 gap-3 max-w-2xl">
+                  <div className="grid sm:grid-cols-2 gap-3 max-w-xl">
                     <div>
                       <label className="label !text-[11px]">Nome</label>
                       <input className="input !py-2 text-xs" value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} />
-                    </div>
-                    <div>
-                      <label className="label !text-[11px]">E-mail de login</label>
-                      <input className="input !py-2 text-xs" type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
                     </div>
                     <div>
                       <label className="label !text-[11px]">Apelido (link de indicação)</label>
