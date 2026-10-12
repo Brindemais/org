@@ -40,6 +40,8 @@ export function PartnerShell() {
   const [asaasDismissed, setAsaasDismissed] = useState(false)
   const [linkingAsaas, setLinkingAsaas] = useState(false)
   const [asaasLinkError, setAsaasLinkError] = useState<string | null>(null)
+  const [showWalletInput, setShowWalletInput] = useState(false)
+  const [walletIdInput, setWalletIdInput] = useState('')
 
   async function confirmAsaasVerified() {
     if (!partner) return
@@ -49,13 +51,13 @@ export function PartnerShell() {
     setConfirmingAsaas(false)
   }
 
-  async function startAsaasLink() {
+  async function startAsaasLink(walletId?: string) {
     if (!partner) return
     setLinkingAsaas(true)
     setAsaasLinkError(null)
     const { data: sessionData } = await supabase.auth.getSession()
     const { data, error } = await supabase.functions.invoke('asaas-create-subaccount', {
-      body: { partner_id: partner.id },
+      body: walletId ? { partner_id: partner.id, wallet_id: walletId } : { partner_id: partner.id },
       headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
     }).catch((e) => ({ data: null, error: e }))
     setLinkingAsaas(false)
@@ -63,11 +65,15 @@ export function PartnerShell() {
       if (data?.error === 'MISSING_KYC_FIELDS') {
         const labels = (data.missing ?? []).map((f: string) => MISSING_FIELD_LABELS[f] ?? f)
         setAsaasLinkError(`Complete em "Meu estabelecimento": ${labels.join(', ')}.`)
+      } else if (data?.error === 'INVALID_WALLET_ID') {
+        setAsaasLinkError('Esse Wallet ID não parece válido — confira no painel da Asaas, em Integrações.')
       } else {
         setAsaasLinkError('Não foi possível vincular agora. Tente novamente em instantes.')
       }
       return
     }
+    setWalletIdInput('')
+    setShowWalletInput(false)
     await refreshProfile()
   }
 
@@ -112,15 +118,34 @@ export function PartnerShell() {
         </div>
       )}
       {showAsaasPendingBanner && (
-        <div className="bg-red-600 text-white px-4 lg:px-8 py-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm font-medium">
-          <AlertTriangle size={15} className="shrink-0" />
-          <span>Sua conta Asaas ainda não foi vinculada — sem ela não sai repasse automático nem dá pra cadastrar produto com preço.</span>
-          <button onClick={startAsaasLink} disabled={linkingAsaas} className="underline font-semibold whitespace-nowrap">
-            {linkingAsaas ? 'Vinculando...' : 'Vincular Asaas agora'}
-          </button>
-          {asaasLinkError && <span className="whitespace-nowrap">{asaasLinkError}</span>}
-          <Link to="/parceiro/perfil" className="underline font-semibold whitespace-nowrap">Meu estabelecimento</Link>
-          <button onClick={() => setAsaasDismissed(true)} className="whitespace-nowrap opacity-70 hover:opacity-100">Dispensar por agora</button>
+        <div className="bg-red-600 text-white px-4 lg:px-8 py-2.5 text-sm font-medium">
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center">
+            <AlertTriangle size={15} className="shrink-0" />
+            <span>Sua conta Asaas ainda não foi vinculada — sem ela não sai repasse automático nem dá pra cadastrar produto com preço.</span>
+            <button onClick={() => startAsaasLink()} disabled={linkingAsaas} className="underline font-semibold whitespace-nowrap">
+              {linkingAsaas ? 'Vinculando...' : 'Criar conta Asaas agora'}
+            </button>
+            <button onClick={() => setShowWalletInput((v) => !v)} className="underline font-semibold whitespace-nowrap">
+              Já tenho conta Asaas
+            </button>
+            <Link to="/parceiro/perfil" className="underline font-semibold whitespace-nowrap">Meu estabelecimento</Link>
+            <button onClick={() => setAsaasDismissed(true)} className="whitespace-nowrap opacity-70 hover:opacity-100">Dispensar por agora</button>
+          </div>
+          {showWalletInput && (
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+              <span className="text-xs text-white/80">Cole o Wallet ID da sua conta Asaas (painel Asaas → Integrações):</span>
+              <input
+                className="rounded px-2 py-1 text-xs text-ink-950 w-64 max-w-full"
+                placeholder="00000000-0000-0000-0000-000000000000"
+                value={walletIdInput}
+                onChange={(e) => setWalletIdInput(e.target.value)}
+              />
+              <button onClick={() => startAsaasLink(walletIdInput)} disabled={linkingAsaas || !walletIdInput.trim()} className="underline font-semibold whitespace-nowrap disabled:opacity-50">
+                {linkingAsaas ? 'Vinculando...' : 'Vincular'}
+              </button>
+            </div>
+          )}
+          {asaasLinkError && <p className="text-center text-xs mt-1">{asaasLinkError}</p>}
         </div>
       )}
       {showAsaasBanner && (
