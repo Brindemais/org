@@ -53,6 +53,7 @@ export default function AdminPartners() {
   const [statusBusyId, setStatusBusyId] = useState<string | null>(null)
   const [asaasLinking, setAsaasLinking] = useState<string | null>(null)
   const [asaasMsg, setAsaasMsg] = useState<Record<string, string>>({})
+  const [existingWalletInput, setExistingWalletInput] = useState<Record<string, string>>({})
 
   async function load() {
     const [{ data }, { data: staff }] = await Promise.all([
@@ -251,6 +252,29 @@ export default function AdminPartners() {
     load()
   }
 
+  // Parceiro que já tinha conta própria na Asaas ANTES de se cadastrar
+  // na Brinde Mais: criar uma subconta nova via /v3/accounts não serve
+  // (CPF/CNPJ duplicado, a Asaas não "reconhece" a conta antiga) — o
+  // jeito certo é o próprio parceiro pegar o Wallet ID da conta dele já
+  // existente (painel Asaas > Integrações) e a gente vincular direto,
+  // sem passar pela criação automática. Já marca aprovado, porque o
+  // dinheiro vai de verdade pra essa carteira (não tem saldo fictício
+  // envolvido) — só o admin confirma que o Wallet ID é mesmo do parceiro.
+  async function linkExistingAsaasWallet(partner: Partner) {
+    const walletId = (existingWalletInput[partner.id] ?? '').trim()
+    if (!walletId) return
+    if (!window.confirm(`Confirma que ${walletId} é o Wallet ID da conta Asaas que já pertence a este parceiro? As vendas dele passam a ir direto pra essa carteira.`)) return
+    setAsaasLinking(partner.id)
+    await supabase.from('partners').update({
+      asaas_wallet_id: walletId, asaas_account_id: null,
+      asaas_subaccount_status: 'approved', asaas_verified_at: new Date().toISOString(), asaas_subaccount_error: null,
+    }).eq('id', partner.id)
+    setAsaasLinking(null)
+    setExistingWalletInput((m) => ({ ...m, [partner.id]: '' }))
+    setAsaasMsg((m) => ({ ...m, [partner.id]: 'Wallet ID vinculado e aprovado! As vendas desse parceiro já vão direto pra essa conta Asaas.' }))
+    load()
+  }
+
   async function linkStaff(partnerId: string) {
     setLinkMsg('')
     const { data: profile } = await supabase.from('profiles').select('id, role').eq('email', linkEmail.trim()).maybeSingle()
@@ -433,6 +457,19 @@ export default function AdminPartners() {
               </button>
             )}
             {inviteMsg[p.id] && <p className="text-xs text-white/50 mb-3">{inviteMsg[p.id]}</p>}
+            {!p.asaas_wallet_id && (
+              <div className="flex gap-2 items-center mb-3">
+                <input
+                  className="input !py-2 text-xs flex-1"
+                  placeholder="Parceiro já tem Asaas? Cole o Wallet ID da conta dele aqui"
+                  value={existingWalletInput[p.id] ?? ''}
+                  onChange={(e) => setExistingWalletInput((m) => ({ ...m, [p.id]: e.target.value }))}
+                />
+                <button onClick={() => linkExistingAsaasWallet(p)} disabled={asaasLinking === p.id || !existingWalletInput[p.id]?.trim()} className="btn-dark !py-2 !px-3 text-xs shrink-0">
+                  Vincular conta existente
+                </button>
+              </div>
+            )}
             {asaasMsg[p.id] && <p className="text-xs text-white/50 mb-3">{asaasMsg[p.id]}</p>}
             {linking === p.id ? (
               <div className="flex gap-2 items-center">
