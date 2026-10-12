@@ -132,17 +132,24 @@ export function PartnerShell() {
             <button onClick={() => setAsaasDismissed(true)} className="whitespace-nowrap opacity-70 hover:opacity-100">Dispensar por agora</button>
           </div>
           {showWalletInput && (
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-              <span className="text-xs text-white/80">Cole o Wallet ID da sua conta Asaas (painel Asaas → Integrações):</span>
-              <input
-                className="rounded px-2 py-1 text-xs text-ink-950 w-64 max-w-full"
-                placeholder="00000000-0000-0000-0000-000000000000"
-                value={walletIdInput}
-                onChange={(e) => setWalletIdInput(e.target.value)}
-              />
-              <button onClick={() => startAsaasLink(walletIdInput)} disabled={linkingAsaas || !walletIdInput.trim()} className="underline font-semibold whitespace-nowrap disabled:opacity-50">
-                {linkingAsaas ? 'Vinculando...' : 'Vincular'}
-              </button>
+            <div className="max-w-md mx-auto mt-2 space-y-2">
+              <div className="text-xs text-white/80 text-left leading-relaxed">
+                <p className="font-semibold mb-0.5">Como encontrar seu Wallet ID na Asaas:</p>
+                <p>1. Entre na sua conta em <strong>asaas.com</strong></p>
+                <p>2. Vá em <strong>Integrações</strong> (menu lateral)</p>
+                <p>3. Copie o código em <strong>Wallet ID</strong> e cole abaixo</p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <input
+                  className="rounded px-2 py-1 text-xs text-ink-950 w-64 max-w-full"
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                  value={walletIdInput}
+                  onChange={(e) => setWalletIdInput(e.target.value)}
+                />
+                <button onClick={() => startAsaasLink(walletIdInput)} disabled={linkingAsaas || !walletIdInput.trim()} className="underline font-semibold whitespace-nowrap disabled:opacity-50">
+                  {linkingAsaas ? 'Vinculando...' : 'Vincular'}
+                </button>
+              </div>
             </div>
           )}
           {asaasLinkError && <p className="text-center text-xs mt-1">{asaasLinkError}</p>}
