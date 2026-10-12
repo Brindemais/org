@@ -18,11 +18,15 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
+    // Erro "esperado" sai com status 200: o supabase-js só manda o corpo
+    // JSON pra `data` em respostas 2xx — em 4xx/5xx `data` fica null e o
+    // front nunca enxerga o código do erro. Status HTTP de erro de
+    // verdade fica só pro catch-all final, inesperado.
     const { profile_id, full_name, email, referral_code } = await req.json().catch(() => ({}))
-    if (!profile_id) return json({ error: 'MISSING_PARAMS' }, 400)
+    if (!profile_id) return json({ error: 'MISSING_PARAMS' })
 
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) return json({ error: 'UNAUTHORIZED' }, 401)
+    if (!authHeader) return json({ error: 'UNAUTHORIZED' })
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
@@ -30,17 +34,17 @@ Deno.serve(async (req) => {
 
     const callerClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } })
     const { data: callerAuth, error: callerErr } = await callerClient.auth.getUser()
-    if (callerErr || !callerAuth.user) return json({ error: 'UNAUTHORIZED' }, 401)
+    if (callerErr || !callerAuth.user) return json({ error: 'UNAUTHORIZED' })
 
     const admin = createClient(supabaseUrl, serviceKey)
 
     const { data: callerProfile } = await admin.from('profiles').select('role').eq('id', callerAuth.user.id).maybeSingle()
     if (!callerProfile || !['admin', 'operator'].includes(callerProfile.role)) {
-      return json({ error: 'NOT_AUTHORIZED' }, 403)
+      return json({ error: 'NOT_AUTHORIZED' })
     }
 
     const { data: target } = await admin.from('profiles').select('*').eq('id', profile_id).maybeSingle()
-    if (!target) return json({ error: 'PROFILE_NOT_FOUND' }, 404)
+    if (!target) return json({ error: 'PROFILE_NOT_FOUND' })
 
     const updates: Record<string, unknown> = {}
 
@@ -50,10 +54,10 @@ Deno.serve(async (req) => {
 
     if (typeof referral_code === 'string' && referral_code.trim()) {
       const { data: normalized } = await admin.rpc('normalize_referral_code', { p_input: referral_code })
-      if (!normalized || String(normalized).length < 3) return json({ error: 'REFERRAL_TOO_SHORT' }, 400)
+      if (!normalized || String(normalized).length < 3) return json({ error: 'REFERRAL_TOO_SHORT' })
       if (normalized !== target.referral_code) {
         const { data: taken } = await admin.from('profiles').select('id').neq('id', profile_id).ilike('referral_code', normalized).maybeSingle()
-        if (taken) return json({ error: 'REFERRAL_TAKEN' }, 400)
+        if (taken) return json({ error: 'REFERRAL_TAKEN' })
         updates.referral_code = normalized
       }
     }
@@ -64,14 +68,14 @@ Deno.serve(async (req) => {
       if (authUpdateError) {
         const msg = String(authUpdateError.message ?? authUpdateError)
         const code = msg.toLowerCase().includes('already been registered') || msg.toLowerCase().includes('already exists') ? 'EMAIL_TAKEN' : 'EMAIL_UPDATE_FAILED'
-        return json({ error: code, detail: msg }, 400)
+        return json({ error: code, detail: msg })
       }
       updates.email = newEmail
     }
 
     if (Object.keys(updates).length) {
       const { error: updateError } = await admin.from('profiles').update(updates).eq('id', profile_id)
-      if (updateError) return json({ error: 'UPDATE_FAILED', detail: updateError.message }, 400)
+      if (updateError) return json({ error: 'UPDATE_FAILED', detail: updateError.message })
     }
 
     return json({ ok: true, updated: updates })

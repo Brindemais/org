@@ -84,11 +84,11 @@ Deno.serve(async (req) => {
 
   try {
     const { email, full_name, role, redirect_to } = await req.json().catch(() => ({}))
-    if (!email || !full_name || !role || !redirect_to) return json({ error: 'MISSING_PARAMS' }, 400)
-    if (role !== 'admin' && role !== 'operator') return json({ error: 'INVALID_ROLE' }, 400)
+    if (!email || !full_name || !role || !redirect_to) return json({ error: 'MISSING_PARAMS' })
+    if (role !== 'admin' && role !== 'operator') return json({ error: 'INVALID_ROLE' })
 
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) return json({ error: 'UNAUTHORIZED' }, 401)
+    if (!authHeader) return json({ error: 'UNAUTHORIZED' })
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
 
     const callerClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } })
     const { data: callerAuth, error: callerErr } = await callerClient.auth.getUser()
-    if (callerErr || !callerAuth.user) return json({ error: 'UNAUTHORIZED' }, 401)
+    if (callerErr || !callerAuth.user) return json({ error: 'UNAUTHORIZED' })
 
     const admin = createClient(supabaseUrl, serviceKey)
 
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
     // in the app, but must not be able to mint new staff accounts.
     const { data: callerProfile } = await admin.from('profiles').select('role').eq('id', callerAuth.user.id).maybeSingle()
     if (!callerProfile || callerProfile.role !== 'admin') {
-      return json({ error: 'NOT_AUTHORIZED' }, 403)
+      return json({ error: 'NOT_AUTHORIZED' })
     }
 
     const roleLabel = role === 'admin' ? 'administrador' : 'operador'
@@ -118,24 +118,24 @@ Deno.serve(async (req) => {
     if (genErr) {
       const msg = (genErr.message ?? '').toLowerCase()
       if (!(msg.includes('already been registered') || msg.includes('already registered') || msg.includes('already exists'))) {
-        return json({ error: 'INVITE_FAILED', detail: genErr.message }, 500)
+        return json({ error: 'INVITE_FAILED', detail: genErr.message })
       }
       // Already has an auth account — just (re)assign the role, no new
       // invite e-mail. Mirrors invite-partner's same-situation handling.
       const { data: list, error: listErr } = await admin.auth.admin.listUsers()
       const existing = listErr ? undefined : list.users.find((u) => u.email?.toLowerCase() === email.toLowerCase())
-      if (!existing) return json({ error: 'INVITE_FAILED', detail: genErr.message }, 500)
+      if (!existing) return json({ error: 'INVITE_FAILED', detail: genErr.message })
       const { error: linkErr } = await admin.rpc('admin_complete_staff_invite', {
         p_user_id: existing.id, p_email: email, p_full_name: full_name, p_role: role,
       })
-      if (linkErr) return json({ error: 'LINK_FAILED', detail: linkErr.message }, 500)
+      if (linkErr) return json({ error: 'LINK_FAILED', detail: linkErr.message })
       return json({ ok: true, already_had_account: true })
     }
 
     try {
       await sendViaResend(email, full_name, roleLabel, generated.properties.email_otp)
     } catch (sendErr) {
-      return json({ error: 'EMAIL_SEND_FAILED', detail: String(sendErr) }, 500)
+      return json({ error: 'EMAIL_SEND_FAILED', detail: String(sendErr) })
     }
 
     const desiredCode = slugifyReferralCode(full_name)
@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
         p_user_id: generated.user.id, p_email: email, p_full_name: full_name, p_role: role,
       }))
     }
-    if (linkErr) return json({ error: 'LINK_FAILED', detail: linkErr.message }, 500)
+    if (linkErr) return json({ error: 'LINK_FAILED', detail: linkErr.message })
 
     return json({ ok: true, already_had_account: false })
   } catch (e) {
