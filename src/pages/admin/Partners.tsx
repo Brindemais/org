@@ -54,21 +54,58 @@ export default function AdminPartners() {
   const [asaasLinking, setAsaasLinking] = useState<string | null>(null)
   const [asaasMsg, setAsaasMsg] = useState<Record<string, string>>({})
   const [existingWalletInput, setExistingWalletInput] = useState<Record<string, string>>({})
+  const [staffByPartner, setStaffByPartner] = useState<Record<string, { id: string; full_name: string; email: string | null; referral_code: string }[]>>({})
+  const [editingStaffId, setEditingStaffId] = useState<string | null>(null)
+  const [staffEditForm, setStaffEditForm] = useState({ full_name: '', email: '', username: '' })
+  const [savingStaffEdit, setSavingStaffEdit] = useState(false)
+  const [staffEditError, setStaffEditError] = useState<string | null>(null)
 
   async function load() {
     const [{ data }, { data: staff }] = await Promise.all([
       supabase.from('partners').select('*').order('created_at', { ascending: false }),
       // Nome de usuário é um campo do profile de quem acessa o painel, não do
       // parceiro em si — um parceiro pode ter mais de um staff vinculado.
-      supabase.from('partner_staff').select('partner_id, profiles(referral_code)'),
+      supabase.from('partner_staff').select('partner_id, profiles(id, full_name, email, referral_code)'),
     ])
     setPartners((data as Partner[]) ?? [])
     const map: Record<string, string[]> = {}
+    const staffMap: Record<string, { id: string; full_name: string; email: string | null; referral_code: string }[]> = {}
     for (const row of (staff as any[]) ?? []) {
       const code = row.profiles?.referral_code
       if (code) (map[row.partner_id] ??= []).push(code)
+      if (row.profiles?.id) (staffMap[row.partner_id] ??= []).push(row.profiles)
     }
     setUsernames(map)
+    setStaffByPartner(staffMap)
+  }
+
+  function startStaffEdit(s: { id: string; full_name: string; email: string | null; referral_code: string }) {
+    setEditingStaffId(s.id)
+    setStaffEditError(null)
+    setStaffEditForm({ full_name: s.full_name, email: s.email ?? '', username: s.referral_code })
+  }
+
+  async function saveStaffEdit(profileId: string) {
+    setSavingStaffEdit(true)
+    setStaffEditError(null)
+    const { data: sessionData } = await supabase.auth.getSession()
+    const { data, error } = await supabase.functions.invoke('admin-update-profile', {
+      body: { profile_id: profileId, full_name: staffEditForm.full_name, email: staffEditForm.email, referral_code: staffEditForm.username },
+      headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+    }).catch((e) => ({ data: null, error: e }))
+    setSavingStaffEdit(false)
+    const labels: Record<string, string> = {
+      REFERRAL_TOO_SHORT: 'O apelido precisa ter pelo menos 3 letras ou números.',
+      REFERRAL_TAKEN: 'Esse apelido já está em uso por outra pessoa.',
+      EMAIL_TAKEN: 'Esse e-mail já está em uso por outra conta.',
+      EMAIL_UPDATE_FAILED: 'Não foi possível trocar o e-mail. Confira se é um e-mail válido.',
+    }
+    if (error || data?.error) {
+      setStaffEditError(labels[data?.error] ?? 'Não foi possível salvar as alterações.')
+      return
+    }
+    setEditingStaffId(null)
+    load()
   }
 
   function startEdit(p: Partner) {
@@ -420,6 +457,35 @@ export default function AdminPartners() {
                   <button onClick={() => saveEdit(p.id)} disabled={savingEdit} className="btn-gold !py-2 !px-3 text-xs">{savingEdit ? 'Salvando...' : 'Salvar alterações'}</button>
                   <button onClick={() => setEditingId(null)} className="btn-ghost !py-2 !px-3 text-xs">Cancelar</button>
                 </div>
+
+                {!!staffByPartner[p.id]?.length && (
+                  <div className="sm:col-span-2 border-t border-ink-800 pt-3 space-y-2">
+                    <p className="text-xs font-semibold text-white/60">Acesso ao painel (quem faz login)</p>
+                    {staffByPartner[p.id].map((s) => (
+                      <div key={s.id} className="bg-ink-950 rounded-lg p-2.5">
+                        {editingStaffId === s.id ? (
+                          <div className="space-y-2">
+                            <div className="grid sm:grid-cols-3 gap-2">
+                              <input className="input !py-1.5 text-xs" placeholder="Nome" value={staffEditForm.full_name} onChange={(e) => setStaffEditForm({ ...staffEditForm, full_name: e.target.value })} />
+                              <input className="input !py-1.5 text-xs" type="email" placeholder="E-mail de login" value={staffEditForm.email} onChange={(e) => setStaffEditForm({ ...staffEditForm, email: e.target.value })} />
+                              <input className="input !py-1.5 text-xs" placeholder="Apelido" value={staffEditForm.username} onChange={(e) => setStaffEditForm({ ...staffEditForm, username: e.target.value })} />
+                            </div>
+                            {staffEditError && <p className="text-xs text-red-400">{staffEditError}</p>}
+                            <div className="flex gap-2">
+                              <button onClick={() => saveStaffEdit(s.id)} disabled={savingStaffEdit} className="btn-gold !py-1 !px-2.5 text-xs">{savingStaffEdit ? 'Salvando...' : 'Salvar'}</button>
+                              <button onClick={() => setEditingStaffId(null)} className="btn-ghost !py-1 !px-2.5 text-xs">Cancelar</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-2 text-xs">
+                            <span>{s.full_name} · {s.email ?? 'sem e-mail'} · <span className="font-mono">{s.referral_code}</span></span>
+                            <button onClick={() => startStaffEdit(s)} className="text-gold-400 font-medium shrink-0">Editar</button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (p.responsible_name || p.email || p.phone || p.cnpj_cpf || p.address || usernames[p.id]?.length) && (
               <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-white/50 mb-3 bg-ink-950/50 rounded-lg p-3">
