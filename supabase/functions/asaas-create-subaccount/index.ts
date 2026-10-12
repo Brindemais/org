@@ -23,6 +23,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const WALLET_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
@@ -41,7 +43,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { partner_id } = await req.json().catch(() => ({}));
+    const { partner_id, wallet_id } = await req.json().catch(() => ({}));
     if (!partner_id) return json({ error: "MISSING_PARAMS" }, 400);
 
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -61,6 +63,26 @@ Deno.serve(async (req) => {
 
     if (partner.asaas_wallet_id) {
       return json({ already_linked: true, wallet_id: partner.asaas_wallet_id });
+    }
+
+    // Parceiro/admin informando o Wallet ID de uma conta Asaas que já
+    // existe (comum pra quem já usava Asaas antes de entrar na Brinde
+    // Mais) — não passa pelo POST /v3/accounts, que só cria conta nova e
+    // não reconhece/reaproveita uma conta já existente pro mesmo CPF/CNPJ.
+    // Marca direto como aprovado: é uma carteira real (o split falha na
+    // hora, de forma visível, se o id não existir de verdade — não dá
+    // pra fabricar saldo interno fictício por esse caminho).
+    if (wallet_id) {
+      const trimmed = String(wallet_id).trim();
+      if (!WALLET_ID_RE.test(trimmed)) return json({ error: "INVALID_WALLET_ID" }, 400);
+      await admin.from("partners").update({
+        asaas_wallet_id: trimmed,
+        asaas_account_id: null,
+        asaas_subaccount_status: "approved",
+        asaas_verified_at: new Date().toISOString(),
+        asaas_subaccount_error: null,
+      }).eq("id", partner_id);
+      return json({ ok: true, wallet_id: trimmed, linked_existing: true });
     }
 
     const digits = (partner.cnpj_cpf ?? "").replace(/\D/g, "");

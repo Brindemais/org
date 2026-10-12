@@ -23,7 +23,7 @@ const MISSING_FIELD_LABELS: Record<string, string> = {
 }
 
 export default function PartnerPromotions() {
-  const { partner } = useAuth()
+  const { partner, refreshProfile } = useAuth()
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [form, setForm] = useState({ title: '', description: '', image_url: '', normal_price: '', subscriber_price: '', valid_until: '', quantity: '' })
   const [saving, setSaving] = useState(false)
@@ -33,19 +33,21 @@ export default function PartnerPromotions() {
   const [editQty, setEditQty] = useState('')
   const [linking, setLinking] = useState(false)
   const [linkError, setLinkError] = useState<string | null>(null)
+  const [showWalletInput, setShowWalletInput] = useState(false)
+  const [walletIdInput, setWalletIdInput] = useState('')
 
   // Produto com preço só pode ser publicado com a subconta Asaas já
   // aprovada (trigger no banco bloqueia de qualquer forma) — pra nunca
   // gerar venda com repasse num saldo que ainda não existe de verdade.
   const asaasApproved = partner?.asaas_subaccount_status === 'approved'
 
-  async function requestAsaasLink() {
+  async function requestAsaasLink(walletId?: string) {
     if (!partner) return
     setLinking(true)
     setLinkError(null)
     const { data: sessionData } = await supabase.auth.getSession()
     const { data, error: fnError } = await supabase.functions.invoke('asaas-create-subaccount', {
-      body: { partner_id: partner.id },
+      body: walletId ? { partner_id: partner.id, wallet_id: walletId } : { partner_id: partner.id },
       headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
     }).catch((e) => ({ data: null, error: e }))
     setLinking(false)
@@ -53,10 +55,16 @@ export default function PartnerPromotions() {
       if (data?.error === 'MISSING_KYC_FIELDS') {
         const labels = (data.missing ?? []).map((f: string) => MISSING_FIELD_LABELS[f] ?? f)
         setLinkError(`Complete em "Meu estabelecimento": ${labels.join(', ')}.`)
+      } else if (data?.error === 'INVALID_WALLET_ID') {
+        setLinkError('Esse Wallet ID não parece válido — confira no painel da Asaas, em Integrações.')
       } else {
         setLinkError('Não foi possível vincular agora. Tente novamente em instantes.')
       }
+      return
     }
+    setWalletIdInput('')
+    setShowWalletInput(false)
+    await refreshProfile()
   }
 
   async function load() {
@@ -131,9 +139,30 @@ export default function PartnerPromotions() {
           </p>
           {(!partner?.asaas_subaccount_status || partner.asaas_subaccount_status === 'pending' || partner.asaas_subaccount_status === 'failed') && (
             <>
-              <button onClick={requestAsaasLink} disabled={linking} className="btn-gold !py-2 !px-4 text-sm">
-                {linking ? 'Enviando...' : 'Vincular conta Asaas agora'}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => requestAsaasLink()} disabled={linking} className="btn-gold !py-2 !px-4 text-sm">
+                  {linking ? 'Enviando...' : 'Criar conta Asaas agora'}
+                </button>
+                <button type="button" onClick={() => setShowWalletInput((v) => !v)} className="btn-dark !py-2 !px-4 text-sm">
+                  Já tenho conta Asaas
+                </button>
+              </div>
+              {showWalletInput && (
+                <div className="space-y-1.5">
+                  <p className="text-xs text-white/50">Cole o Wallet ID da sua conta Asaas (painel Asaas → Integrações):</p>
+                  <div className="flex gap-2">
+                    <input
+                      className="input !py-2 text-sm flex-1"
+                      placeholder="00000000-0000-0000-0000-000000000000"
+                      value={walletIdInput}
+                      onChange={(e) => setWalletIdInput(e.target.value)}
+                    />
+                    <button onClick={() => requestAsaasLink(walletIdInput)} disabled={linking || !walletIdInput.trim()} className="btn-gold !py-2 !px-4 text-sm shrink-0">
+                      Vincular
+                    </button>
+                  </div>
+                </div>
+              )}
               {linkError && (
                 <p className="text-sm text-red-400">
                   {linkError} <Link to="/parceiro/perfil" className="underline">Ir pra "Meu estabelecimento"</Link>
