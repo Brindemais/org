@@ -132,14 +132,14 @@ export function PartnerShell() {
             <button onClick={() => setAsaasDismissed(true)} className="whitespace-nowrap opacity-70 hover:opacity-100">Dispensar por agora</button>
           </div>
           {showWalletInput && (
-            <div className="max-w-md mx-auto mt-2 space-y-2">
-              <div className="text-xs text-white/80 text-left leading-relaxed">
+            <div className="max-w-2xl mx-auto mt-2 flex flex-col sm:flex-row sm:items-center gap-3 bg-black/10 rounded-lg p-3">
+              <div className="text-xs text-white/80 text-left leading-relaxed sm:flex-1">
                 <p className="font-semibold mb-0.5">Como encontrar seu Wallet ID na Asaas:</p>
                 <p>1. Entre na sua conta em <strong>asaas.com</strong></p>
                 <p>2. Vá em <strong>Integrações</strong> (menu lateral)</p>
-                <p>3. Copie o código em <strong>Wallet ID</strong> e cole abaixo</p>
+                <p>3. Copie o código em <strong>Wallet ID</strong> e cole aqui ao lado</p>
               </div>
-              <div className="flex flex-wrap items-center justify-center gap-2">
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:shrink-0">
                 <input
                   className="rounded px-2 py-1 text-xs text-ink-950 w-64 max-w-full"
                   placeholder="00000000-0000-0000-0000-000000000000"
