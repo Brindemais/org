@@ -7,6 +7,13 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { downloadCSV } from '../../lib/csv'
 
+const EDIT_ERROR_LABELS: Record<string, string> = {
+  REFERRAL_TOO_SHORT: 'O apelido precisa ter pelo menos 3 letras ou números.',
+  REFERRAL_TAKEN: 'Esse apelido já está em uso por outra pessoa.',
+  EMAIL_TAKEN: 'Esse e-mail já está em uso por outra conta.',
+  EMAIL_UPDATE_FAILED: 'Não foi possível trocar o e-mail. Confira se é um e-mail válido.',
+}
+
 interface Row { id: string; full_name: string; cpf: string | null; email: string | null; username: string | null; created_at: string; sub_status: string | null; sub_expires_at: string | null; balance: number; active: boolean }
 interface PendingRow { id: string; email: string; created_at: string }
 
@@ -17,6 +24,10 @@ export default function AdminSubscribers() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
   const [deletingPendingId, setDeletingPendingId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({ full_name: '', email: '', username: '' })
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
@@ -62,6 +73,29 @@ export default function AdminSubscribers() {
     setBusy(null)
     if (error) return
     setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, active: !x.active } : x)))
+  }
+
+  function startEdit(r: Row) {
+    setEditingId(r.id)
+    setEditError(null)
+    setEditForm({ full_name: r.full_name, email: r.email ?? '', username: r.username ?? '' })
+  }
+
+  async function saveEdit(r: Row) {
+    setSavingEdit(true)
+    setEditError(null)
+    const { data: sessionData } = await supabase.auth.getSession()
+    const { data, error } = await supabase.functions.invoke('admin-update-profile', {
+      body: { profile_id: r.id, full_name: editForm.full_name, email: editForm.email, referral_code: editForm.username },
+      headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+    }).catch((e) => ({ data: null, error: e }))
+    setSavingEdit(false)
+    if (error || data?.error) {
+      setEditError(EDIT_ERROR_LABELS[data?.error] ?? 'Não foi possível salvar as alterações.')
+      return
+    }
+    setEditingId(null)
+    load()
   }
 
   function isExpired(r: Row) {
@@ -155,10 +189,36 @@ export default function AdminSubscribers() {
                 <td className="py-3">
                   <span className={`pill ${r.active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>{r.active ? 'Ativa' : 'Suspensa'}</span>
                 </td>
-                <td className="py-3">
+                <td className="py-3 flex gap-2">
                   <button onClick={() => toggleActive(r)} disabled={busy === r.id} className="btn-ghost !py-1.5 !px-3 text-xs">
                     {busy === r.id ? '...' : r.active ? 'Suspender' : 'Reativar'}
                   </button>
+                  <button onClick={() => startEdit(r)} className="btn-ghost !py-1.5 !px-3 text-xs">Editar</button>
+                </td>
+              </tr>
+            ))}
+            {filtered.map((r) => editingId === r.id && (
+              <tr key={`${r.id}-edit`} className="border-t border-ink-800 bg-ink-950/50">
+                <td colSpan={9} className="py-3">
+                  <div className="grid sm:grid-cols-3 gap-3 max-w-2xl">
+                    <div>
+                      <label className="label !text-[11px]">Nome</label>
+                      <input className="input !py-2 text-xs" value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="label !text-[11px]">E-mail de login</label>
+                      <input className="input !py-2 text-xs" type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="label !text-[11px]">Apelido (link de indicação)</label>
+                      <input className="input !py-2 text-xs" value={editForm.username} onChange={(e) => setEditForm({ ...editForm, username: e.target.value })} />
+                    </div>
+                  </div>
+                  {editError && <p className="text-xs text-red-400 mt-2">{editError}</p>}
+                  <div className="flex gap-2 mt-2">
+                    <button onClick={() => saveEdit(r)} disabled={savingEdit} className="btn-gold !py-1.5 !px-3 text-xs">{savingEdit ? 'Salvando...' : 'Salvar'}</button>
+                    <button onClick={() => setEditingId(null)} className="btn-ghost !py-1.5 !px-3 text-xs">Cancelar</button>
+                  </div>
                 </td>
               </tr>
             ))}
