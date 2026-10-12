@@ -102,10 +102,10 @@ Deno.serve(async (req) => {
 
   try {
     const { partner_id, redirect_to } = await req.json().catch(() => ({}))
-    if (!partner_id || !redirect_to) return json({ error: 'MISSING_PARAMS' }, 400)
+    if (!partner_id || !redirect_to) return json({ error: 'MISSING_PARAMS' })
 
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) return json({ error: 'UNAUTHORIZED' }, 401)
+    if (!authHeader) return json({ error: 'UNAUTHORIZED' })
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
@@ -115,18 +115,18 @@ Deno.serve(async (req) => {
     // never trust a role claim coming from the request body.
     const callerClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } })
     const { data: callerAuth, error: callerErr } = await callerClient.auth.getUser()
-    if (callerErr || !callerAuth.user) return json({ error: 'UNAUTHORIZED' }, 401)
+    if (callerErr || !callerAuth.user) return json({ error: 'UNAUTHORIZED' })
 
     const admin = createClient(supabaseUrl, serviceKey)
 
     const { data: callerProfile } = await admin.from('profiles').select('role').eq('id', callerAuth.user.id).maybeSingle()
     if (!callerProfile || !['admin', 'operator'].includes(callerProfile.role)) {
-      return json({ error: 'NOT_AUTHORIZED' }, 403)
+      return json({ error: 'NOT_AUTHORIZED' })
     }
 
     const { data: partner, error: partnerErr } = await admin.from('partners').select('*').eq('id', partner_id).maybeSingle()
-    if (partnerErr || !partner) return json({ error: 'PARTNER_NOT_FOUND' }, 404)
-    if (!partner.email) return json({ error: 'PARTNER_HAS_NO_EMAIL' }, 400)
+    if (partnerErr || !partner) return json({ error: 'PARTNER_NOT_FOUND' })
+    if (!partner.email) return json({ error: 'PARTNER_HAS_NO_EMAIL' })
 
     const displayName = partner.responsible_name ?? partner.trade_name
     let targetUserId: string
@@ -147,11 +147,11 @@ Deno.serve(async (req) => {
         // before.
         const { data: list, error: listErr } = await admin.auth.admin.listUsers()
         const existing = listErr ? undefined : list.users.find((u) => u.email?.toLowerCase() === partner.email!.toLowerCase())
-        if (!existing) return json({ error: 'INVITE_FAILED', detail: genErr.message }, 500)
+        if (!existing) return json({ error: 'INVITE_FAILED', detail: genErr.message })
         targetUserId = existing.id
         alreadyHadAccount = true
       } else {
-        return json({ error: 'INVITE_FAILED', detail: genErr.message }, 500)
+        return json({ error: 'INVITE_FAILED', detail: genErr.message })
       }
     } else {
       targetUserId = generated.user.id
@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
         // The auth user was already created at this point — don't leave the
         // partner half-linked with no way to know the invite silently
         // failed to send.
-        return json({ error: 'EMAIL_SEND_FAILED', detail: String(sendErr) }, 500)
+        return json({ error: 'EMAIL_SEND_FAILED', detail: String(sendErr) })
       }
     }
 
@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
         p_partner_id: partner_id, p_user_id: targetUserId, p_email: partner.email, p_full_name: displayName, p_phone: partner.phone,
       }))
     }
-    if (linkErr) return json({ error: 'LINK_FAILED', detail: linkErr.message }, 500)
+    if (linkErr) return json({ error: 'LINK_FAILED', detail: linkErr.message })
 
     return json({ ok: true, already_had_account: alreadyHadAccount })
   } catch (e) {

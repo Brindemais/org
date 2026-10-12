@@ -43,23 +43,28 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Toda resposta de erro "esperado" (dado faltando, não autorizado, etc.)
+    // sai com status 200 — o supabase-js só expõe o corpo JSON em `data`
+    // quando a resposta é 2xx; em 4xx/5xx `data` vem null e o detalhe só
+    // estaria em error.context (bem mais chato de tratar no front). Status
+    // de erro de verdade (HTTP) fica só pro catch-all final, inesperado.
     const { partner_id, wallet_id } = await req.json().catch(() => ({}));
-    if (!partner_id) return json({ error: "MISSING_PARAMS" }, 400);
+    if (!partner_id) return json({ error: "MISSING_PARAMS" });
 
     const authHeader = req.headers.get("Authorization") ?? "";
     const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData.user) return json({ error: "NOT_AUTHENTICATED" }, 401);
+    if (userErr || !userData.user) return json({ error: "NOT_AUTHENTICATED" });
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     const { data: callerProfile } = await admin.from("profiles").select("role").eq("id", userData.user.id).maybeSingle();
     const { data: staffRow } = await admin.from("partner_staff").select("partner_id").eq("partner_id", partner_id).eq("profile_id", userData.user.id).maybeSingle();
     const isAllowed = callerProfile?.role === "admin" || !!staffRow;
-    if (!isAllowed) return json({ error: "NOT_AUTHORIZED" }, 403);
+    if (!isAllowed) return json({ error: "NOT_AUTHORIZED" });
 
     const { data: partner, error: partnerErr } = await admin.from("partners").select("*").eq("id", partner_id).maybeSingle();
-    if (partnerErr || !partner) return json({ error: "PARTNER_NOT_FOUND" }, 404);
+    if (partnerErr || !partner) return json({ error: "PARTNER_NOT_FOUND" });
 
     if (partner.asaas_wallet_id) {
       return json({ already_linked: true, wallet_id: partner.asaas_wallet_id });
@@ -74,7 +79,7 @@ Deno.serve(async (req) => {
     // pra fabricar saldo interno fictício por esse caminho).
     if (wallet_id) {
       const trimmed = String(wallet_id).trim();
-      if (!WALLET_ID_RE.test(trimmed)) return json({ error: "INVALID_WALLET_ID" }, 400);
+      if (!WALLET_ID_RE.test(trimmed)) return json({ error: "INVALID_WALLET_ID" });
       await admin.from("partners").update({
         asaas_wallet_id: trimmed,
         asaas_account_id: null,
@@ -99,7 +104,7 @@ Deno.serve(async (req) => {
     if (partner.income_value == null) missing.push("income_value");
     if (isCpf && !partner.birth_date) missing.push("birth_date");
     if (!isCpf && !partner.company_type) missing.push("company_type");
-    if (missing.length) return json({ error: "MISSING_KYC_FIELDS", missing }, 400);
+    if (missing.length) return json({ error: "MISSING_KYC_FIELDS", missing });
 
     const body: Record<string, unknown> = {
       name: partner.trade_name,
@@ -123,7 +128,7 @@ Deno.serve(async (req) => {
         asaas_subaccount_status: "failed",
         asaas_subaccount_error: String(e),
       }).eq("id", partner_id);
-      return json({ error: "ASAAS_REQUEST_FAILED", detail: String(e) }, 400);
+      return json({ error: "ASAAS_REQUEST_FAILED", detail: String(e) });
     }
 
     await admin.from("partners").update({
