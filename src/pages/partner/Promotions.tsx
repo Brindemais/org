@@ -148,16 +148,16 @@ export default function PartnerPromotions() {
                 </button>
               </div>
               {showWalletInput && (
-                <div className="space-y-2">
-                  <div className="text-xs text-white/50 leading-relaxed">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-ink-950/40 rounded-lg p-3">
+                  <div className="text-xs text-white/50 leading-relaxed sm:flex-1">
                     <p className="font-semibold text-white/70 mb-0.5">Como encontrar seu Wallet ID na Asaas:</p>
                     <p>1. Entre na sua conta em <strong className="text-white/70">asaas.com</strong></p>
                     <p>2. Vá em <strong className="text-white/70">Integrações</strong> (menu lateral)</p>
-                    <p>3. Copie o código em <strong className="text-white/70">Wallet ID</strong> e cole abaixo</p>
+                    <p>3. Copie o código em <strong className="text-white/70">Wallet ID</strong> e cole aqui ao lado</p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 sm:shrink-0">
                     <input
-                      className="input !py-2 text-sm flex-1"
+                      className="input !py-2 text-sm flex-1 sm:w-56"
                       placeholder="00000000-0000-0000-0000-000000000000"
                       value={walletIdInput}
                       onChange={(e) => setWalletIdInput(e.target.value)}
