@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Percent, Trash2, Wallet } from 'lucide-react'
-import { formatDate } from '../../lib/format'
+import { formatDate, formatBRL } from '../../lib/format'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import type { Promotion } from '../../lib/types'
@@ -202,6 +202,12 @@ export default function PartnerPromotions() {
           <label className="label">Quantidade em estoque</label>
           <input className="input" type="number" min="0" placeholder="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
         </div>
+        {!!Number(form.subscriber_price) && (
+          <p className="sm:col-span-2 text-xs text-white/40 -mt-1">
+            Comissão Brinde Mais: <span className="text-white/70 font-semibold">{partner?.commission_pct ?? 15}%</span> sobre o preço assinante —
+            você recebe <span className="text-emerald-400 font-semibold">{formatBRL(Number(form.subscriber_price) * (1 - (partner?.commission_pct ?? 15) / 100))}</span> líquido por unidade.
+          </p>
+        )}
         <div className="sm:col-span-2">
           <label className="label">Válida até</label>
           <input className="input" type="date" required value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} />
