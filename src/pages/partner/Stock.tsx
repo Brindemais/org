@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { formatDateTime } from '../../lib/format'
 import { EmptyState } from '../../components/ui/EmptyState'
 
-interface StockRow { id: string; quantity: number; product: { id: string; name: string } }
+interface StockRow { id: string; quantity: number; product: { id: string; name: string } | null }
 interface ProductOpt { id: string; name: string }
 
 export default function PartnerStock() {
@@ -100,36 +100,39 @@ export default function PartnerStock() {
             </tr>
           </thead>
           <tbody>
-            {stock.map((s) => (
-              <tr key={s.id} className="border-t border-ink-800 align-top">
-                <td className="py-3">{s.product?.name}</td>
-                <td className="py-3 font-semibold">{s.quantity}</td>
-                <td className="py-3">
-                  <span className={`pill ${s.quantity === 0 ? 'bg-red-500/15 text-red-400' : s.quantity <= 5 ? 'bg-gold-400/15 text-gold-300' : 'bg-emerald-500/15 text-emerald-400'}`}>
-                    {s.quantity === 0 ? 'Sem estoque' : s.quantity <= 5 ? 'Estoque baixo' : 'Em estoque'}
-                  </span>
-                </td>
-                <td className="py-3">
-                  {adjusting === s.product.id ? (
-                    <div className="flex flex-col gap-1.5 w-48">
-                      <select className="input !py-1.5 !text-xs" value={type} onChange={(e) => setType(e.target.value as any)}>
-                        <option value="loss">Perda</option>
-                        <option value="damage">Avaria</option>
-                        <option value="adjustment">Ajuste (entrada)</option>
-                      </select>
-                      <input className="input !py-1.5 !text-xs" placeholder="Quantidade" type="number" value={qty} onChange={(e) => setQty(e.target.value)} />
-                      <input className="input !py-1.5 !text-xs" placeholder="Motivo" value={reason} onChange={(e) => setReason(e.target.value)} />
-                      <div className="flex gap-1.5">
-                        <button onClick={() => submitAdjust(s.product.id)} className="btn-gold !py-1.5 !px-2 text-xs flex-1">Salvar</button>
-                        <button onClick={() => setAdjusting(null)} className="btn-ghost !py-1.5 !px-2 text-xs flex-1">Cancelar</button>
+            {stock.map((s) => {
+              const product = s.product
+              return (
+                <tr key={s.id} className="border-t border-ink-800 align-top">
+                  <td className="py-3">{product?.name ?? '-'}</td>
+                  <td className="py-3 font-semibold">{s.quantity}</td>
+                  <td className="py-3">
+                    <span className={`pill ${s.quantity === 0 ? 'bg-red-500/15 text-red-400' : s.quantity <= 5 ? 'bg-gold-400/15 text-gold-300' : 'bg-emerald-500/15 text-emerald-400'}`}>
+                      {s.quantity === 0 ? 'Sem estoque' : s.quantity <= 5 ? 'Estoque baixo' : 'Em estoque'}
+                    </span>
+                  </td>
+                  <td className="py-3">
+                    {!product ? null : adjusting === product.id ? (
+                      <div className="flex flex-col gap-1.5 w-48">
+                        <select className="input !py-1.5 !text-xs" value={type} onChange={(e) => setType(e.target.value as any)}>
+                          <option value="loss">Perda</option>
+                          <option value="damage">Avaria</option>
+                          <option value="adjustment">Ajuste (entrada)</option>
+                        </select>
+                        <input className="input !py-1.5 !text-xs" placeholder="Quantidade" type="number" value={qty} onChange={(e) => setQty(e.target.value)} />
+                        <input className="input !py-1.5 !text-xs" placeholder="Motivo" value={reason} onChange={(e) => setReason(e.target.value)} />
+                        <div className="flex gap-1.5">
+                          <button onClick={() => submitAdjust(product.id)} className="btn-gold !py-1.5 !px-2 text-xs flex-1">Salvar</button>
+                          <button onClick={() => setAdjusting(null)} className="btn-ghost !py-1.5 !px-2 text-xs flex-1">Cancelar</button>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <button onClick={() => setAdjusting(s.product.id)} className="text-xs text-gold-400 font-medium">Ajustar</button>
-                  )}
-                </td>
-              </tr>
-            ))}
+                    ) : (
+                      <button onClick={() => setAdjusting(product.id)} className="text-xs text-gold-400 font-medium">Ajustar</button>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
             {!stock.length && <tr><td colSpan={4}><EmptyState dark icon={Package} title="Nenhum brinde em estoque ainda" description="Use 'Receber estoque' acima para adicionar." className="py-8" /></td></tr>}
           </tbody>
         </table>
