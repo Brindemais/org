@@ -23,11 +23,19 @@ export function useSubscription() {
     setSubscription(sub as Subscription | null)
 
     if (sub) {
+      // Inclui 'withdrawn' e trava por ciclo (mês/ano) — sem isso, assim que
+      // o parceiro confirmava a retirada o pickup "sumia" daqui e as telas
+      // que leem esse hook (Home, Benefícios, detalhe do parceiro) voltavam
+      // a mostrar o botão de escolher ponto de retirada como se o assinante
+      // ainda não tivesse pego o brinde do mês.
+      const now = new Date()
       const { data: pk } = await supabase
         .from('pickups')
         .select('*')
         .eq('subscription_id', sub.id)
-        .in('status', ['reserved', 'ready'])
+        .eq('cycle_month', now.getMonth() + 1)
+        .eq('cycle_year', now.getFullYear())
+        .in('status', ['reserved', 'ready', 'withdrawn'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
