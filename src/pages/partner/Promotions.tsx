@@ -89,12 +89,10 @@ export default function PartnerPromotions() {
       subscriber_price: Number(form.subscriber_price || 0),
       valid_until: form.valid_until,
       quantity: Math.max(0, Number(form.quantity || 0)),
-      // Produto enviado pelo parceiro entra em fila de aprovação — só
-      // fica visível pro assinante depois que o admin aprovar
-      // (admin/Promotions.tsx). Um trigger no banco força esse status
-      // independente do que mandar aqui, então nem adianta tentar enviar
-      // 'approved' direto.
-      status: 'pending_approval',
+      // Produto vai ao ar na hora — não passa mais por aprovação de
+      // conteúdo do admin. Um trigger no banco força status='approved'
+      // pro insert de não-admin, então o valor aqui é só informativo.
+      status: 'approved',
     })
     setSaving(false)
     if (insertError) {
@@ -125,7 +123,7 @@ export default function PartnerPromotions() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold">Produtos e descontos</h1>
-        <p className="text-white/50 text-sm">Cadastre produtos com preço normal e preço assinante. Cada envio entra em análise e só fica visível para assinantes depois que o admin aprovar.</p>
+        <p className="text-white/50 text-sm">Cadastre produtos com preço normal e preço assinante. O produto fica visível pros assinantes assim que você publicar.</p>
       </div>
 
       {!asaasApproved && (
@@ -213,7 +211,7 @@ export default function PartnerPromotions() {
           <input className="input" type="date" required value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} />
         </div>
         {error && <p className="text-sm text-red-400 sm:col-span-2">{error}</p>}
-        <button type="submit" disabled={saving} className="btn-gold sm:col-span-2">{saving ? 'Enviando...' : 'Enviar para aprovação'}</button>
+        <button type="submit" disabled={saving} className="btn-gold sm:col-span-2">{saving ? 'Publicando...' : 'Publicar produto'}</button>
         {!asaasApproved && (
           <p className="text-xs text-white/40 sm:col-span-2">
             Produto sem preço (campo "Preço assinante" em 0) pode ser publicado mesmo sem a Asaas aprovada.
