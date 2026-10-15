@@ -183,7 +183,7 @@ export default function SubscriberPartnerProducts() {
       <div className="grid grid-cols-2 gap-3">
         {products.map((p) => (
           <div key={p.id} className="card !p-3 text-left">
-            <button type="button" onClick={() => p.image_url && setZoomed(p)} className="block w-full">
+            <button type="button" onClick={() => (p.subscriber_price ? startBuy(p) : p.image_url && setZoomed(p))} className="block w-full">
               <div className="aspect-[4/3] rounded-lg bg-ink-950 border border-ink-800 mb-2 overflow-hidden flex items-center justify-center">
                 {p.image_url ? <img src={p.image_url} alt={p.title} className="w-full h-full object-cover" /> : <Percent size={22} className="text-white/15" />}
               </div>
