@@ -72,7 +72,10 @@ export function SubscriptionPaywall() {
     }
     const { data: charge, error: chargeError } = await supabase.functions.invoke('asaas-create-pix-charge', { body: { payment_id: data.id } })
     setLoading(false)
-    if (chargeError || !charge?.pix_code) { setError('Não foi possível gerar o Pix. Tente novamente.'); return }
+    if (chargeError || !charge?.pix_code) {
+      setError(charge?.error === 'MISSING_CPF' ? 'Complete seu CPF no perfil antes de continuar o pagamento.' : 'Não foi possível gerar o Pix. Tente novamente.')
+      return
+    }
     setPending({ ...data, pix_code: charge.pix_code, pix_qr_code: charge.pix_qr_code ?? null } as PendingPayment)
   }
 
@@ -103,7 +106,7 @@ export function SubscriptionPaywall() {
     })
     setLoading(false)
     if (chargeError || charge?.error) {
-      setError('Cartão recusado. Confira os dados, tente outro cartão ou pague via Pix.')
+      setError(charge?.error === 'MISSING_CPF' ? 'Complete seu CPF no perfil antes de continuar o pagamento.' : 'Cartão recusado. Confira os dados, tente outro cartão ou pague via Pix.')
       return
     }
     await refreshProfile()

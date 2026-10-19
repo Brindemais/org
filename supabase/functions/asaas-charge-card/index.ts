@@ -89,6 +89,8 @@ Deno.serve(async (req) => {
       .eq("id", payment.subscriber_id)
       .maybeSingle();
     if (!profile) return json({ error: "PROFILE_NOT_FOUND" }, 404);
+    // Mesma checagem do Pix — Asaas recusa cobrança sem CPF/CNPJ do cliente.
+    if (!profile.cpf) return json({ error: "MISSING_CPF" });
 
     let customerId = (profile as Record<string, string | null>)[CUSTOMER_ID_COLUMN];
     if (!customerId) {
