@@ -50,7 +50,7 @@ export default function PartnerAdvertiser() {
     const { data: charge, error: chargeError } = await supabase.functions.invoke('asaas-create-pix-charge', { body: { payment_id: data.id } })
     setLoading(false)
     if (chargeError || !charge?.pix_code) {
-      setError('Não foi possível gerar o Pix. Tente novamente.')
+      setError(charge?.error === 'MISSING_CPF' ? 'Confira o CNPJ/CPF informado no cadastro antes de continuar.' : 'Não foi possível gerar o Pix. Tente novamente.')
       return
     }
     setPending({ ...data, pix_code: charge.pix_code, pix_qr_code: charge.pix_qr_code ?? null } as PendingPayment)

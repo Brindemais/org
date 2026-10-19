@@ -81,7 +81,7 @@ export default function SubscriberPartnerProducts() {
     const { data: charge, error: chargeError } = await supabase.functions.invoke('asaas-create-pix-charge', { body: { payment_id: (payment as any).id } })
     setBusy(false)
     if (chargeError || !charge?.pix_code) {
-      setError('Não foi possível gerar o Pix. Tente novamente em instantes.')
+      setError(charge?.error === 'MISSING_CPF' ? 'Complete seu CPF em Perfil antes de continuar o pagamento.' : 'Não foi possível gerar o Pix. Tente novamente em instantes.')
       return
     }
     setPixCode(charge.pix_code)
@@ -115,7 +115,7 @@ export default function SubscriberPartnerProducts() {
     })
     setBusy(false)
     if (chargeError || charge?.error) {
-      setError('Cartão recusado. Confira os dados, tente outro cartão ou pague via Pix.')
+      setError(charge?.error === 'MISSING_CPF' ? 'Complete seu CPF em Perfil antes de continuar o pagamento.' : 'Cartão recusado. Confira os dados, tente outro cartão ou pague via Pix.')
       return
     }
     setStep('done')

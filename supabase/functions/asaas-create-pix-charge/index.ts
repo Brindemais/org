@@ -84,13 +84,26 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!profile) return json({ error: "PROFILE_NOT_FOUND" }, 404);
 
+    // Pra taxa de ativação de parceiro, o CNPJ/CPF foi coletado no cadastro
+    // do parceiro (partners.cnpj_cpf) — profiles.cpf só é preenchido no
+    // cadastro de assinante, então fica null pra quem só é dono de parceiro.
+    let cpfCnpj = profile.cpf as string | null;
+    if (!cpfCnpj && payment.type === "partner_fee" && payment.partner_id) {
+      const { data: partnerRow } = await admin.from("partners").select("cnpj_cpf").eq("id", payment.partner_id).maybeSingle();
+      cpfCnpj = partnerRow?.cnpj_cpf ?? null;
+    }
+    // Asaas recusa a cobrança sem CPF/CNPJ do cliente (400 invalid_object) —
+    // checa antes de chamar pra devolver um erro específico em vez da
+    // mensagem genérica de "não foi possível gerar o Pix".
+    if (!cpfCnpj) return json({ error: "MISSING_CPF" });
+
     let customerId = (profile as Record<string, string | null>)[CUSTOMER_ID_COLUMN];
     if (!customerId) {
       const customer = await asaasFetch("/customers", {
         method: "POST",
         body: JSON.stringify({
           name: profile.full_name,
-          cpfCnpj: profile.cpf,
+          cpfCnpj,
           email: profile.email,
           mobilePhone: profile.phone,
           externalReference: profile.id,

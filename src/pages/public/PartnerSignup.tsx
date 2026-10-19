@@ -150,7 +150,7 @@ export default function PartnerSignup() {
 
     const { data: charge, error: chargeError } = await supabase.functions.invoke('asaas-create-pix-charge', { body: { payment_id: payment.id } })
     if (chargeError || !charge?.pix_code) {
-      setError('Não foi possível gerar o Pix. Tente novamente em instantes.')
+      setError(charge?.error === 'MISSING_CPF' ? 'Confira o CNPJ/CPF informado no cadastro antes de continuar.' : 'Não foi possível gerar o Pix. Tente novamente em instantes.')
       return false
     }
     setPixCode(charge.pix_code)
