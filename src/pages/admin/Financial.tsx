@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
-import { TrendingDown, TrendingUp, Users2, Wallet, KeyRound, Store, QrCode, Search, Undo2 } from 'lucide-react'
+import { TrendingDown, TrendingUp, Users2, Wallet, KeyRound, Store, QrCode, Search, Undo2, SlidersHorizontal } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { StatCard } from '../../components/ui/StatCard'
 import { formatBRL, formatDateTime } from '../../lib/format'
@@ -21,6 +21,7 @@ export default function AdminFinancial() {
   const [payments, setPayments] = useState<{ amount: number; confirmed_at: string }[]>([])
   const [bonuses, setBonuses] = useState<{ amount: number; created_at: string }[]>([])
   const [confirmedByMethod, setConfirmedByMethod] = useState<ConfirmedPayment[]>([])
+  const [adjustments, setAdjustments] = useState<{ amount: number; direction: string; created_at: string }[]>([])
   const [loading, setLoading] = useState(true)
 
   const [walletQuery, setWalletQuery] = useState('')
@@ -40,13 +41,26 @@ export default function AdminFinancial() {
       supabase.from('payments').select('amount, confirmed_at').eq('type', 'subscription').eq('status', 'confirmed').not('confirmed_at', 'is', null),
       supabase.from('bonuses').select('amount, created_at').eq('status', 'confirmed'),
       supabase.from('payments').select('amount, confirmed_at, type, payment_method').in('type', ['subscription', 'partner_fee']).eq('status', 'confirmed'),
-    ]).then(([{ data: p }, { data: b }, { data: cm }]) => {
+      supabase.from('wallet_transactions').select('amount, direction, created_at').eq('type', 'adjustment').eq('status', 'confirmed'),
+    ]).then(([{ data: p }, { data: b }, { data: cm }, { data: adj }]) => {
       setPayments((p as any[]) ?? [])
       setBonuses((b as any[]) ?? [])
       setConfirmedByMethod((cm as ConfirmedPayment[]) ?? [])
+      setAdjustments((adj as any[]) ?? [])
       setLoading(false)
     })
   }, [])
+
+  // "Valor incluído manualmente" = saldo líquido de ajustes aplicados pelo
+  // admin direto na carteira de alguém (positivo ou negativo) — não passa
+  // por `payments`, então sem isso nenhum card do financeiro refletia um
+  // ajuste manual de saldo.
+  const adjustmentTotals = useMemo(() => {
+    const net = (rows: typeof adjustments) => rows.reduce((s, a) => s + (a.direction === 'in' ? Number(a.amount) : -Number(a.amount)), 0)
+    const key = new Date().toISOString().slice(0, 7)
+    const thisMonthRows = adjustments.filter((a) => a.created_at.slice(0, 7) === key)
+    return { allTime: net(adjustments), thisMonth: net(thisMonthRows), count: adjustments.length }
+  }, [adjustments])
 
   // "Ativação manual" = pagamento marcado payment_method='manual' (criado
   // em /admin/ativacao-manual), em oposição a pix/credit_card confirmados
@@ -166,11 +180,12 @@ export default function AdminFinancial() {
 
       <div>
         <p className="text-xs font-bold uppercase tracking-wide text-white/40 mb-3">Mês atual</p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard label="Entradas de assinantes" value={formatBRL(thisMonth.gross)} icon={<TrendingUp size={18} />} tone="gold" />
           <StatCard label={`Custo (${(PLATFORM_COST_PCT * 100).toFixed(0)}%)`} value={formatBRL(thisMonth.platformCost)} icon={<TrendingDown size={18} />} />
           <StatCard label="Custo de indicações" value={formatBRL(thisMonth.referralCost)} icon={<Users2 size={18} />} />
           <StatCard label="Valor líquido" value={formatBRL(thisMonth.net)} icon={<Wallet size={18} />} />
+          <StatCard label="Incluído manualmente" value={formatBRL(adjustmentTotals.thisMonth)} icon={<SlidersHorizontal size={18} />} />
         </div>
       </div>
 
@@ -283,12 +298,14 @@ export default function AdminFinancial() {
 
       <div>
         <p className="text-xs font-bold uppercase tracking-wide text-white/40 mb-3">Acumulado (todo o período)</p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard label="Entradas de assinantes" value={formatBRL(totals.gross)} icon={<TrendingUp size={18} />} tone="gold" />
           <StatCard label={`Custo (${(PLATFORM_COST_PCT * 100).toFixed(0)}%)`} value={formatBRL(totals.platformCost)} icon={<TrendingDown size={18} />} />
           <StatCard label="Custo de indicações" value={formatBRL(totals.referralCost)} icon={<Users2 size={18} />} />
           <StatCard label="Valor líquido" value={formatBRL(totals.net)} icon={<Wallet size={18} />} />
+          <StatCard label="Incluído manualmente (total)" value={formatBRL(adjustmentTotals.allTime)} icon={<SlidersHorizontal size={18} />} />
         </div>
+        <p className="text-xs text-white/30 mt-2">{adjustmentTotals.count} ajuste{adjustmentTotals.count === 1 ? '' : 's'} manual{adjustmentTotals.count === 1 ? '' : 'is'} de saldo aplicado{adjustmentTotals.count === 1 ? '' : 's'} pelo admin no total (positivo ou negativo).</p>
       </div>
 
       <div className="card">
