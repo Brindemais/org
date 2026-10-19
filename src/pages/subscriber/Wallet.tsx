@@ -103,7 +103,7 @@ export default function SubscriberWallet() {
                 {t.direction === 'in' ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{t.description || TYPE_LABELS[t.type] || t.type}</p>
+                <p className="text-sm font-medium truncate">{t.type === 'adjustment' ? (profile?.full_name ?? TYPE_LABELS.adjustment) : (t.description || TYPE_LABELS[t.type] || t.type)}</p>
                 <p className="text-xs text-white/40">{formatDateTime(t.created_at)}</p>
               </div>
               <div className="text-right shrink-0">

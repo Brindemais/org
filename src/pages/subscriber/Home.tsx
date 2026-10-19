@@ -299,7 +299,7 @@ export default function SubscriberHome() {
                   {t.direction === 'in' ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{t.description || TX_LABELS[t.type] || t.type}</p>
+                  <p className="text-sm font-medium truncate">{t.type === 'adjustment' ? (profile?.full_name ?? TX_LABELS.adjustment) : (t.description || TX_LABELS[t.type] || t.type)}</p>
                   <p className="text-xs text-white/40">{formatDateTime(t.created_at)}</p>
                 </div>
                 <p className={`text-sm font-semibold shrink-0 ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
