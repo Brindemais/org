@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { PackageCheck, ScanLine, ShoppingBag, Wallet, Gift } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, History, PackageCheck, ScanLine, ShoppingBag, Wallet, Gift } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useWallet } from '../../hooks/useWallet'
 import { supabase } from '../../lib/supabase'
@@ -7,6 +7,22 @@ import { formatBRL, formatDateTime } from '../../lib/format'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { QrScannerModal } from '../../components/ui/QrScannerModal'
+
+// Mesmos tipos de wallet_transactions do extrato do assinante
+// (src/pages/subscriber/Wallet.tsx), só que com rótulo no contexto do
+// parceiro — 'purchase' aqui é venda de produto recebida, não compra.
+const TYPE_LABELS: Record<string, string> = {
+  purchase: 'Venda de produto',
+  bonus_subscription: 'Bonificação de indicação de assinante',
+  bonus_partner_fee: 'Bonificação de indicação de parceiro',
+  bonus_consumption: 'Bonificação de produtos',
+  cashback: 'Cashback',
+  withdrawal: 'Saque',
+  adjustment: 'Ajuste administrativo',
+  reversal: 'Estorno',
+}
+
+const EXTRATO_PREVIEW_COUNT = 8
 
 interface OrderRow {
   order_id: string; status: string; code: string; quantity: number; unit_price: number
@@ -20,8 +36,9 @@ interface OrderRow {
 // o código/QR pra finalizar a entrega.
 export default function PartnerProductOrders() {
   const { partner, profile, refreshProfile } = useAuth()
-  const { balance, reload: reloadWallet } = useWallet()
+  const { balance, transactions, loading: walletLoading, reload: reloadWallet } = useWallet()
   const [bonusAvailable, setBonusAvailable] = useState(0)
+  const [showAllExtrato, setShowAllExtrato] = useState(false)
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [loading, setLoading] = useState(true)
   const [codeInput, setCodeInput] = useState<Record<string, string>>({})
@@ -173,6 +190,37 @@ export default function PartnerProductOrders() {
         </form>
         {withdrawError && <p className="text-xs text-red-400">{withdrawError}</p>}
         {withdrawDone && <p className="text-xs text-emerald-400">Saque solicitado! Fica em análise até ser aprovado e pago.</p>}
+      </section>
+
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-semibold flex items-center gap-1.5"><History size={16} className="text-gold-400" /> Extrato</p>
+          {transactions.length > EXTRATO_PREVIEW_COUNT && (
+            <button onClick={() => setShowAllExtrato(!showAllExtrato)} className="text-xs text-gold-400 font-medium">
+              {showAllExtrato ? 'Ver menos' : 'Ver todos'}
+            </button>
+          )}
+        </div>
+        {walletLoading && <LoadingState dark label="Carregando extrato..." />}
+        <div className="space-y-2">
+          {(showAllExtrato ? transactions : transactions.slice(0, EXTRATO_PREVIEW_COUNT)).map((t) => (
+            <div key={t.id} className="card !py-3 flex items-center gap-3">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${t.direction === 'in' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
+                {t.direction === 'in' ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{t.description || TYPE_LABELS[t.type] || t.type}</p>
+                <p className="text-xs text-white/40">{formatDateTime(t.created_at)}</p>
+              </div>
+              <p className={`text-sm font-semibold shrink-0 ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
+                {t.direction === 'in' ? '+' : '-'} {formatBRL(t.amount)}
+              </p>
+            </div>
+          ))}
+          {!walletLoading && !transactions.length && (
+            <EmptyState dark icon={History} title="Nenhuma movimentação ainda" description="Vendas de produtos e bonificações aparecem aqui." className="py-8" />
+          )}
+        </div>
       </section>
 
       <section>

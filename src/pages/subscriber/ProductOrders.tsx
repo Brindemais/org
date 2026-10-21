@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { Check, ChevronLeft, Percent, ShoppingBag } from 'lucide-react'
+import { Check, ChevronLeft, Copy, Percent, ShoppingBag } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatBRL, formatDate } from '../../lib/format'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -40,6 +40,13 @@ function stepIndex(status: string) {
 export default function SubscriberProductOrders() {
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  function copyCode(o: OrderRow) {
+    navigator.clipboard.writeText(o.code)
+    setCopiedId(o.order_id)
+    setTimeout(() => setCopiedId(null), 1500)
+  }
 
   function load() {
     setLoading(true)
@@ -110,11 +117,14 @@ export default function SubscriberProductOrders() {
                   <div className="bg-white p-2 rounded-lg shrink-0">
                     <QRCodeSVG value={o.code} size={64} />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-[11px] text-white/40">Código de retirada</p>
                     <p className="font-display text-lg font-bold tracking-wider text-gold-400">{o.code}</p>
                     {o.deadline && <p className="text-[11px] text-white/30 mt-0.5">Retire até {formatDate(o.deadline)}</p>}
                   </div>
+                  <button onClick={() => copyCode(o)} className="btn-dark !px-3 !py-2 text-xs gap-1.5 shrink-0" aria-label="Copiar código">
+                    <Copy size={13} /> {copiedId === o.order_id ? 'Copiado!' : 'Copiar'}
+                  </button>
                 </div>
               )}
               {o.status === 'ready' && (
