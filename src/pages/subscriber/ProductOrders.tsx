@@ -1,16 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { Check, ChevronLeft, Copy, Percent, ShoppingBag } from 'lucide-react'
+import { Check, ChevronLeft, Copy, Percent, Search, ShoppingBag } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import { formatBRL, formatDate } from '../../lib/format'
+import { formatBRL, formatDate, formatDateTime } from '../../lib/format'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 
 interface OrderRow {
   order_id: string; status: string; code: string; quantity: number; unit_price: number
   total_amount: number; promotion_title: string; promotion_image_url: string | null
-  partner_id: string; partner_trade_name: string; deadline: string | null; created_at: string
+  partner_id: string; partner_trade_name: string; deadline: string | null
+  accepted_at: string | null; confirmed_at: string | null; created_at: string
 }
 
 const STATUS_LABEL: Record<string, { label: string; className: string }> = {
@@ -41,6 +42,8 @@ export default function SubscriberProductOrders() {
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [loading, setLoading] = useState(true)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [dateFilter, setDateFilter] = useState('')
 
   function copyCode(o: OrderRow) {
     navigator.clipboard.writeText(o.code)
@@ -62,18 +65,40 @@ export default function SubscriberProductOrders() {
     return () => clearInterval(t)
   }, [])
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return orders.filter((o) => {
+      const matchesSearch = !q || o.promotion_title.toLowerCase().includes(q) || o.partner_trade_name.toLowerCase().includes(q)
+      const matchesDate = !dateFilter || o.created_at.slice(0, 10) === dateFilter
+      return matchesSearch && matchesDate
+    })
+  }, [orders, search, dateFilter])
+
   return (
     <div className="space-y-4">
       <Link to="/app/produtos" className="text-xs text-white/40 flex items-center gap-1 w-fit"><ChevronLeft size={14} /> Produtos e descontos</Link>
       <h1 className="font-display text-xl font-semibold">Minhas compras</h1>
 
+      {orders.length > 3 && (
+        <div className="flex flex-wrap gap-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+            <input className="input !pl-9" placeholder="Buscar por produto ou parceiro..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+          <input className="input !w-auto" type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
+        </div>
+      )}
+
       {loading && <LoadingState dark label="Carregando compras..." />}
       {!loading && !orders.length && (
         <EmptyState dark icon={ShoppingBag} title="Nenhuma compra ainda" description="Compre produtos com desconto direto na vitrine de um parceiro." />
       )}
+      {!loading && !!orders.length && !filtered.length && (
+        <EmptyState dark icon={ShoppingBag} title="Nenhuma compra encontrada" description="Tente outra busca ou outra data." />
+      )}
 
       <div className="space-y-3">
-        {orders.map((o) => {
+        {filtered.map((o) => {
           const status = STATUS_LABEL[o.status] ?? { label: o.status, className: 'bg-white/10 text-white/50' }
           const idx = stepIndex(o.status)
           return (
@@ -85,7 +110,7 @@ export default function SubscriberProductOrders() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{o.promotion_title}{o.quantity > 1 && ` ×${o.quantity}`}</p>
                   <p className="text-xs text-white/40 truncate">{o.partner_trade_name} · {formatBRL(o.total_amount)}</p>
-                  <p className="text-[11px] text-white/30 mt-0.5">{formatDate(o.created_at)}</p>
+                  <p className="text-[11px] text-white/30 mt-0.5">Pedido em {formatDateTime(o.created_at)}</p>
                 </div>
                 <span className={`pill shrink-0 ${status.className}`}>{status.label}</span>
               </div>
@@ -130,6 +155,11 @@ export default function SubscriberProductOrders() {
               {o.status === 'ready' && (
                 <div className="border-t border-ink-800 p-4">
                   <p className="text-xs text-white/40">Aguardando o parceiro confirmar que recebeu seu pedido.</p>
+                </div>
+              )}
+              {o.status === 'delivered' && o.confirmed_at && (
+                <div className="border-t border-ink-800 p-4">
+                  <p className="text-xs text-white/40">Finalizado em {formatDateTime(o.confirmed_at)}</p>
                 </div>
               )}
             </div>
