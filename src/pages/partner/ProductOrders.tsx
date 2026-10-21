@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { ArrowDownLeft, ArrowUpRight, History, PackageCheck, ScanLine, ShoppingBag, Wallet, Gift } from 'lucide-react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { ArrowDownLeft, ArrowUpRight, History, PackageCheck, ScanLine, Search, ShoppingBag, Wallet, Gift } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useWallet } from '../../hooks/useWallet'
 import { supabase } from '../../lib/supabase'
@@ -45,6 +45,8 @@ export default function PartnerProductOrders() {
   const [busy, setBusy] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [scanningFor, setScanningFor] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [dateFilter, setDateFilter] = useState('')
 
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [withdrawPixKey, setWithdrawPixKey] = useState(profile?.pix_key ?? '')
@@ -134,9 +136,18 @@ export default function PartnerProductOrders() {
     load()
   }
 
-  const incoming = orders.filter((o) => o.status === 'ready')
-  const awaitingPickup = orders.filter((o) => o.status === 'accepted')
-  const history = orders.filter((o) => o.status !== 'ready' && o.status !== 'accepted')
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return orders.filter((o) => {
+      const matchesSearch = !q || o.subscriber_name.toLowerCase().includes(q) || o.promotion_title.toLowerCase().includes(q)
+      const matchesDate = !dateFilter || o.created_at.slice(0, 10) === dateFilter
+      return matchesSearch && matchesDate
+    })
+  }, [orders, search, dateFilter])
+
+  const incoming = filtered.filter((o) => o.status === 'ready')
+  const awaitingPickup = filtered.filter((o) => o.status === 'accepted')
+  const history = filtered.filter((o) => o.status !== 'ready' && o.status !== 'accepted')
 
   if (loading) return <LoadingState dark label="Carregando pedidos..." />
 
@@ -223,6 +234,14 @@ export default function PartnerProductOrders() {
         </div>
       </section>
 
+      <div className="flex flex-wrap gap-2">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+          <input className="input !pl-9" placeholder="Buscar por assinante ou produto..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <input className="input !w-auto" type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
+      </div>
+
       <section>
         <p className="font-semibold mb-3">Novos pedidos ({incoming.length})</p>
         {!incoming.length && <EmptyState dark icon={ShoppingBag} title="Nenhum pedido novo" className="py-8" />}
@@ -249,8 +268,8 @@ export default function PartnerProductOrders() {
       </section>
 
       <section>
-        <p className="font-semibold mb-3">Aguardando retirada ({awaitingPickup.length})</p>
-        {!awaitingPickup.length && <EmptyState dark icon={PackageCheck} title="Nenhum pedido aguardando retirada" className="py-8" />}
+        <p className="font-semibold mb-3">Pedidos em andamento ({awaitingPickup.length})</p>
+        {!awaitingPickup.length && <EmptyState dark icon={PackageCheck} title="Nenhum pedido em andamento" className="py-8" />}
         <div className="space-y-3">
           {awaitingPickup.map((o) => (
             <div key={o.order_id} className="card space-y-3">
@@ -283,14 +302,14 @@ export default function PartnerProductOrders() {
       </section>
 
       <section>
-        <p className="font-semibold mb-3">Histórico</p>
+        <p className="font-semibold mb-3">Pedidos finalizados</p>
         {!history.length && <EmptyState dark icon={ShoppingBag} title="Nenhuma venda concluída ainda" className="py-8" />}
         <div className="card !p-0 overflow-x-auto">
           {!!history.length && (
-            <table className="w-full text-sm min-w-[640px]">
+            <table className="w-full text-sm min-w-[800px]">
               <thead>
                 <tr className="text-left text-white/40 text-xs uppercase">
-                  <th className="p-3">Assinante</th><th className="p-3">Produto</th><th className="p-3">Valor</th><th className="p-3">Líquido</th><th className="p-3">Status</th><th className="p-3">Data</th>
+                  <th className="p-3">Assinante</th><th className="p-3">Produto</th><th className="p-3">Valor</th><th className="p-3">Líquido</th><th className="p-3">Status</th><th className="p-3">Pedido em</th><th className="p-3">Finalizado em</th>
                 </tr>
               </thead>
               <tbody>
@@ -301,7 +320,8 @@ export default function PartnerProductOrders() {
                     <td className="p-3">{formatBRL(o.total_amount)}</td>
                     <td className="p-3 text-emerald-400">{formatBRL(o.net_amount)}</td>
                     <td className="p-3 text-white/50">{o.status === 'delivered' ? 'Concluído' : o.status === 'cancelled' ? 'Cancelado' : o.status}</td>
-                    <td className="p-3 text-white/40">{formatDateTime(o.confirmed_at ?? o.created_at)}</td>
+                    <td className="p-3 text-white/40">{formatDateTime(o.created_at)}</td>
+                    <td className="p-3 text-white/40">{o.confirmed_at ? formatDateTime(o.confirmed_at) : '—'}</td>
                   </tr>
                 ))}
               </tbody>

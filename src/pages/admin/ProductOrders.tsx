@@ -14,14 +14,15 @@ interface OrderRow {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  pending_payment: 'Aguardando pagamento', ready: 'Pedido realizado', accepted: 'Aguardando retirada',
-  delivered: 'Concluído', cancelled: 'Cancelado', expired: 'Expirado',
+  pending_payment: 'Aguardando pagamento', ready: 'Pedido realizado', accepted: 'Em andamento',
+  delivered: 'Finalizado', cancelled: 'Cancelado', expired: 'Expirado',
 }
 
 export default function AdminProductOrders() {
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [dateFilter, setDateFilter] = useState('')
 
   useEffect(() => {
     setLoading(true)
@@ -33,9 +34,12 @@ export default function AdminProductOrders() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return orders
-    return orders.filter((o) => o.partner_trade_name.toLowerCase().includes(q) || o.subscriber_name.toLowerCase().includes(q) || o.promotion_title.toLowerCase().includes(q))
-  }, [orders, search])
+    return orders.filter((o) => {
+      const matchesSearch = !q || o.partner_trade_name.toLowerCase().includes(q) || o.subscriber_name.toLowerCase().includes(q) || o.promotion_title.toLowerCase().includes(q)
+      const matchesDate = !dateFilter || o.created_at.slice(0, 10) === dateFilter
+      return matchesSearch && matchesDate
+    })
+  }, [orders, search, dateFilter])
 
   const byPartner = useMemo(() => {
     const map = new Map<string, { partner: string; rows: OrderRow[] }>()
@@ -62,7 +66,7 @@ export default function AdminProductOrders() {
         parceiro: o.partner_trade_name, assinante: o.subscriber_name, produto: o.promotion_title,
         quantidade: o.quantity, valor_total: Number(o.total_amount).toFixed(2),
         comissao: Number(o.commission_amount).toFixed(2), liquido: Number(o.net_amount).toFixed(2),
-        status: STATUS_LABEL[o.status] ?? o.status, criado_em: o.created_at,
+        status: STATUS_LABEL[o.status] ?? o.status, pedido_em: o.created_at, finalizado_em: o.confirmed_at ?? '',
       })),
     )
   }
@@ -76,8 +80,9 @@ export default function AdminProductOrders() {
             {totals.count} venda{totals.count === 1 ? '' : 's'} concluída{totals.count === 1 ? '' : 's'} · {formatBRL(totals.gross)} em vendas · {formatBRL(totals.commission)} de comissão
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <input className="input !w-64" placeholder="Buscar por parceiro, assinante ou produto..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="input !w-auto" type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
           <button onClick={exportCSV} className="btn-dark !px-3 !py-2 text-xs gap-1.5 shrink-0"><Download size={14} /> Exportar CSV</button>
         </div>
       </div>
@@ -93,10 +98,10 @@ export default function AdminProductOrders() {
               <p className="text-xs text-white/40">{rows.length} pedido{rows.length === 1 ? '' : 's'}</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[720px]">
+              <table className="w-full text-sm min-w-[880px]">
                 <thead>
                   <tr className="text-left text-white/40 text-xs uppercase">
-                    <th className="p-3">Assinante</th><th className="p-3">Produto</th><th className="p-3">Valor</th><th className="p-3">Comissão</th><th className="p-3">Líquido</th><th className="p-3">Status</th><th className="p-3">Data</th>
+                    <th className="p-3">Assinante</th><th className="p-3">Produto</th><th className="p-3">Valor</th><th className="p-3">Comissão</th><th className="p-3">Líquido</th><th className="p-3">Status</th><th className="p-3">Pedido em</th><th className="p-3">Finalizado em</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -109,6 +114,7 @@ export default function AdminProductOrders() {
                       <td className="p-3 text-emerald-400">{formatBRL(o.net_amount)}</td>
                       <td className="p-3 text-white/50">{STATUS_LABEL[o.status] ?? o.status}</td>
                       <td className="p-3 text-white/40">{formatDateTime(o.created_at)}</td>
+                      <td className="p-3 text-white/40">{o.confirmed_at ? formatDateTime(o.confirmed_at) : '—'}</td>
                     </tr>
                   ))}
                 </tbody>
