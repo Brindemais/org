@@ -138,7 +138,7 @@ export default function PartnerPickups() {
                       className="input !py-2 !text-sm font-mono tracking-wider flex-1"
                       placeholder="BM24560"
                       value={codeInput[p.pickup_id] ?? ''}
-                      onChange={(e) => setCodeInput({ ...codeInput, [p.pickup_id]: e.target.value })}
+                      onChange={(e) => setCodeInput({ ...codeInput, [p.pickup_id]: e.target.value.toUpperCase() })}
                     />
                     <button
                       type="button"
@@ -228,7 +228,7 @@ export default function PartnerPickups() {
         open={!!scanningFor}
         onClose={() => setScanningFor(null)}
         onScan={(text) => {
-          if (scanningFor) setCodeInput((c) => ({ ...c, [scanningFor]: text }))
+          if (scanningFor) setCodeInput((c) => ({ ...c, [scanningFor]: text.toUpperCase() }))
         }}
       />
     </div>
