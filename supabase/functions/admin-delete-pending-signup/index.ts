@@ -48,8 +48,15 @@ Deno.serve(async (req) => {
     const { data: existingProfile } = await admin.from('profiles').select('id').eq('id', user_id).maybeSingle()
     if (existingProfile) return json({ error: 'HAS_PROFILE_NOT_PENDING' }, 400)
 
+    const { data: pendingUser } = await admin.auth.admin.getUserById(user_id)
+
     const { error: deleteError } = await admin.auth.admin.deleteUser(user_id)
     if (deleteError) return json({ error: 'DELETE_FAILED', detail: deleteError.message }, 500)
+
+    await admin.from('audit_logs').insert({
+      actor_id: callerAuth.user.id, action: 'delete_pending_signup', entity: 'auth.users', entity_id: user_id,
+      before: { email: pendingUser?.user?.email ?? null },
+    })
 
     return json({ ok: true })
   } catch (e) {

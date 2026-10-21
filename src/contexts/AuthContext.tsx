@@ -91,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (event === 'SIGNED_IN') {
           setLoading(true)
           loadProfile(newSession.user.id).finally(() => setLoading(false))
+          supabase.rpc('log_login_event').then(() => {}, () => {})
         } else {
           loadProfile(newSession.user.id)
         }
