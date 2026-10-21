@@ -118,12 +118,19 @@ export default function AdminSubscribers() {
     (r.cpf ?? '').includes(search.replace(/\D/g, '')),
   )
 
+  // Cadastro travado (código de confirmação nunca chegou/foi digitado)
+  // antes só aparecia numa caixa recolhida separada — se o suporte
+  // precisasse achar essa pessoa pelo nome ou e-mail que ela informou,
+  // não tinha como, já que a busca de cima só olhava `rows`. Entra na
+  // mesma lista pesquisável, com aviso de que o cadastro está pendente.
+  const filteredPending = pending.filter((p) => p.email.toLowerCase().includes(search.toLowerCase()))
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold">Assinantes</h1>
-          <p className="text-white/50 text-sm">{rows.length} cadastrados</p>
+          <p className="text-white/50 text-sm">{rows.length} cadastrados{pending.length > 0 && ` · ${pending.length} pendente${pending.length === 1 ? '' : 's'} de confirmação`}</p>
         </div>
         <div className="flex gap-2">
           <input className="input !w-64" placeholder="Buscar por nome, usuário ou CPF..." value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -132,28 +139,9 @@ export default function AdminSubscribers() {
       </div>
 
       {pending.length > 0 && (
-        <details className="card border-amber-500/30 bg-amber-500/5">
-          <summary className="font-semibold cursor-pointer flex items-center gap-2 text-amber-400">
-            <AlertTriangle size={16} /> {pending.length} cadastro{pending.length === 1 ? '' : 's'} pendente{pending.length === 1 ? '' : 's'} (código de confirmação nunca foi digitado)
-          </summary>
-          <div className="mt-3 divide-y divide-ink-800">
-            {pending.map((p) => (
-              <div key={p.id} className="py-2.5 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm">{p.email}</p>
-                  <p className="text-xs text-white/40">cadastrado em {formatDateTime(p.created_at)}</p>
-                </div>
-                <button
-                  onClick={() => deletePending(p)}
-                  disabled={deletingPendingId === p.id}
-                  className="btn-ghost !py-1.5 !px-3 text-xs !border-red-500/40 text-red-400 shrink-0"
-                >
-                  {deletingPendingId === p.id ? 'Removendo...' : 'Remover e liberar e-mail'}
-                </button>
-              </div>
-            ))}
-          </div>
-        </details>
+        <p className="text-xs text-amber-400 flex items-center gap-1.5">
+          <AlertTriangle size={13} /> {pending.length} cadastro{pending.length === 1 ? '' : 's'} com código de confirmação por e-mail pendente — aparece{pending.length === 1 ? '' : 'm'} na lista abaixo.
+        </p>
       )}
 
       <div className="card overflow-x-auto">
@@ -164,6 +152,29 @@ export default function AdminSubscribers() {
             </tr>
           </thead>
           <tbody>
+            {filteredPending.map((p) => (
+              <tr key={p.id} className="border-t border-ink-800 bg-amber-500/5">
+                <td className="py-3 text-white/40 italic">Nome ainda não informado</td>
+                <td className="py-3 text-white/30">-</td>
+                <td className="py-3 text-white/30">-</td>
+                <td className="py-3 text-white/50">{p.email}</td>
+                <td className="py-3">
+                  <span className="pill bg-amber-500/15 text-amber-400">Pendente · código por e-mail</span>
+                </td>
+                <td className="py-3 text-white/30">-</td>
+                <td className="py-3 text-white/50">{formatDateTime(p.created_at)}</td>
+                <td className="py-3 text-white/30">-</td>
+                <td className="py-3">
+                  <button
+                    onClick={() => deletePending(p)}
+                    disabled={deletingPendingId === p.id}
+                    className="btn-ghost !py-1.5 !px-3 text-xs !border-red-500/40 text-red-400"
+                  >
+                    {deletingPendingId === p.id ? 'Removendo...' : 'Remover e liberar e-mail'}
+                  </button>
+                </td>
+              </tr>
+            ))}
             {filtered.map((r) => (
               <tr key={r.id} className="border-t border-ink-800">
                 <td className="py-3">{r.full_name}</td>
@@ -217,7 +228,7 @@ export default function AdminSubscribers() {
               </tr>
             ))}
             {loading && <tr><td colSpan={9}><LoadingState dark label="Carregando assinantes..." className="py-8" /></td></tr>}
-            {!loading && !filtered.length && <tr><td colSpan={9}><EmptyState dark icon={Users} title="Nenhum assinante encontrado" className="py-8" /></td></tr>}
+            {!loading && !filtered.length && !filteredPending.length && <tr><td colSpan={9}><EmptyState dark icon={Users} title="Nenhum assinante encontrado" className="py-8" /></td></tr>}
           </tbody>
         </table>
       </div>
