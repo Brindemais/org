@@ -184,7 +184,22 @@ export default function PartnerSignup() {
       return
     }
 
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+    // Mesmo motivo do cadastro de assinante: salva os dados principais
+    // como metadata do auth.users já na criação da conta, não só depois
+    // do código confirmado — sem isso, quem nunca digitava o código
+    // ficava sem nada salvo em lugar nenhum pro suporte localizar.
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email, password,
+      options: {
+        data: {
+          trade_name: tradeName,
+          company_name: companyName,
+          cnpj_cpf: cnpjCpf.replace(/\D/g, ''),
+          responsible_name: responsibleName,
+          phone: phone.replace(/\D/g, ''),
+        },
+      },
+    })
     if (signUpError || !data.user) {
       setLoading(false)
       setError(signUpError?.message.includes('already registered') ? 'Este e-mail já está cadastrado.' : 'Não foi possível concluir o cadastro.')

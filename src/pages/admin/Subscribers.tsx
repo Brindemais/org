@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Download, Users, AlertTriangle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import { formatBRL, formatDate, formatDateTime, maskCPF } from '../../lib/format'
+import { formatBRL, formatDate, formatDateTime, maskCPF, maskCpfCnpj } from '../../lib/format'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
@@ -13,7 +13,7 @@ const EDIT_ERROR_LABELS: Record<string, string> = {
 }
 
 interface Row { id: string; full_name: string; cpf: string | null; email: string | null; username: string | null; created_at: string; sub_status: string | null; sub_expires_at: string | null; balance: number; active: boolean }
-interface PendingRow { id: string; email: string; created_at: string }
+interface PendingRow { id: string; email: string; full_name: string | null; document: string | null; phone: string | null; created_at: string }
 
 export default function AdminSubscribers() {
   const [rows, setRows] = useState<Row[]>([])
@@ -123,7 +123,10 @@ export default function AdminSubscribers() {
   // precisasse achar essa pessoa pelo nome ou e-mail que ela informou,
   // não tinha como, já que a busca de cima só olhava `rows`. Entra na
   // mesma lista pesquisável, com aviso de que o cadastro está pendente.
-  const filteredPending = pending.filter((p) => p.email.toLowerCase().includes(search.toLowerCase()))
+  const filteredPending = pending.filter((p) => {
+    const q = search.toLowerCase()
+    return p.email.toLowerCase().includes(q) || (p.full_name ?? '').toLowerCase().includes(q) || (p.document ?? '').includes(search.replace(/\D/g, ''))
+  })
 
   return (
     <div className="space-y-6">
@@ -154,10 +157,10 @@ export default function AdminSubscribers() {
           <tbody>
             {filteredPending.map((p) => (
               <tr key={p.id} className="border-t border-ink-800 bg-amber-500/5">
-                <td className="py-3 text-white/40 italic">Nome ainda não informado</td>
+                <td className="py-3">{p.full_name || <span className="text-white/40 italic">Nome ainda não informado</span>}</td>
                 <td className="py-3 text-white/30">-</td>
-                <td className="py-3 text-white/30">-</td>
-                <td className="py-3 text-white/50">{p.email}</td>
+                <td className="py-3 text-white/50">{p.document ? maskCpfCnpj(p.document) : '-'}</td>
+                <td className="py-3 text-white/50">{p.email}{p.phone && <span className="block text-[11px] text-white/30">{p.phone}</span>}</td>
                 <td className="py-3">
                   <span className="pill bg-amber-500/15 text-amber-400">Pendente · código por e-mail</span>
                 </td>

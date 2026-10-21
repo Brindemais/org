@@ -140,7 +140,24 @@ export default function Signup() {
       return
     }
 
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+    // Salva nome/CPF/telefone como metadata do auth.users já na criação da
+    // conta, não só depois do código confirmado — sem isso, quem nunca
+    // digitava o código (ex.: e-mail que não chegava) ficava sem nenhuma
+    // dessas informações salvas em lugar nenhum, só na memória do
+    // navegador, e o suporte não tinha como saber quem era essa pessoa.
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email, password,
+      options: {
+        data: {
+          full_name: fullName,
+          cpf: cpf.replace(/\D/g, ''),
+          phone: phone.replace(/\D/g, ''),
+          birth_date: birthDate,
+          referral_code: referralCode,
+          my_referral_code: myReferralCode,
+        },
+      },
+    })
     if (signUpError || !data.user) {
       setLoading(false)
       setError(signUpError?.message.includes('already registered') ? 'Este e-mail já está cadastrado.' : 'Não foi possível concluir o cadastro.')
