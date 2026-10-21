@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Check, Copy, CreditCard, KeyRound, QrCode, ShieldCheck, User, Wallet } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
@@ -75,6 +75,7 @@ export default function Signup() {
   const [plan, setPlan] = useState<SubscriptionPlan>('monthly')
   const [pixCode, setPixCode] = useState('')
   const [pixQrCode, setPixQrCode] = useState('')
+  const [pixPaymentId, setPixPaymentId] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
   // Cartão só existe pro plano anual — o mensal é Pix obrigatório, sem
@@ -219,8 +220,22 @@ export default function Signup() {
     }
     setPixCode(charge.pix_code)
     setPixQrCode(charge.pix_qr_code ?? '')
+    setPixPaymentId(payment.id)
     setStep(4)
   }
+
+  // Confirmação do Pix chega sozinha via webhook da Asaas, mas nada aqui
+  // reconsultava o pagamento — a pessoa ficava presa na tela de QR Code
+  // mesmo já pago, até clicar em "Ir para o painel" na mão. Consulta o
+  // status a cada poucos segundos e já leva pro app assim que confirmar.
+  useEffect(() => {
+    if (step !== 4 || !pixPaymentId) return
+    const t = setInterval(async () => {
+      const { data } = await supabase.from('payments').select('status').eq('id', pixPaymentId).maybeSingle()
+      if (data?.status === 'confirmed') navigate('/app')
+    }, 4000)
+    return () => clearInterval(t)
+  }, [step, pixPaymentId, navigate])
 
   async function handleCardPayment(e: FormEvent) {
     e.preventDefault()
@@ -458,6 +473,10 @@ export default function Signup() {
                 </button>
               </form>
             )}
+
+            <button type="button" onClick={() => navigate('/app')} className="text-xs text-black/40 w-full text-center">
+              Pagar depois — entrar no painel por enquanto
+            </button>
           </div>
         )}
 

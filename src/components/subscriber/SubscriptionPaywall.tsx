@@ -125,6 +125,18 @@ export function SubscriptionPaywall() {
     setChecking(false)
   }
 
+  // refreshProfile() só roda no login/refresh de token — sem isso, a
+  // pessoa pagava o Pix e ficava presa aqui até clicar em "Já paguei" na
+  // mão, mesmo o webhook da Asaas já tendo confirmado o pagamento no
+  // banco segundos antes. Reconsulta sozinho enquanto estiver esperando;
+  // assim que confirmar, este componente para de ser renderizado (o
+  // gate em SubscriberShell libera o dashboard de verdade).
+  useEffect(() => {
+    if (!pending) return
+    const t = setInterval(() => { refreshProfile() }, 5000)
+    return () => clearInterval(t)
+  }, [pending, refreshProfile])
+
   return (
     <div className="min-h-dvh bg-white px-5 py-10 flex items-center justify-center">
       <div className="w-full max-w-sm">
