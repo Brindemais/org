@@ -63,6 +63,13 @@ Deno.serve(async (req) => {
     if (Object.keys(updates).length) {
       const { error: updateError } = await admin.from('profiles').update(updates).eq('id', profile_id)
       if (updateError) return json({ error: 'UPDATE_FAILED', detail: updateError.message })
+
+      const before: Record<string, unknown> = {}
+      for (const key of Object.keys(updates)) before[key] = (target as Record<string, unknown>)[key]
+      await admin.from('audit_logs').insert({
+        actor_id: callerAuth.user.id, action: 'update_profile', entity: 'profiles', entity_id: profile_id,
+        before, after: updates,
+      })
     }
 
     return json({ ok: true, updated: updates })

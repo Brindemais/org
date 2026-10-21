@@ -184,6 +184,11 @@ Deno.serve(async (req) => {
     }
     if (linkErr) return json({ error: 'LINK_FAILED', detail: linkErr.message })
 
+    await admin.from('audit_logs').insert({
+      actor_id: callerAuth.user.id, action: 'invite_partner', entity: 'partners', entity_id: partner_id,
+      after: { email: partner.email, full_name: displayName, already_had_account: alreadyHadAccount },
+    })
+
     return json({ ok: true, already_had_account: alreadyHadAccount })
   } catch (e) {
     return json({ error: 'UNEXPECTED', detail: String(e) }, 500)

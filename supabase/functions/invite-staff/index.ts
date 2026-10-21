@@ -129,6 +129,10 @@ Deno.serve(async (req) => {
         p_user_id: existing.id, p_email: email, p_full_name: full_name, p_role: role,
       })
       if (linkErr) return json({ error: 'LINK_FAILED', detail: linkErr.message })
+      await admin.from('audit_logs').insert({
+        actor_id: callerAuth.user.id, action: 'invite_staff', entity: 'profiles', entity_id: existing.id,
+        after: { email, full_name, role, already_had_account: true },
+      })
       return json({ ok: true, already_had_account: true })
     }
 
@@ -148,6 +152,11 @@ Deno.serve(async (req) => {
       }))
     }
     if (linkErr) return json({ error: 'LINK_FAILED', detail: linkErr.message })
+
+    await admin.from('audit_logs').insert({
+      actor_id: callerAuth.user.id, action: 'invite_staff', entity: 'profiles', entity_id: generated.user.id,
+      after: { email, full_name, role, already_had_account: false },
+    })
 
     return json({ ok: true, already_had_account: false })
   } catch (e) {

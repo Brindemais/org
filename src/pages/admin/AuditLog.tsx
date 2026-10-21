@@ -22,6 +22,12 @@ const ACTION_LABELS: Record<string, string> = {
   set_partner_status: 'Alterou status do parceiro',
   set_promotion_status: 'Alterou status da promoção',
   set_subscriber_active: 'Suspendeu/reativou assinante',
+  update_profile: 'Editou perfil',
+  invite_partner: 'Convidou parceiro',
+  invite_staff: 'Convidou equipe/admin',
+  delete_pending_signup: 'Removeu cadastro pendente',
+  set_partner_commission: 'Alterou comissão do parceiro',
+  login: 'Login',
 }
 
 function summarize(row: Pick<LogRow, 'before' | 'after'>) {
@@ -39,7 +45,7 @@ export default function AdminAuditLog() {
   const [actionFilter, setActionFilter] = useState('')
 
   useEffect(() => {
-    supabase.from('audit_logs').select('*, actor:actor_id(full_name)').order('created_at', { ascending: false }).limit(300)
+    supabase.from('audit_logs').select('*, actor:actor_id(full_name)').order('created_at', { ascending: false }).limit(1000)
       .then(({ data }) => { setLogs((data as LogRow[]) ?? []); setLoading(false) })
   }, [])
 
@@ -48,7 +54,10 @@ export default function AdminAuditLog() {
   const filtered = useMemo(() => logs.filter((l) => {
     const q = search.trim().toLowerCase()
     const matchesSearch = !q || l.actor?.full_name?.toLowerCase().includes(q) || l.entity.toLowerCase().includes(q) || l.entity_id.toLowerCase().includes(q)
-    const matchesAction = !actionFilter || l.action === actionFilter
+    // Login é alto volume (toda entrada em qualquer painel gera uma linha)
+    // — sem esse filtro, login lota os 300 mais recentes e esconde as
+    // ações administrativas de verdade. Só aparece se escolhido explicitamente.
+    const matchesAction = actionFilter ? l.action === actionFilter : l.action !== 'login'
     return matchesSearch && matchesAction
   }), [logs, search, actionFilter])
 
@@ -56,7 +65,7 @@ export default function AdminAuditLog() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold">Auditoria</h1>
-        <p className="text-white/50 text-sm">Registro de ações administrativas sensíveis: pagamentos, saques, status de parceiros/promoções/assinantes.</p>
+        <p className="text-white/50 text-sm">Registro de ações administrativas sensíveis: pagamentos, saques, status, edição de perfil, convites e comissão. Login fica escondido por padrão — filtre por "Login" pra ver.</p>
       </div>
 
       <div className="flex flex-wrap gap-2">
