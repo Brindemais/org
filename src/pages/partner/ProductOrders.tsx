@@ -170,10 +170,14 @@ export default function PartnerProductOrders() {
       <section className="card space-y-4">
         <p className="font-semibold flex items-center gap-1.5"><Gift size={16} className="text-gold-400" /> Saldo e saque</p>
         <p className="text-xs text-white/40 -mt-2">Soma bônus de indicação e vendas pagas com saldo do assinante (essas últimas, 30 dias após a retirada confirmada).</p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div>
             <p className="text-xs text-white/40">Saldo total</p>
             <p className="text-xl font-bold">{formatBRL(balance)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-white/40">Pendente</p>
+            <p className="text-xl font-bold text-white/50">{formatBRL(Math.max(0, balance - bonusAvailable))}</p>
           </div>
           <div>
             <p className="text-xs text-white/40">Disponível para saque</p>
