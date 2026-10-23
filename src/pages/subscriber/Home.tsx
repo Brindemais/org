@@ -44,7 +44,7 @@ const QUICK_LINKS = [
 export default function SubscriberHome() {
   const { profile } = useAuth()
   const { subscription, pickup, loading: subLoading, benefitsBlocked } = useSubscription()
-  const { balance, transactions } = useWallet()
+  const { available, transactions } = useWallet()
   const [partners, setPartners] = useState<HomePartner[]>([])
   const [promoCounts, setPromoCounts] = useState<Record<string, number>>({})
   const [loadingClub, setLoadingClub] = useState(true)
@@ -133,7 +133,7 @@ export default function SubscriberHome() {
               {hideBalance ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
-          <p className="text-3xl font-bold text-[#ffffff]">{hideBalance ? '••••••' : formatBRL(balance)}</p>
+          <p className="text-3xl font-bold text-[#ffffff]">{hideBalance ? '••••••' : formatBRL(available)}</p>
           <Link to="/app/carteira" className="text-xs font-semibold mt-2 inline-flex items-center gap-1 text-gold-400">
             Ver carteira <ChevronRight size={13} />
           </Link>
