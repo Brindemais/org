@@ -52,7 +52,7 @@ export function SubscriberShell() {
 
 function SubscriberShellInner() {
   const { profile, hasActiveSubscription, signOut } = useAuth()
-  const { balance } = useWallet()
+  const { available } = useWallet()
   const { theme, toggleTheme } = useDashboardTheme()
   const { renewalDue, daysUntilExpiry } = useSubscription()
 
@@ -71,7 +71,7 @@ function SubscriberShellInner() {
         </div>
         <div className="px-6 py-4 bg-gold-gradient text-ink-950">
           <p className="text-[11px] font-bold uppercase tracking-wide opacity-70">Saldo disponível</p>
-          <p className="text-xl font-bold">{formatBRL(balance)}</p>
+          <p className="text-xl font-bold">{formatBRL(available)}</p>
         </div>
         <nav className="flex-1 overflow-y-auto py-3">
           {SIDEBAR_NAV.map(({ to, label, icon: Icon, end }) => (

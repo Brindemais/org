@@ -53,7 +53,7 @@ export default function SubscriberWallet() {
               {hide ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
-          <p className="text-3xl font-bold text-[#ffffff]">{hide ? '••••••' : formatBRL(balance)}</p>
+          <p className="text-3xl font-bold text-[#ffffff]">{hide ? '••••••' : formatBRL(available)}</p>
         </div>
         <div className="absolute right-4 bottom-4 opacity-95">
           <Logo size="sm" />
