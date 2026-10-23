@@ -160,22 +160,16 @@ export default function PartnerProductOrders() {
 
       <section className="card space-y-3">
         <p className="font-semibold flex items-center gap-1.5"><Wallet size={16} className="text-gold-400" /> Repasse de vendas</p>
-        {partner?.asaas_wallet_id ? (
-          <p className="text-sm text-white/60">
-            Repasse automático ativo — o valor líquido de cada venda já cai direto na sua conta Asaas, sem passar pela
-            Brinde Mais. Pra sacar, acesse sua conta Asaas diretamente.
-          </p>
-        ) : (
-          <p className="text-sm text-white/60">
-            O repasse das vendas é feito direto na sua conta Asaas (split automático), não pela Brinde Mais. Vincule e
-            aguarde a aprovação da sua subconta em "Produtos e descontos" pra poder vender produtos com preço — depois
-            disso, o dinheiro de cada venda já cai direto na sua Asaas.
-          </p>
-        )}
+        <p className="text-sm text-white/60">
+          Depende de como o assinante pagou: venda paga via <strong>Pix ou cartão</strong>
+          {partner?.asaas_wallet_id ? ' cai direto na sua conta Asaas (split automático), sem passar pela Brinde Mais.' : ' só cai direto na sua Asaas depois que você vincular e aprovar a subconta em "Produtos e descontos" — até lá, entra aqui na carteira Brinde Mais igual a venda com saldo.'}
+          {' '}Venda paga com o <strong>saldo do assinante</strong> sempre entra aqui na carteira Brinde Mais (abaixo), confirmada só depois que você bater o código de retirada do pedido — e saca pelo mesmo "Solicitar saque" do bônus de indicação, com 30 dias de espera antes de ficar disponível.
+        </p>
       </section>
 
       <section className="card space-y-4">
-        <p className="font-semibold flex items-center gap-1.5"><Gift size={16} className="text-gold-400" /> Bônus de indicação</p>
+        <p className="font-semibold flex items-center gap-1.5"><Gift size={16} className="text-gold-400" /> Saldo e saque</p>
+        <p className="text-xs text-white/40 -mt-2">Soma bônus de indicação e vendas pagas com saldo do assinante (essas últimas, 30 dias após a retirada confirmada).</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <p className="text-xs text-white/40">Saldo total</p>
