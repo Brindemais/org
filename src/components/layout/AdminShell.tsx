@@ -13,7 +13,7 @@ const NAV: DashNavItem[] = [
   { to: '/admin/estoque', label: 'Estoque', icon: Boxes },
   { to: '/admin/promocoes', label: 'Produtos e descontos', icon: Percent },
   { to: '/admin/vendas', label: 'Vendas de produtos', icon: ShoppingBag },
-  { to: '/admin/saques', label: 'Saques', icon: Landmark },
+  { to: '/admin/saques', label: 'Saques e repasses', icon: Landmark },
   { to: '/admin/suporte', label: 'Suporte', icon: LifeBuoy },
   { to: '/admin/equipe', label: 'Equipe', icon: UserCog },
   { to: '/admin/auditoria', label: 'Auditoria', icon: History },
