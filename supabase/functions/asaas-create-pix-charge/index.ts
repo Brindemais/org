@@ -117,8 +117,13 @@ Deno.serve(async (req) => {
     // parte líquida (100% - comissão) vai direto pra conta dele via
     // split, sem passar pela carteira interna.
     let splits: Array<{ walletId: string; percentualValue: number }> | undefined;
-    if (payment.type === "product_purchase" && payment.product_order_id) {
-      const { data: order } = await admin.from("product_orders").select("commission_pct, split_applied").eq("id", payment.product_order_id).maybeSingle();
+    if (payment.type === "product_purchase") {
+      // Busca por payment_id, não por payments.product_order_id: um carrinho
+      // com mais de um produto do mesmo parceiro compartilha um único
+      // payment entre vários product_orders, então product_order_id fica
+      // null nesse caso — qualquer um dos pedidos serve aqui, já que
+      // commission_pct/split_applied são iguais pra todos (mesmo parceiro).
+      const { data: order } = await admin.from("product_orders").select("commission_pct, split_applied").eq("payment_id", payment.id).limit(1).maybeSingle();
       if (order?.split_applied) {
         const { data: partner } = await admin.from("partners").select("asaas_wallet_id").eq("id", payment.partner_id).maybeSingle();
         if (partner?.asaas_wallet_id) {
