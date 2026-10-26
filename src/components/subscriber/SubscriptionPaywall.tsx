@@ -1,13 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Check, Copy, CreditCard, LogOut, QrCode, RefreshCw } from 'lucide-react'
+import { Check, Copy, CreditCard, LogOut, QrCode, RefreshCw, Wallet } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { useWallet } from '../../hooks/useWallet'
 import { formatBRL, maskCardNumber, maskCardExpiry } from '../../lib/format'
 import { PLAN_PRICES, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../../lib/plans'
 import { LogoBadge } from '../layout/Logo'
 import type { SubscriptionPlan } from '../../lib/types'
 
-type PaymentMethod = 'pix' | 'credit_card'
+type PaymentMethod = 'pix' | 'credit_card' | 'wallet'
 
 interface PendingPayment { id: string; pix_code: string | null; pix_qr_code: string | null; created_at: string; plan: SubscriptionPlan | null; amount: number }
 
@@ -19,6 +20,7 @@ interface PendingPayment { id: string; pix_code: string | null; pix_qr_code: str
 // there's no live push, so "Já paguei" just re-checks instead of assuming).
 export function SubscriptionPaywall() {
   const { user, refreshProfile, signOut } = useAuth()
+  const { available: walletAvailable, reload: reloadWallet } = useWallet()
   const [pending, setPending] = useState<PendingPayment | null>(null)
   const [plan, setPlan] = useState<SubscriptionPlan>('monthly')
   const [loading, setLoading] = useState(false)
@@ -112,6 +114,24 @@ export function SubscriptionPaywall() {
     await refreshProfile()
   }
 
+  async function payWithWallet() {
+    setError(null)
+    setLoading(true)
+    const { error: payError } = await supabase.rpc('pay_subscription_wallet', { p_plan: plan })
+    setLoading(false)
+    if (payError) {
+      const map: Record<string, string> = {
+        INSUFFICIENT_BALANCE: 'Saldo interno insuficiente para pagar esse plano. Escolha Pix ou cartão, ou aguarde seu saldo ficar disponível.',
+        ACCOUNT_SUSPENDED: 'Sua conta está suspensa. Fale com o suporte.',
+      }
+      const code = Object.keys(map).find((k) => payError.message.includes(k))
+      setError(code ? map[code] : 'Não foi possível pagar com o saldo interno. Tente novamente.')
+      return
+    }
+    reloadWallet()
+    await refreshProfile()
+  }
+
   function copyPix() {
     if (!pending?.pix_code) return
     navigator.clipboard.writeText(pending.pix_code)
@@ -178,7 +198,7 @@ export function SubscriptionPaywall() {
               <div className="grid grid-cols-1 gap-3">
                 <button
                   type="button"
-                  onClick={() => setPlan('monthly')}
+                  onClick={() => { setPlan('monthly'); if (method === 'credit_card') setMethod('pix') }}
                   className={`text-left rounded-xl p-4 border transition ${plan === 'monthly' ? 'border-gold-400 bg-gold-400/10' : 'border-black/10'}`}
                 >
                   <p className="text-xs font-bold uppercase text-black/50">Plano mensal</p>
@@ -199,15 +219,15 @@ export function SubscriptionPaywall() {
                   <li key={b} className="flex gap-2"><Check size={16} className="text-gold-500 shrink-0 mt-0.5" />{b}</li>
                 ))}
               </ul>
-              {plan === 'annual' && (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setMethod('pix')}
-                    className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'pix' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}
-                  >
-                    <QrCode size={15} /> Pix
-                  </button>
+              <div className={`grid gap-2 ${plan === 'annual' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                <button
+                  type="button"
+                  onClick={() => setMethod('pix')}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'pix' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}
+                >
+                  <QrCode size={15} /> Pix
+                </button>
+                {plan === 'annual' && (
                   <button
                     type="button"
                     onClick={() => setMethod('credit_card')}
@@ -215,15 +235,24 @@ export function SubscriptionPaywall() {
                   >
                     <CreditCard size={15} /> Cartão
                   </button>
-                </div>
-              )}
+                )}
+                <button
+                  type="button"
+                  onClick={() => setMethod('wallet')}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'wallet' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}
+                >
+                  <Wallet size={15} /> Saldo
+                </button>
+              </div>
 
-              {plan === 'monthly' || method === 'pix' ? (
+              {method === 'pix' && (
                 <>
                   {error && <p className="text-sm text-red-500">{error}</p>}
                   <button onClick={activate} disabled={loading} className="btn-gold w-full">{loading ? 'Gerando Pix...' : 'Ativar assinatura via Pix'}</button>
                 </>
-              ) : (
+              )}
+
+              {method === 'credit_card' && plan === 'annual' && (
                 <form onSubmit={payWithCard} className="space-y-3">
                   <div>
                     <label className="label-light">Nome no cartão</label>
@@ -252,6 +281,22 @@ export function SubscriptionPaywall() {
                     {loading ? 'Processando pagamento...' : `Pagar ${formatBRL(PLAN_PRICES.annual)} no cartão`}
                   </button>
                 </form>
+              )}
+
+              {method === 'wallet' && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm border-t border-black/10 pt-3">
+                    <span className="text-black/50">Saldo disponível</span>
+                    <span className="font-semibold">{formatBRL(walletAvailable)}</span>
+                  </div>
+                  {walletAvailable < PLAN_PRICES[plan] && (
+                    <p className="text-sm text-red-500">Saldo insuficiente para esse plano. Escolha Pix{plan === 'annual' ? ' ou cartão' : ''}, ou aguarde seu saldo ficar disponível.</p>
+                  )}
+                  {error && <p className="text-sm text-red-500">{error}</p>}
+                  <button onClick={payWithWallet} disabled={loading || walletAvailable < PLAN_PRICES[plan]} className="btn-gold w-full disabled:opacity-40">
+                    {loading ? 'Processando...' : `Pagar ${formatBRL(PLAN_PRICES[plan])} com saldo`}
+                  </button>
+                </div>
               )}
             </>
           )}

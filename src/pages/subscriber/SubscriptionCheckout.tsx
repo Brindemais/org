@@ -1,21 +1,33 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, Copy } from 'lucide-react'
+import { Check, Copy, CreditCard, QrCode, Wallet } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { useSubscription } from '../../hooks/useSubscription'
-import { formatBRL, formatDate } from '../../lib/format'
+import { useWallet } from '../../hooks/useWallet'
+import { formatBRL, formatDate, maskCardNumber, maskCardExpiry } from '../../lib/format'
 import { PLAN_PRICES, PLAN_LABELS, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../../lib/plans'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import type { SubscriptionPlan } from '../../lib/types'
 
+type Method = 'pix' | 'credit_card' | 'wallet'
+
 export default function SubscriberSubscription() {
-  const { user } = useAuth()
+  const { user, refreshProfile } = useAuth()
+  const { available: walletAvailable, reload: reloadWallet } = useWallet()
   const { subscription, benefitsBlocked, renewalDue, daysUntilExpiry, reload } = useSubscription()
   const [plan, setPlan] = useState<SubscriptionPlan>('monthly')
+  const [method, setMethod] = useState<Method>('pix')
   const [pixCode, setPixCode] = useState('')
+  const [pixQrCode, setPixQrCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [cardName, setCardName] = useState('')
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardExpiry, setCardExpiry] = useState('')
+  const [cardCvv, setCardCvv] = useState('')
+  const [cardAddressNumber, setCardAddressNumber] = useState('')
   const navigate = useNavigate()
 
   // Pre-select whatever plan they're already on, so renewing/switching
@@ -28,20 +40,81 @@ export default function SubscriberSubscription() {
   const amount = PLAN_PRICES[plan]
   const isRenewal = !!subscription && (benefitsBlocked || renewalDue)
 
-  async function generatePix() {
+  async function submitPix() {
     if (!user) return
     setLoading(true)
-    const fakePix = `00020126360014BR.GOV.BCB.PIX0114${user.id.slice(0, 14)}5204000053039865406${amount.toFixed(2)}5802BR5913BRINDEMAIS6009RIOJANEIRO62070503***6304${Math.random().toString(36).slice(2, 6).toUpperCase()}`
-    setPixCode(fakePix)
-    await supabase.from('payments').insert({
-      subscriber_id: user.id,
-      subscription_id: subscription?.id ?? null,
-      amount,
-      plan,
-      type: 'subscription',
-      pix_code: fakePix,
+    setError(null)
+    const { data: payment, error: insertError } = await supabase.from('payments').insert({
+      subscriber_id: user.id, subscription_id: subscription?.id ?? null, amount, plan, type: 'subscription', payment_method: 'pix',
+    }).select('id').single()
+    if (insertError || !payment) {
+      setLoading(false)
+      setError('Não foi possível gerar o Pix. Tente novamente.')
+      return
+    }
+    const { data: charge, error: chargeError } = await supabase.functions.invoke('asaas-create-pix-charge', { body: { payment_id: payment.id } })
+    setLoading(false)
+    if (chargeError || !charge?.pix_code) {
+      setError(charge?.error === 'MISSING_CPF' ? 'Complete seu CPF em Perfil antes de continuar o pagamento.' : 'Não foi possível gerar o Pix. Tente novamente.')
+      return
+    }
+    setPixCode(charge.pix_code)
+    setPixQrCode(charge.pix_qr_code ?? '')
+  }
+
+  async function submitCard(e: FormEvent) {
+    e.preventDefault()
+    if (!user) return
+    setLoading(true)
+    setError(null)
+    const { data: payment, error: insertError } = await supabase.from('payments').insert({
+      subscriber_id: user.id, subscription_id: subscription?.id ?? null, amount: PLAN_PRICES.annual, plan: 'annual', type: 'subscription', payment_method: 'credit_card',
+    }).select('id').single()
+    if (insertError || !payment) {
+      setLoading(false)
+      setError('Não foi possível iniciar o pagamento. Tente novamente.')
+      return
+    }
+    const [expMonth, expYearShort] = cardExpiry.split('/')
+    const { data: charge, error: chargeError } = await supabase.functions.invoke('asaas-charge-card', {
+      body: {
+        payment_id: payment.id,
+        holder_name: cardName,
+        card_number: cardNumber,
+        expiry_month: expMonth,
+        expiry_year: expYearShort ? `20${expYearShort}` : '',
+        ccv: cardCvv,
+        holder_address_number: cardAddressNumber,
+      },
     })
     setLoading(false)
+    if (chargeError || charge?.error) {
+      setError(charge?.error === 'MISSING_CPF' ? 'Complete seu CPF em Perfil antes de continuar o pagamento.' : 'Cartão recusado. Confira os dados, tente outro cartão ou pague via Pix.')
+      return
+    }
+    await refreshProfile()
+    reload()
+    navigate('/app')
+  }
+
+  async function submitWallet() {
+    setLoading(true)
+    setError(null)
+    const { error: payError } = await supabase.rpc('pay_subscription_wallet', { p_plan: plan })
+    setLoading(false)
+    if (payError) {
+      const map: Record<string, string> = {
+        INSUFFICIENT_BALANCE: 'Saldo interno insuficiente para pagar esse plano. Escolha Pix ou cartão, ou aguarde seu saldo ficar disponível.',
+        ACCOUNT_SUSPENDED: 'Sua conta está suspensa. Fale com o suporte.',
+      }
+      const code = Object.keys(map).find((k) => payError.message.includes(k))
+      setError(code ? map[code] : 'Não foi possível pagar com o saldo interno. Tente novamente.')
+      return
+    }
+    reloadWallet()
+    await refreshProfile()
+    reload()
+    navigate('/app')
   }
 
   function copyPix() {
@@ -94,7 +167,7 @@ export default function SubscriberSubscription() {
           )}
           <div className="grid grid-cols-1 gap-3">
             <button
-              onClick={() => setPlan('monthly')}
+              onClick={() => { setPlan('monthly'); if (method === 'credit_card') setMethod('pix') }}
               className={`text-left rounded-xl2 p-5 border transition ${plan === 'monthly' ? 'border-gold-400 bg-gold-400/10' : 'border-ink-800 bg-ink-900'}`}
             >
               <p className="text-xs font-bold uppercase opacity-70">Plano mensal</p>
@@ -115,9 +188,58 @@ export default function SubscriberSubscription() {
             </button>
           </div>
 
-          <button onClick={generatePix} disabled={loading} className="btn-gold w-full">
-            {loading ? 'Gerando Pix...' : isRenewal ? 'Renovar assinatura via Pix' : 'Ativar assinatura via Pix'}
-          </button>
+          <div className={`grid gap-2 ${plan === 'annual' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            <button type="button" onClick={() => setMethod('pix')} className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'pix' ? 'border-gold-400 bg-gold-400/10 text-gold-300' : 'border-ink-800 text-white/50'}`}>
+              <QrCode size={15} /> Pix
+            </button>
+            {plan === 'annual' && (
+              <button type="button" onClick={() => setMethod('credit_card')} className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'credit_card' ? 'border-gold-400 bg-gold-400/10 text-gold-300' : 'border-ink-800 text-white/50'}`}>
+                <CreditCard size={15} /> Cartão
+              </button>
+            )}
+            <button type="button" onClick={() => setMethod('wallet')} className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'wallet' ? 'border-gold-400 bg-gold-400/10 text-gold-300' : 'border-ink-800 text-white/50'}`}>
+              <Wallet size={15} /> Saldo
+            </button>
+          </div>
+
+          {method === 'pix' && (
+            <>
+              {error && <p className="text-sm text-red-400">{error}</p>}
+              <button onClick={submitPix} disabled={loading} className="btn-gold w-full">
+                {loading ? 'Gerando Pix...' : isRenewal ? 'Renovar assinatura via Pix' : 'Ativar assinatura via Pix'}
+              </button>
+            </>
+          )}
+
+          {method === 'credit_card' && plan === 'annual' && (
+            <form onSubmit={submitCard} className="space-y-3">
+              <input className="input" placeholder="Nome no cartão" required value={cardName} onChange={(e) => setCardName(e.target.value.toUpperCase())} />
+              <input className="input" placeholder="Número do cartão" required inputMode="numeric" value={maskCardNumber(cardNumber)} onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} />
+              <div className="grid grid-cols-3 gap-2">
+                <input className="input" placeholder="MM/AA" required inputMode="numeric" value={cardExpiry} onChange={(e) => setCardExpiry(maskCardExpiry(e.target.value))} />
+                <input className="input" placeholder="CVV" required inputMode="numeric" maxLength={4} value={cardCvv} onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} />
+                <input className="input" placeholder="Nº endereço" required inputMode="numeric" value={cardAddressNumber} onChange={(e) => setCardAddressNumber(e.target.value.replace(/\D/g, ''))} />
+              </div>
+              {error && <p className="text-sm text-red-400">{error}</p>}
+              <button type="submit" disabled={loading} className="btn-gold w-full">{loading ? 'Processando...' : `Pagar ${formatBRL(PLAN_PRICES.annual)} no cartão`}</button>
+            </form>
+          )}
+
+          {method === 'wallet' && (
+            <div className="space-y-3">
+              <div className="card !py-3 flex items-center justify-between text-sm">
+                <span className="text-white/50">Saldo disponível</span>
+                <span className="font-semibold">{formatBRL(walletAvailable)}</span>
+              </div>
+              {walletAvailable < amount && (
+                <p className="text-sm text-red-400">Saldo insuficiente para esse plano. Escolha Pix{plan === 'annual' ? ' ou cartão' : ''}, ou aguarde seu saldo ficar disponível.</p>
+              )}
+              {error && <p className="text-sm text-red-400">{error}</p>}
+              <button onClick={submitWallet} disabled={loading || walletAvailable < amount} className="btn-gold w-full disabled:opacity-40">
+                {loading ? 'Processando...' : `Pagar ${formatBRL(amount)} com saldo`}
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -126,14 +248,14 @@ export default function SubscriberSubscription() {
           <p className="text-sm text-white/50">
             Plano {plan === 'annual' ? 'anual' : 'mensal'} · <span className="text-white font-semibold">{formatBRL(amount)}</span>
           </p>
-          <div className="w-40 h-40 mx-auto rounded-xl bg-white p-3 flex items-center justify-center">
-            <div className="w-full h-full bg-[repeating-linear-gradient(45deg,#111_0,#111_4px,#fff_4px,#fff_8px)] opacity-80 rounded" />
+          <div className="w-40 h-40 mx-auto rounded-xl bg-white p-3 flex items-center justify-center overflow-hidden">
+            {pixQrCode ? <img src={`data:image/png;base64,${pixQrCode}`} alt="QR Code Pix" className="w-full h-full object-contain" /> : null}
           </div>
           <button onClick={copyPix} className="btn-dark w-full !py-2.5 text-sm gap-2">
             <Copy size={14} /> {copied ? 'Código copiado!' : 'Copiar código Pix'}
           </button>
-          <p className="text-xs text-white/40">A confirmação do pagamento é validada pela equipe Brinde Mais e sua assinatura será ativada em instantes.</p>
-          <button onClick={() => { reload(); navigate('/app') }} className="btn-gold w-full gap-2"><Check size={16} /> Já efetuei o pagamento</button>
+          <p className="text-xs text-white/40">A confirmação é automática assim que a Asaas identificar o pagamento, normalmente em poucos segundos.</p>
+          <button onClick={() => { reload(); navigate('/app') }} className="btn-gold w-full gap-2"><Check size={16} /> Ver meu painel</button>
         </div>
       )}
     </div>
