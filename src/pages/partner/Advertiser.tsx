@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react'
-import { Megaphone, Check, Clock, Gift, Percent } from 'lucide-react'
+import { Megaphone, Check, Clock, Gift, Percent, Wallet } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatBRL, formatDateTime } from '../../lib/format'
+import { useWallet } from '../../hooks/useWallet'
 
 const FEE_AMOUNT = 149.9
 
 interface PendingPayment { id: string; status: string; pix_code: string | null; pix_qr_code: string | null; created_at: string }
 
 export default function PartnerAdvertiser() {
-  const { partner, profile } = useAuth()
+  const { partner, profile, refreshProfile } = useAuth()
+  const { available: walletAvailable, reload: reloadWallet } = useWallet()
   const [pending, setPending] = useState<PendingPayment | null>(null)
   const [loading, setLoading] = useState(false)
+  const [walletLoading, setWalletLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState({ products: 0, promotions: 0 })
 
@@ -56,6 +59,25 @@ export default function PartnerAdvertiser() {
     setPending({ ...data, pix_code: charge.pix_code, pix_qr_code: charge.pix_qr_code ?? null } as PendingPayment)
   }
 
+  async function payFeeWallet() {
+    setWalletLoading(true)
+    setError(null)
+    const { error: payError } = await supabase.rpc('pay_partner_fee_wallet')
+    setWalletLoading(false)
+    if (payError) {
+      const map: Record<string, string> = {
+        INSUFFICIENT_BALANCE: 'Saldo interno insuficiente para pagar a taxa. Escolha Pix ou aguarde seu saldo ficar disponível.',
+        ACCOUNT_SUSPENDED: 'Sua conta está suspensa. Fale com o suporte.',
+        NOT_PARTNER_STAFF: 'Não foi possível identificar seu parceiro.',
+      }
+      const code = Object.keys(map).find((k) => payError.message.includes(k))
+      setError(code ? map[code] : 'Não foi possível pagar com o saldo interno. Tente novamente.')
+      return
+    }
+    reloadWallet()
+    await refreshProfile()
+  }
+
   if (!partner) return null
 
   return (
@@ -93,7 +115,10 @@ export default function PartnerAdvertiser() {
               ) : (
                 <>
                   {error && <p className="text-sm text-red-400">{error}</p>}
-                  <button onClick={payFee} disabled={loading} className="btn-gold w-full">{loading ? 'Gerando Pix...' : `Renovar por ${formatBRL(FEE_AMOUNT)}`}</button>
+                  <button onClick={payFee} disabled={loading || walletLoading} className="btn-gold w-full">{loading ? 'Gerando Pix...' : `Renovar por ${formatBRL(FEE_AMOUNT)}`}</button>
+                  <button onClick={payFeeWallet} disabled={loading || walletLoading || walletAvailable < FEE_AMOUNT} className="btn-dark w-full gap-2 disabled:opacity-40">
+                    <Wallet size={14} /> {walletLoading ? 'Processando...' : `Pagar com saldo interno (${formatBRL(walletAvailable)} disponível)`}
+                  </button>
                 </>
               )}
             </div>
@@ -125,7 +150,10 @@ export default function PartnerAdvertiser() {
         <div className="card space-y-3">
           <p className="text-sm text-white/60">Pague a taxa de anunciante para liberar sua área com brindes, promoções e destaque para os assinantes Brinde Mais.</p>
           {error && <p className="text-sm text-red-400">{error}</p>}
-          <button onClick={payFee} disabled={loading} className="btn-gold w-full">{loading ? 'Gerando Pix...' : `Pagar ${formatBRL(FEE_AMOUNT)}`}</button>
+          <button onClick={payFee} disabled={loading || walletLoading} className="btn-gold w-full">{loading ? 'Gerando Pix...' : `Pagar ${formatBRL(FEE_AMOUNT)} via Pix`}</button>
+          <button onClick={payFeeWallet} disabled={loading || walletLoading || walletAvailable < FEE_AMOUNT} className="btn-dark w-full gap-2 disabled:opacity-40">
+            <Wallet size={14} /> {walletLoading ? 'Processando...' : `Pagar com saldo interno (${formatBRL(walletAvailable)} disponível)`}
+          </button>
         </div>
       )}
     </div>
