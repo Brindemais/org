@@ -68,7 +68,7 @@ export default function SubscriberSubscription() {
     setLoading(true)
     setError(null)
     const { data: payment, error: insertError } = await supabase.from('payments').insert({
-      subscriber_id: user.id, subscription_id: subscription?.id ?? null, amount: PLAN_PRICES.annual, plan: 'annual', type: 'subscription', payment_method: 'credit_card',
+      subscriber_id: user.id, subscription_id: subscription?.id ?? null, amount, plan, type: 'subscription', payment_method: 'credit_card',
     }).select('id').single()
     if (insertError || !payment) {
       setLoading(false)
@@ -167,7 +167,7 @@ export default function SubscriberSubscription() {
           )}
           <div className="grid grid-cols-1 gap-3">
             <button
-              onClick={() => { setPlan('monthly'); if (method === 'credit_card') setMethod('pix') }}
+              onClick={() => setPlan('monthly')}
               className={`text-left rounded-xl2 p-5 border transition ${plan === 'monthly' ? 'border-gold-400 bg-gold-400/10' : 'border-ink-800 bg-ink-900'}`}
             >
               <p className="text-xs font-bold uppercase opacity-70">Plano mensal</p>
@@ -188,15 +188,13 @@ export default function SubscriberSubscription() {
             </button>
           </div>
 
-          <div className={`grid gap-2 ${plan === 'annual' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <div className="grid grid-cols-3 gap-2">
             <button type="button" onClick={() => setMethod('pix')} className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'pix' ? 'border-gold-400 bg-gold-400/10 text-gold-300' : 'border-ink-800 text-white/50'}`}>
               <QrCode size={15} /> Pix
             </button>
-            {plan === 'annual' && (
-              <button type="button" onClick={() => setMethod('credit_card')} className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'credit_card' ? 'border-gold-400 bg-gold-400/10 text-gold-300' : 'border-ink-800 text-white/50'}`}>
-                <CreditCard size={15} /> Cartão
-              </button>
-            )}
+            <button type="button" onClick={() => setMethod('credit_card')} className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'credit_card' ? 'border-gold-400 bg-gold-400/10 text-gold-300' : 'border-ink-800 text-white/50'}`}>
+              <CreditCard size={15} /> Cartão
+            </button>
             <button type="button" onClick={() => setMethod('wallet')} className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'wallet' ? 'border-gold-400 bg-gold-400/10 text-gold-300' : 'border-ink-800 text-white/50'}`}>
               <Wallet size={15} /> Saldo
             </button>
@@ -211,7 +209,7 @@ export default function SubscriberSubscription() {
             </>
           )}
 
-          {method === 'credit_card' && plan === 'annual' && (
+          {method === 'credit_card' && (
             <form onSubmit={submitCard} className="space-y-3">
               <input className="input" placeholder="Nome no cartão" required value={cardName} onChange={(e) => setCardName(e.target.value.toUpperCase())} />
               <input className="input" placeholder="Número do cartão" required inputMode="numeric" value={maskCardNumber(cardNumber)} onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} />
@@ -221,7 +219,7 @@ export default function SubscriberSubscription() {
                 <input className="input" placeholder="Nº endereço" required inputMode="numeric" value={cardAddressNumber} onChange={(e) => setCardAddressNumber(e.target.value.replace(/\D/g, ''))} />
               </div>
               {error && <p className="text-sm text-red-400">{error}</p>}
-              <button type="submit" disabled={loading} className="btn-gold w-full">{loading ? 'Processando...' : `Pagar ${formatBRL(PLAN_PRICES.annual)} no cartão`}</button>
+              <button type="submit" disabled={loading} className="btn-gold w-full">{loading ? 'Processando...' : `Pagar ${formatBRL(amount)} no cartão`}</button>
             </form>
           )}
 
@@ -232,7 +230,7 @@ export default function SubscriberSubscription() {
                 <span className="font-semibold">{formatBRL(walletAvailable)}</span>
               </div>
               {walletAvailable < amount && (
-                <p className="text-sm text-red-400">Saldo insuficiente para esse plano. Escolha Pix{plan === 'annual' ? ' ou cartão' : ''}, ou aguarde seu saldo ficar disponível.</p>
+                <p className="text-sm text-red-400">Saldo insuficiente para esse plano. Escolha Pix ou cartão, ou aguarde seu saldo ficar disponível.</p>
               )}
               {error && <p className="text-sm text-red-400">{error}</p>}
               <button onClick={submitWallet} disabled={loading || walletAvailable < amount} className="btn-gold w-full disabled:opacity-40">

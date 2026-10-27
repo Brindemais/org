@@ -264,8 +264,8 @@ export default function Signup() {
 
     const { data: payment, error: payErr } = await supabase.from('payments').insert({
       subscriber_id: uid,
-      amount: PLAN_PRICES.annual,
-      plan: 'annual',
+      amount: PLAN_PRICES[plan],
+      plan,
       type: 'subscription',
       payment_method: 'credit_card',
     }).select('id').single()
@@ -433,26 +433,24 @@ export default function Signup() {
               ))}
             </ul>
 
-            {plan === 'annual' && (
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMethod('pix')}
-                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'pix' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}
-                >
-                  <QrCode size={15} /> Pix
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMethod('credit_card')}
-                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'credit_card' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}
-                >
-                  <CreditCard size={15} /> Cartão
-                </button>
-              </div>
-            )}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMethod('pix')}
+                className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'pix' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}
+              >
+                <QrCode size={15} /> Pix
+              </button>
+              <button
+                type="button"
+                onClick={() => setMethod('credit_card')}
+                className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'credit_card' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}
+              >
+                <CreditCard size={15} /> Cartão
+              </button>
+            </div>
 
-            {plan === 'monthly' || method === 'pix' ? (
+            {method === 'pix' ? (
               <>
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 <button onClick={handleActivateSubscription} disabled={loading} className="btn-gold w-full">
@@ -483,10 +481,12 @@ export default function Signup() {
                     <input className="input-light" required inputMode="numeric" value={cardAddressNumber} onChange={(e) => setCardAddressNumber(e.target.value.replace(/\D/g, ''))} placeholder="123" />
                   </div>
                 </div>
-                <p className="text-[11px] text-black/40">Cobrança única de {formatBRL(PLAN_PRICES.annual)}. Número e CVV vão direto e criptografados até a operadora do cartão, não ficam salvos aqui.</p>
+                <p className="text-[11px] text-black/40">
+                  {plan === 'annual' ? `Cobrança única de ${formatBRL(PLAN_PRICES.annual)}.` : `Cobrança de ${formatBRL(PLAN_PRICES.monthly)}, renovada a cada 30 dias.`} Número e CVV vão direto e criptografados até a operadora do cartão, não ficam salvos aqui.
+                </p>
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 <button type="submit" disabled={loading} className="btn-gold w-full">
-                  {loading ? 'Processando pagamento...' : `Pagar ${formatBRL(PLAN_PRICES.annual)} no cartão`}
+                  {loading ? 'Processando pagamento...' : `Pagar ${formatBRL(PLAN_PRICES[plan])} no cartão`}
                 </button>
               </form>
             )}
