@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, Copy, CreditCard, MapPin, Minus, Percent, Plus, QrCode, ShoppingBag, ShoppingCart, Trash2, Wallet } from 'lucide-react'
+import { ChevronLeft, Copy, MapPin, Minus, Percent, Plus, QrCode, ShoppingBag, ShoppingCart, Trash2, Wallet } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, Promotion } from '../../lib/types'
-import { formatBRL, formatDate, maskCardNumber, maskCardExpiry } from '../../lib/format'
+import { formatBRL, formatDate } from '../../lib/format'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { Modal } from '../../components/ui/Modal'
 import { useWallet } from '../../hooks/useWallet'
 
+// Pagamento via cartão foi escondido da plataforma (pedido do dono) —
+// fica só Pix e saldo interno.
 type CatalogPartner = Pick<Partner, 'id' | 'trade_name' | 'neighborhood' | 'city' | 'logo_url'>
-type Method = 'pix' | 'credit_card' | 'wallet'
+type Method = 'pix' | 'wallet'
 type CheckoutStep = 'form' | 'pix' | 'done'
 interface CartItem { promotion: Promotion; qty: number }
 
@@ -33,11 +35,6 @@ export default function SubscriberPartnerProducts() {
   const [pixCode, setPixCode] = useState('')
   const [pixQrCode, setPixQrCode] = useState('')
   const [copied, setCopied] = useState(false)
-  const [cardName, setCardName] = useState('')
-  const [cardNumber, setCardNumber] = useState('')
-  const [cardExpiry, setCardExpiry] = useState('')
-  const [cardCvv, setCardCvv] = useState('')
-  const [cardAddressNumber, setCardAddressNumber] = useState('')
   const { available: walletAvailable, reload: reloadWallet } = useWallet()
 
   function load() {
@@ -121,41 +118,6 @@ export default function SubscriberPartnerProducts() {
     load()
   }
 
-  async function submitCard() {
-    if (!cart.length) return
-    setBusy(true)
-    setError(null)
-    const items = cart.map((i) => ({ promotion_id: i.promotion.id, quantity: i.qty }))
-    const { data: payment, error: orderError } = await supabase.rpc('create_product_order_cart', {
-      p_items: items, p_payment_method: 'credit_card',
-    })
-    if (orderError || !payment) {
-      setBusy(false)
-      setError(orderErrorMessage(orderError?.message))
-      return
-    }
-    setCart([])
-    const [expMonth, expYearShort] = cardExpiry.split('/')
-    const { data: charge, error: chargeError } = await supabase.functions.invoke('asaas-charge-card', {
-      body: {
-        payment_id: (payment as any).id,
-        holder_name: cardName,
-        card_number: cardNumber,
-        expiry_month: expMonth,
-        expiry_year: expYearShort ? `20${expYearShort}` : '',
-        ccv: cardCvv,
-        holder_address_number: cardAddressNumber,
-      },
-    })
-    setBusy(false)
-    if (chargeError || charge?.error) {
-      setError(charge?.error === 'MISSING_CPF' ? 'Complete seu CPF em Perfil antes de continuar o pagamento.' : 'Cartão recusado. Confira os dados, tente outro cartão ou pague via Pix.')
-      return
-    }
-    setStep('done')
-    load()
-  }
-
   async function submitWallet() {
     if (!cart.length) return
     setBusy(true)
@@ -187,7 +149,7 @@ export default function SubscriberPartnerProducts() {
       PRODUCT_HAS_NO_PRICE: 'Esse produto não tem preço configurado.',
       PRODUCT_NOT_FOUND: 'Um dos produtos do carrinho não está mais disponível.',
       ACCOUNT_SUSPENDED: 'Sua assinatura precisa estar ativa para comprar.',
-      INSUFFICIENT_BALANCE: 'Saldo insuficiente para pagar essa compra. Escolha Pix ou cartão, ou reduza a quantidade.',
+      INSUFFICIENT_BALANCE: 'Saldo insuficiente para pagar essa compra. Escolha Pix, ou reduza a quantidade.',
       PARTNER_MISMATCH: 'O carrinho só pode ter produtos do mesmo parceiro.',
       EMPTY_CART: 'Adicione pelo menos um produto ao carrinho.',
     }
@@ -315,12 +277,9 @@ export default function SubscriberPartnerProducts() {
 
             {!!cart.length && (
               <>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <button type="button" onClick={() => setMethod('pix')} className={`flex flex-col items-center justify-center gap-1 rounded-lg py-2 text-xs font-medium border transition ${method === 'pix' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}>
                     <QrCode size={15} /> Pix
-                  </button>
-                  <button type="button" onClick={() => setMethod('credit_card')} className={`flex flex-col items-center justify-center gap-1 rounded-lg py-2 text-xs font-medium border transition ${method === 'credit_card' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}>
-                    <CreditCard size={15} /> Cartão
                   </button>
                   <button type="button" onClick={() => setMethod('wallet')} className={`flex flex-col items-center justify-center gap-1 rounded-lg py-2 text-xs font-medium border transition ${method === 'wallet' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}>
                     <Wallet size={15} /> Saldo
@@ -334,20 +293,6 @@ export default function SubscriberPartnerProducts() {
                   </>
                 )}
 
-                {method === 'credit_card' && (
-                  <div className="space-y-3">
-                    <input className="input-light" placeholder="Nome no cartão" value={cardName} onChange={(e) => setCardName(e.target.value.toUpperCase())} />
-                    <input className="input-light" placeholder="Número do cartão" inputMode="numeric" value={maskCardNumber(cardNumber)} onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} />
-                    <div className="grid grid-cols-3 gap-2">
-                      <input className="input-light" placeholder="MM/AA" inputMode="numeric" value={cardExpiry} onChange={(e) => setCardExpiry(maskCardExpiry(e.target.value))} />
-                      <input className="input-light" placeholder="CVV" inputMode="numeric" maxLength={4} value={cardCvv} onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} />
-                      <input className="input-light" placeholder="Nº endereço" inputMode="numeric" value={cardAddressNumber} onChange={(e) => setCardAddressNumber(e.target.value.replace(/\D/g, ''))} />
-                    </div>
-                    {error && <p className="text-sm text-red-500">{error}</p>}
-                    <button onClick={submitCard} disabled={busy} className="btn-gold w-full">{busy ? 'Processando...' : `Pagar ${formatBRL(cartTotal)} no cartão`}</button>
-                  </div>
-                )}
-
                 {method === 'wallet' && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm border-t border-black/10 pt-3">
@@ -355,7 +300,7 @@ export default function SubscriberPartnerProducts() {
                       <span className="font-semibold">{formatBRL(walletAvailable)}</span>
                     </div>
                     {walletAvailable < cartTotal && (
-                      <p className="text-sm text-red-500">Saldo insuficiente para essa compra. Escolha Pix ou cartão, ou reduza a quantidade.</p>
+                      <p className="text-sm text-red-500">Saldo insuficiente para essa compra. Escolha Pix, ou reduza a quantidade.</p>
                     )}
                     {error && <p className="text-sm text-red-500">{error}</p>}
                     <button onClick={submitWallet} disabled={busy || walletAvailable < cartTotal} className="btn-gold w-full disabled:opacity-40">
