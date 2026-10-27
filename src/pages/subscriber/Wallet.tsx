@@ -40,6 +40,35 @@ export default function SubscriberWallet() {
   const cashbackTotal = transactions.filter((t) => t.type === 'cashback').reduce((s, t) => s + Number(t.amount), 0)
   const visibleTransactions = showAll ? transactions : transactions.slice(0, PREVIEW_COUNT)
 
+  // Bônus de indicação (e o estorno/cancelamento deles) separados do
+  // extrato geral — a descrição já traz o nome de quem foi indicado desde
+  // que o bônus foi gerado.
+  const referralTransactions = transactions.filter((t) => t.type.startsWith('bonus_') || (t.type === 'reversal' && t.reference_type === 'bonus'))
+
+  function renderTxRow(t: (typeof transactions)[number]) {
+    const daysLeft = pendingDaysLeft(t)
+    const isCancelled = t.type === 'reversal' && t.reference_type === 'bonus'
+    return (
+      <div key={t.id} className="card !py-3 flex items-center gap-3">
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${t.direction === 'in' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
+          {t.direction === 'in' ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{t.type === 'adjustment' ? (profile?.full_name ?? TYPE_LABELS.adjustment) : (t.description || TYPE_LABELS[t.type] || t.type)}</p>
+          <p className="text-xs text-white/40">{formatDateTime(t.created_at)}</p>
+        </div>
+        <div className="text-right shrink-0">
+          <p className={`text-sm font-semibold ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
+            {t.direction === 'in' ? '+' : '-'} {formatBRL(t.amount)}
+          </p>
+          <p className={`text-[10px] ${isCancelled ? 'text-red-400' : daysLeft !== null ? 'text-gold-400' : 'text-white/30'}`}>
+            {isCancelled ? 'Cancelado' : t.direction === 'out' ? 'Transferido' : daysLeft !== null ? `Libera em ${daysLeft} dia${daysLeft === 1 ? '' : 's'}` : 'Disponível'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-5">
       <h1 className="font-display text-xl font-semibold">Carteira e ganhos</h1>
@@ -87,6 +116,16 @@ export default function SubscriberWallet() {
 
       <Link to="/app/carteira/saque" className="btn-gold w-full">Saque · Transferir para minha conta</Link>
 
+      {referralTransactions.length > 0 && (
+        <div>
+          <p className="font-semibold mb-1 flex items-center gap-1.5"><Users2 size={15} className="text-gold-400" /> Indicações</p>
+          <p className="text-xs text-white/40 mb-3">Bônus gerados por quem você indicou, com o nome de cada pessoa. Se algum for cancelado, o motivo aparece aqui também.</p>
+          <div className="space-y-2">
+            {referralTransactions.map(renderTxRow)}
+          </div>
+        </div>
+      )}
+
       <div>
         <div className="flex items-center justify-between mb-3">
           <p className="font-semibold">Extrato</p>
@@ -98,28 +137,7 @@ export default function SubscriberWallet() {
         </div>
         {loading && <LoadingState dark label="Carregando extrato..." />}
         <div className="space-y-2">
-          {visibleTransactions.map((t) => {
-            const daysLeft = pendingDaysLeft(t)
-            return (
-              <div key={t.id} className="card !py-3 flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${t.direction === 'in' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
-                  {t.direction === 'in' ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{t.type === 'adjustment' ? (profile?.full_name ?? TYPE_LABELS.adjustment) : (t.description || TYPE_LABELS[t.type] || t.type)}</p>
-                  <p className="text-xs text-white/40">{formatDateTime(t.created_at)}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className={`text-sm font-semibold ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {t.direction === 'in' ? '+' : '-'} {formatBRL(t.amount)}
-                  </p>
-                  <p className={`text-[10px] ${daysLeft !== null ? 'text-gold-400' : 'text-white/30'}`}>
-                    {t.direction === 'out' ? 'Transferido' : daysLeft !== null ? `Libera em ${daysLeft} dia${daysLeft === 1 ? '' : 's'}` : 'Disponível'}
-                  </p>
-                </div>
-              </div>
-            )
-          })}
+          {visibleTransactions.map(renderTxRow)}
           {!loading && !transactions.length && (
             <EmptyState dark icon={History} title="Nenhuma movimentação ainda" description="Seus créditos, saques e cashback aparecem aqui." />
           )}

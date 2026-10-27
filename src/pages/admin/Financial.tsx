@@ -12,7 +12,7 @@ const PLATFORM_COST_PCT = 0.15
 interface MonthRow { key: string; label: string; gross: number; referralCost: number }
 interface ConfirmedPayment { amount: number; confirmed_at: string; type: string; payment_method: string }
 interface UserResult { id: string; full_name: string; email: string | null }
-interface BonusRow { id: string; type: string; level: number; amount: number; status: string; created_at: string; cancel_reason: string | null }
+interface BonusRow { id: string; type: string; level: number; amount: number; status: string; created_at: string; cancel_reason: string | null; source: { full_name: string } | null }
 interface ExtratoRow { id: string; type: string; direction: string; amount: number; description: string | null; created_at: string }
 
 // Mesmos rótulos do extrato do assinante (src/pages/subscriber/Wallet.tsx) —
@@ -159,11 +159,11 @@ export default function AdminFinancial() {
     setShowAllExtrato(false)
     const [{ data: balance }, { data: bonusRows }, { data: extratoRows }] = await Promise.all([
       supabase.rpc('current_wallet_balance', { p_user_id: u.id }),
-      supabase.from('bonuses').select('id, type, level, amount, status, created_at, cancel_reason').eq('beneficiary_id', u.id).order('created_at', { ascending: false }).limit(20),
+      supabase.from('bonuses').select('id, type, level, amount, status, created_at, cancel_reason, source:source_subscriber_id(full_name)').eq('beneficiary_id', u.id).order('created_at', { ascending: false }).limit(20),
       supabase.from('wallet_transactions').select('id, type, direction, amount, description, created_at').eq('user_id', u.id).order('created_at', { ascending: false }).limit(100),
     ])
     setSelectedBalance(typeof balance === 'number' ? balance : Number(balance ?? 0))
-    setSelectedBonuses((bonusRows as BonusRow[]) ?? [])
+    setSelectedBonuses((bonusRows as any as BonusRow[]) ?? [])
     setSelectedExtrato((extratoRows as ExtratoRow[]) ?? [])
   }
 
@@ -294,13 +294,13 @@ export default function AdminFinancial() {
             {walletMsg && <p className="text-xs text-white/50">{walletMsg}</p>}
 
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-white/40 mb-2">Bônus recebidos</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-white/40 mb-2 flex items-center gap-1.5"><Users2 size={12} /> Indicações</p>
               {selectedBonuses.length === 0 && <p className="text-xs text-white/30">Nenhum bônus registrado.</p>}
               <div className="space-y-1.5">
                 {selectedBonuses.map((b) => (
                   <div key={b.id} className="py-1.5 border-t border-ink-800">
                     <div className="flex items-center justify-between">
-                      <span className="text-white/60">{formatDateTime(b.created_at)} · nível {b.level} · {b.type}</span>
+                      <span className="text-white/60">{formatDateTime(b.created_at)} · nível {b.level} · {b.type} · <span className="text-white/80">{b.source?.full_name ?? 'alguém da rede'}</span></span>
                       <div className="flex items-center gap-2">
                         <span className={b.status === 'reversed' ? 'text-white/30 line-through' : 'font-semibold'}>{formatBRL(b.amount)}</span>
                         {b.status !== 'reversed' ? (
