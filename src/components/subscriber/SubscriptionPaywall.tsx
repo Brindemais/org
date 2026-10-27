@@ -28,7 +28,6 @@ export function SubscriptionPaywall() {
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Cartão só existe pro plano anual — mensal continua Pix obrigatório.
   const [method, setMethod] = useState<PaymentMethod>('pix')
   const [cardName, setCardName] = useState('')
   const [cardNumber, setCardNumber] = useState('')
@@ -86,8 +85,9 @@ export function SubscriptionPaywall() {
     if (!user) return
     setError(null)
     setLoading(true)
+    const amount = PLAN_PRICES[plan]
     const { data: payment, error: insertError } = await supabase.from('payments').insert({
-      subscriber_id: user.id, amount: PLAN_PRICES.annual, plan: 'annual', type: 'subscription', payment_method: 'credit_card',
+      subscriber_id: user.id, amount, plan, type: 'subscription', payment_method: 'credit_card',
     }).select('id').single()
     if (insertError || !payment) {
       setLoading(false)
@@ -198,7 +198,7 @@ export function SubscriptionPaywall() {
               <div className="grid grid-cols-1 gap-3">
                 <button
                   type="button"
-                  onClick={() => { setPlan('monthly'); if (method === 'credit_card') setMethod('pix') }}
+                  onClick={() => setPlan('monthly')}
                   className={`text-left rounded-xl p-4 border transition ${plan === 'monthly' ? 'border-gold-400 bg-gold-400/10' : 'border-black/10'}`}
                 >
                   <p className="text-xs font-bold uppercase text-black/50">Plano mensal</p>
@@ -219,7 +219,7 @@ export function SubscriptionPaywall() {
                   <li key={b} className="flex gap-2"><Check size={16} className="text-gold-500 shrink-0 mt-0.5" />{b}</li>
                 ))}
               </ul>
-              <div className={`grid gap-2 ${plan === 'annual' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setMethod('pix')}
@@ -227,15 +227,13 @@ export function SubscriptionPaywall() {
                 >
                   <QrCode size={15} /> Pix
                 </button>
-                {plan === 'annual' && (
-                  <button
-                    type="button"
-                    onClick={() => setMethod('credit_card')}
-                    className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'credit_card' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}
-                  >
-                    <CreditCard size={15} /> Cartão
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setMethod('credit_card')}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'credit_card' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}
+                >
+                  <CreditCard size={15} /> Cartão
+                </button>
                 <button
                   type="button"
                   onClick={() => setMethod('wallet')}
@@ -252,7 +250,7 @@ export function SubscriptionPaywall() {
                 </>
               )}
 
-              {method === 'credit_card' && plan === 'annual' && (
+              {method === 'credit_card' && (
                 <form onSubmit={payWithCard} className="space-y-3">
                   <div>
                     <label className="label-light">Nome no cartão</label>
@@ -278,7 +276,7 @@ export function SubscriptionPaywall() {
                   </div>
                   {error && <p className="text-sm text-red-500">{error}</p>}
                   <button type="submit" disabled={loading} className="btn-gold w-full">
-                    {loading ? 'Processando pagamento...' : `Pagar ${formatBRL(PLAN_PRICES.annual)} no cartão`}
+                    {loading ? 'Processando pagamento...' : `Pagar ${formatBRL(PLAN_PRICES[plan])} no cartão`}
                   </button>
                 </form>
               )}
@@ -290,7 +288,7 @@ export function SubscriptionPaywall() {
                     <span className="font-semibold">{formatBRL(walletAvailable)}</span>
                   </div>
                   {walletAvailable < PLAN_PRICES[plan] && (
-                    <p className="text-sm text-red-500">Saldo insuficiente para esse plano. Escolha Pix{plan === 'annual' ? ' ou cartão' : ''}, ou aguarde seu saldo ficar disponível.</p>
+                    <p className="text-sm text-red-500">Saldo insuficiente para esse plano. Escolha Pix ou cartão, ou aguarde seu saldo ficar disponível.</p>
                   )}
                   {error && <p className="text-sm text-red-500">{error}</p>}
                   <button onClick={payWithWallet} disabled={loading || walletAvailable < PLAN_PRICES[plan]} className="btn-gold w-full disabled:opacity-40">
