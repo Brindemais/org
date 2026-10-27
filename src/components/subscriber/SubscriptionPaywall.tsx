@@ -1,14 +1,14 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { Check, Copy, CreditCard, LogOut, QrCode, RefreshCw, Wallet } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Check, Copy, LogOut, QrCode, RefreshCw, Wallet } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { useWallet } from '../../hooks/useWallet'
-import { formatBRL, maskCardNumber, maskCardExpiry } from '../../lib/format'
+import { formatBRL } from '../../lib/format'
 import { PLAN_PRICES, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../../lib/plans'
 import { LogoBadge } from '../layout/Logo'
 import type { SubscriptionPlan } from '../../lib/types'
 
-type PaymentMethod = 'pix' | 'credit_card' | 'wallet'
+type PaymentMethod = 'pix' | 'wallet'
 
 interface PendingPayment { id: string; pix_code: string | null; pix_qr_code: string | null; created_at: string; plan: SubscriptionPlan | null; amount: number }
 
@@ -18,6 +18,10 @@ interface PendingPayment { id: string; pix_code: string | null; pix_qr_code: str
 // renew. Same screen either way: pick a plan, pay via Pix, wait for the
 // team to confirm (this platform's payments are all manually confirmed —
 // there's no live push, so "Já paguei" just re-checks instead of assuming).
+//
+// Pagamento via cartão foi escondido da plataforma (pedido do dono) —
+// fica só Pix e saldo interno. O backend (asaas-charge-card) continua de
+// pé, só não tem mais nenhum caminho na UI pra chegar nele.
 export function SubscriptionPaywall() {
   const { user, refreshProfile, signOut } = useAuth()
   const { available: walletAvailable, reload: reloadWallet } = useWallet()
@@ -27,14 +31,7 @@ export function SubscriptionPaywall() {
   const [checking, setChecking] = useState(false)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  // Cartão só existe pro plano anual — mensal continua Pix obrigatório.
   const [method, setMethod] = useState<PaymentMethod>('pix')
-  const [cardName, setCardName] = useState('')
-  const [cardNumber, setCardNumber] = useState('')
-  const [cardExpiry, setCardExpiry] = useState('')
-  const [cardCvv, setCardCvv] = useState('')
-  const [cardAddressNumber, setCardAddressNumber] = useState('')
 
   useEffect(() => {
     if (!user) return
@@ -81,39 +78,6 @@ export function SubscriptionPaywall() {
     setPending({ ...data, pix_code: charge.pix_code, pix_qr_code: charge.pix_qr_code ?? null } as PendingPayment)
   }
 
-  async function payWithCard(e: FormEvent) {
-    e.preventDefault()
-    if (!user) return
-    setError(null)
-    setLoading(true)
-    const { data: payment, error: insertError } = await supabase.from('payments').insert({
-      subscriber_id: user.id, amount: PLAN_PRICES.annual, plan: 'annual', type: 'subscription', payment_method: 'credit_card',
-    }).select('id').single()
-    if (insertError || !payment) {
-      setLoading(false)
-      setError('Não foi possível iniciar o pagamento. Tente novamente.')
-      return
-    }
-    const [expMonth, expYearShort] = cardExpiry.split('/')
-    const { data: charge, error: chargeError } = await supabase.functions.invoke('asaas-charge-card', {
-      body: {
-        payment_id: payment.id,
-        holder_name: cardName,
-        card_number: cardNumber,
-        expiry_month: expMonth,
-        expiry_year: expYearShort ? `20${expYearShort}` : '',
-        ccv: cardCvv,
-        holder_address_number: cardAddressNumber,
-      },
-    })
-    setLoading(false)
-    if (chargeError || charge?.error) {
-      setError(charge?.error === 'MISSING_CPF' ? 'Complete seu CPF no perfil antes de continuar o pagamento.' : 'Cartão recusado. Confira os dados, tente outro cartão ou pague via Pix.')
-      return
-    }
-    await refreshProfile()
-  }
-
   async function payWithWallet() {
     setError(null)
     setLoading(true)
@@ -121,7 +85,7 @@ export function SubscriptionPaywall() {
     setLoading(false)
     if (payError) {
       const map: Record<string, string> = {
-        INSUFFICIENT_BALANCE: 'Saldo interno insuficiente para pagar esse plano. Escolha Pix ou cartão, ou aguarde seu saldo ficar disponível.',
+        INSUFFICIENT_BALANCE: 'Saldo interno insuficiente para pagar esse plano. Escolha Pix, ou aguarde seu saldo ficar disponível.',
         ACCOUNT_SUSPENDED: 'Sua conta está suspensa. Fale com o suporte.',
       }
       const code = Object.keys(map).find((k) => payError.message.includes(k))
@@ -198,7 +162,7 @@ export function SubscriptionPaywall() {
               <div className="grid grid-cols-1 gap-3">
                 <button
                   type="button"
-                  onClick={() => { setPlan('monthly'); if (method === 'credit_card') setMethod('pix') }}
+                  onClick={() => setPlan('monthly')}
                   className={`text-left rounded-xl p-4 border transition ${plan === 'monthly' ? 'border-gold-400 bg-gold-400/10' : 'border-black/10'}`}
                 >
                   <p className="text-xs font-bold uppercase text-black/50">Plano mensal</p>
@@ -219,7 +183,7 @@ export function SubscriptionPaywall() {
                   <li key={b} className="flex gap-2"><Check size={16} className="text-gold-500 shrink-0 mt-0.5" />{b}</li>
                 ))}
               </ul>
-              <div className={`grid gap-2 ${plan === 'annual' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setMethod('pix')}
@@ -227,15 +191,6 @@ export function SubscriptionPaywall() {
                 >
                   <QrCode size={15} /> Pix
                 </button>
-                {plan === 'annual' && (
-                  <button
-                    type="button"
-                    onClick={() => setMethod('credit_card')}
-                    className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'credit_card' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}
-                  >
-                    <CreditCard size={15} /> Cartão
-                  </button>
-                )}
                 <button
                   type="button"
                   onClick={() => setMethod('wallet')}
@@ -252,37 +207,6 @@ export function SubscriptionPaywall() {
                 </>
               )}
 
-              {method === 'credit_card' && plan === 'annual' && (
-                <form onSubmit={payWithCard} className="space-y-3">
-                  <div>
-                    <label className="label-light">Nome no cartão</label>
-                    <input className="input-light" required value={cardName} onChange={(e) => setCardName(e.target.value.toUpperCase())} />
-                  </div>
-                  <div>
-                    <label className="label-light">Número do cartão</label>
-                    <input className="input-light" required inputMode="numeric" value={maskCardNumber(cardNumber)} onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} placeholder="0000 0000 0000 0000" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="label-light">Validade</label>
-                      <input className="input-light" required inputMode="numeric" value={cardExpiry} onChange={(e) => setCardExpiry(maskCardExpiry(e.target.value))} placeholder="MM/AA" />
-                    </div>
-                    <div>
-                      <label className="label-light">CVV</label>
-                      <input className="input-light" required inputMode="numeric" maxLength={4} value={cardCvv} onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="000" />
-                    </div>
-                    <div>
-                      <label className="label-light">Nº endereço</label>
-                      <input className="input-light" required inputMode="numeric" value={cardAddressNumber} onChange={(e) => setCardAddressNumber(e.target.value.replace(/\D/g, ''))} placeholder="123" />
-                    </div>
-                  </div>
-                  {error && <p className="text-sm text-red-500">{error}</p>}
-                  <button type="submit" disabled={loading} className="btn-gold w-full">
-                    {loading ? 'Processando pagamento...' : `Pagar ${formatBRL(PLAN_PRICES.annual)} no cartão`}
-                  </button>
-                </form>
-              )}
-
               {method === 'wallet' && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm border-t border-black/10 pt-3">
@@ -290,7 +214,7 @@ export function SubscriptionPaywall() {
                     <span className="font-semibold">{formatBRL(walletAvailable)}</span>
                   </div>
                   {walletAvailable < PLAN_PRICES[plan] && (
-                    <p className="text-sm text-red-500">Saldo insuficiente para esse plano. Escolha Pix{plan === 'annual' ? ' ou cartão' : ''}, ou aguarde seu saldo ficar disponível.</p>
+                    <p className="text-sm text-red-500">Saldo insuficiente para esse plano. Escolha Pix, ou aguarde seu saldo ficar disponível.</p>
                   )}
                   {error && <p className="text-sm text-red-500">{error}</p>}
                   <button onClick={payWithWallet} disabled={loading || walletAvailable < PLAN_PRICES[plan]} className="btn-gold w-full disabled:opacity-40">
