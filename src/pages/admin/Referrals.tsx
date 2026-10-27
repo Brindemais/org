@@ -11,6 +11,7 @@ interface Row {
   referral_code: string
   referred_by: string | null
   created_at: string
+  role: string
 }
 
 interface TreeNode extends Row {
@@ -28,7 +29,10 @@ export default function AdminReferrals() {
   useEffect(() => {
     setLoading(true)
     Promise.all([
-      supabase.from('profiles').select('id, full_name, referral_code, referred_by, created_at').eq('role', 'subscriber').order('created_at', { ascending: true }),
+      // Inclui parceiro também — antes só trazia role='subscriber', então
+      // quem foi indicado e virou parceiro desaparecia da árvore mesmo
+      // tendo um referred_by válido.
+      supabase.from('profiles').select('id, full_name, referral_code, referred_by, created_at, role').in('role', ['subscriber', 'partner']).order('created_at', { ascending: true }),
       // Same "still within the paid cycle" rule as useSubscription's benefitsBlocked — a
       // status still saying 'active' with an expires_at in the past doesn't count.
       supabase.from('subscriptions').select('subscriber_id, status, expires_at').eq('status', 'active'),
@@ -44,7 +48,7 @@ export default function AdminReferrals() {
     })
   }, [])
 
-  const { roots, byId, totalInNetwork } = useMemo(() => {
+  const { roots, byId, totalInNetwork, partnerCount } = useMemo(() => {
     const byId = new Map<string, TreeNode>()
     for (const r of rows) byId.set(r.id, { ...r, isActive: activeIds.has(r.id), children: [] })
 
@@ -59,7 +63,11 @@ export default function AdminReferrals() {
     roots.sort(sortByName)
     roots.forEach(sortTree)
 
-    return { roots, byId, totalInNetwork: rows.filter((r) => r.referred_by).length }
+    return {
+      roots, byId,
+      totalInNetwork: rows.filter((r) => r.referred_by).length,
+      partnerCount: rows.filter((r) => r.role === 'partner').length,
+    }
   }, [rows, activeIds])
 
   // When searching, auto-expand every ancestor chain that leads to a match
@@ -112,6 +120,7 @@ export default function AdminReferrals() {
           )}
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${n.isActive ? 'bg-emerald-400' : 'bg-white/20'}`} />
           <span className="text-sm truncate">{n.full_name}</span>
+          {n.role === 'partner' && <span className="pill !py-0 !px-1.5 text-[10px] bg-gold-400/15 text-gold-300 shrink-0">parceiro</span>}
           <span className="text-xs text-white/30 font-mono shrink-0">{n.referral_code}</span>
           {n.children.length > 0 && (
             <span className="text-xs text-white/40 shrink-0 ml-auto pl-2">{descendants} indicado{descendants === 1 ? '' : 's'}</span>
@@ -130,7 +139,7 @@ export default function AdminReferrals() {
         <div>
           <h1 className="font-display text-2xl font-semibold">Indicações</h1>
           <p className="text-white/50 text-sm">
-            {rows.length} assinantes · {totalInNetwork} vieram por indicação · {activeIds.size} com benefícios ativos
+            {rows.length - partnerCount} assinantes · {partnerCount} parceiro{partnerCount === 1 ? '' : 's'} · {totalInNetwork} vieram por indicação · {activeIds.size} com benefícios ativos
           </p>
         </div>
         <input
@@ -144,7 +153,7 @@ export default function AdminReferrals() {
       <div className="card">
         {loading && <LoadingState dark label="Carregando árvore de indicações..." className="py-8" />}
         {!loading && !roots.length && (
-          <EmptyState dark icon={Network} title="Nenhum assinante ainda" description="A árvore de indicações aparece aqui assim que houver assinantes cadastrados." className="py-8" />
+          <EmptyState dark icon={Network} title="Ninguém cadastrado ainda" description="A árvore de indicações aparece aqui assim que houver assinantes ou parceiros cadastrados." className="py-8" />
         )}
         {!loading && roots.length > 0 && !visibleRoots.length && (
           <EmptyState dark icon={Search} title="Nada encontrado" description="Tente outro nome ou código de indicação." className="py-8" />
