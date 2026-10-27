@@ -4,6 +4,7 @@ import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Check, Gift, History, Package, 
 import { supabase } from '../../lib/supabase'
 import type { ProductRow, Partner } from '../../lib/types'
 import { formatBRL, formatDateTime } from '../../lib/format'
+import { pendingDaysLeft } from '../../lib/wallet'
 import { EmptyState } from '../../components/ui/EmptyState'
 
 interface ExtratoRow { id: string; type: string; direction: string; amount: number; description: string | null; created_at: string }
@@ -159,20 +160,23 @@ export default function AdminPartnerManage() {
           </div>
           {extrato.length === 0 && <p className="text-xs text-white/30">Nenhuma movimentação ainda.</p>}
           <div className="space-y-1.5">
-            {(showAllExtrato ? extrato : extrato.slice(0, 6)).map((t) => (
-              <div key={t.id} className="flex items-center gap-2 text-xs py-1.5 border-t border-ink-800">
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${t.direction === 'in' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
-                  {t.direction === 'in' ? <ArrowDownLeft size={11} /> : <ArrowUpRight size={11} />}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="truncate">{t.description || EXTRATO_TYPE_LABELS[t.type] || t.type}</p>
-                  <p className="text-white/30">{formatDateTime(t.created_at)}</p>
+            {(showAllExtrato ? extrato : extrato.slice(0, 6)).map((t) => {
+              const daysLeft = pendingDaysLeft(t)
+              return (
+                <div key={t.id} className="flex items-center gap-2 text-xs py-1.5 border-t border-ink-800">
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${t.direction === 'in' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
+                    {t.direction === 'in' ? <ArrowDownLeft size={11} /> : <ArrowUpRight size={11} />}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate">{t.description || EXTRATO_TYPE_LABELS[t.type] || t.type}</p>
+                    <p className="text-white/30">{formatDateTime(t.created_at)}{daysLeft !== null && <span className="text-gold-400"> · libera em {daysLeft} dia{daysLeft === 1 ? '' : 's'}</span>}</p>
+                  </div>
+                  <span className={`font-semibold shrink-0 ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {t.direction === 'in' ? '+' : '-'} {formatBRL(t.amount)}
+                  </span>
                 </div>
-                <span className={`font-semibold shrink-0 ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {t.direction === 'in' ? '+' : '-'} {formatBRL(t.amount)}
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       ) : (

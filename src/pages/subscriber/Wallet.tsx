@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useWallet } from '../../hooks/useWallet'
 import { supabase } from '../../lib/supabase'
 import { formatBRL, formatDateTime } from '../../lib/format'
+import { pendingDaysLeft } from '../../lib/wallet'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { Logo } from '../../components/layout/Logo'
@@ -97,23 +98,28 @@ export default function SubscriberWallet() {
         </div>
         {loading && <LoadingState dark label="Carregando extrato..." />}
         <div className="space-y-2">
-          {visibleTransactions.map((t) => (
-            <div key={t.id} className="card !py-3 flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${t.direction === 'in' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
-                {t.direction === 'in' ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
+          {visibleTransactions.map((t) => {
+            const daysLeft = pendingDaysLeft(t)
+            return (
+              <div key={t.id} className="card !py-3 flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${t.direction === 'in' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
+                  {t.direction === 'in' ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{t.type === 'adjustment' ? (profile?.full_name ?? TYPE_LABELS.adjustment) : (t.description || TYPE_LABELS[t.type] || t.type)}</p>
+                  <p className="text-xs text-white/40">{formatDateTime(t.created_at)}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className={`text-sm font-semibold ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {t.direction === 'in' ? '+' : '-'} {formatBRL(t.amount)}
+                  </p>
+                  <p className={`text-[10px] ${daysLeft !== null ? 'text-gold-400' : 'text-white/30'}`}>
+                    {t.direction === 'out' ? 'Transferido' : daysLeft !== null ? `Libera em ${daysLeft} dia${daysLeft === 1 ? '' : 's'}` : 'Disponível'}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{t.type === 'adjustment' ? (profile?.full_name ?? TYPE_LABELS.adjustment) : (t.description || TYPE_LABELS[t.type] || t.type)}</p>
-                <p className="text-xs text-white/40">{formatDateTime(t.created_at)}</p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className={`text-sm font-semibold ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {t.direction === 'in' ? '+' : '-'} {formatBRL(t.amount)}
-                </p>
-                <p className="text-[10px] text-white/30">{t.direction === 'in' ? 'Aprovado' : 'Transferido'}</p>
-              </div>
-            </div>
-          ))}
+            )
+          })}
           {!loading && !transactions.length && (
             <EmptyState dark icon={History} title="Nenhuma movimentação ainda" description="Seus créditos, saques e cashback aparecem aqui." />
           )}

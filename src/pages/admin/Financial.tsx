@@ -4,6 +4,7 @@ import { TrendingDown, TrendingUp, Users2, Wallet, KeyRound, Store, QrCode, Sear
 import { supabase } from '../../lib/supabase'
 import { StatCard } from '../../components/ui/StatCard'
 import { formatBRL, formatDateTime } from '../../lib/format'
+import { pendingDaysLeft } from '../../lib/wallet'
 import { useDashboardTheme } from '../../contexts/DashboardThemeContext'
 
 const PLATFORM_COST_PCT = 0.15
@@ -11,7 +12,7 @@ const PLATFORM_COST_PCT = 0.15
 interface MonthRow { key: string; label: string; gross: number; referralCost: number }
 interface ConfirmedPayment { amount: number; confirmed_at: string; type: string; payment_method: string }
 interface UserResult { id: string; full_name: string; email: string | null }
-interface BonusRow { id: string; type: string; level: number; amount: number; status: string; created_at: string }
+interface BonusRow { id: string; type: string; level: number; amount: number; status: string; created_at: string; cancel_reason: string | null }
 interface ExtratoRow { id: string; type: string; direction: string; amount: number; description: string | null; created_at: string }
 
 // Mesmos rótulos do extrato do assinante (src/pages/subscriber/Wallet.tsx) —
@@ -158,7 +159,7 @@ export default function AdminFinancial() {
     setShowAllExtrato(false)
     const [{ data: balance }, { data: bonusRows }, { data: extratoRows }] = await Promise.all([
       supabase.rpc('current_wallet_balance', { p_user_id: u.id }),
-      supabase.from('bonuses').select('id, type, level, amount, status, created_at').eq('beneficiary_id', u.id).order('created_at', { ascending: false }).limit(20),
+      supabase.from('bonuses').select('id, type, level, amount, status, created_at, cancel_reason').eq('beneficiary_id', u.id).order('created_at', { ascending: false }).limit(20),
       supabase.from('wallet_transactions').select('id, type, direction, amount, description, created_at').eq('user_id', u.id).order('created_at', { ascending: false }).limit(100),
     ])
     setSelectedBalance(typeof balance === 'number' ? balance : Number(balance ?? 0))
@@ -183,9 +184,10 @@ export default function AdminFinancial() {
 
   async function reverseBonus(bonusId: string) {
     if (!selectedUser) return
-    if (!confirm('Estornar este bônus? O valor sai do saldo da pessoa.')) return
+    const reason = window.prompt('Motivo do cancelamento (aparece pra pessoa no extrato dela):')
+    if (reason === null) return
     setReversingId(bonusId)
-    const { error } = await supabase.rpc('admin_reverse_bonus', { p_bonus_id: bonusId })
+    const { error } = await supabase.rpc('admin_reverse_bonus', { p_bonus_id: bonusId, p_reason: reason || null })
     setReversingId(null)
     if (error) { setWalletMsg('Não foi possível estornar este bônus.'); return }
     selectUser(selectedUser)
@@ -296,18 +298,23 @@ export default function AdminFinancial() {
               {selectedBonuses.length === 0 && <p className="text-xs text-white/30">Nenhum bônus registrado.</p>}
               <div className="space-y-1.5">
                 {selectedBonuses.map((b) => (
-                  <div key={b.id} className="flex items-center justify-between text-xs py-1.5 border-t border-ink-800">
-                    <span className="text-white/60">{formatDateTime(b.created_at)} · nível {b.level} · {b.type}</span>
-                    <div className="flex items-center gap-2">
-                      <span className={b.status === 'reversed' ? 'text-white/30 line-through' : 'font-semibold'}>{formatBRL(b.amount)}</span>
-                      {b.status !== 'reversed' ? (
-                        <button onClick={() => reverseBonus(b.id)} disabled={reversingId === b.id} className="text-red-400 flex items-center gap-1">
-                          <Undo2 size={12} /> Estornar
-                        </button>
-                      ) : (
-                        <span className="text-white/30">Estornado</span>
-                      )}
+                  <div key={b.id} className="py-1.5 border-t border-ink-800">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60">{formatDateTime(b.created_at)} · nível {b.level} · {b.type}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={b.status === 'reversed' ? 'text-white/30 line-through' : 'font-semibold'}>{formatBRL(b.amount)}</span>
+                        {b.status !== 'reversed' ? (
+                          <button onClick={() => reverseBonus(b.id)} disabled={reversingId === b.id} className="text-red-400 flex items-center gap-1">
+                            <Undo2 size={12} /> Estornar
+                          </button>
+                        ) : (
+                          <span className="text-white/30">Cancelado</span>
+                        )}
+                      </div>
                     </div>
+                    {b.status === 'reversed' && b.cancel_reason && (
+                      <p className="text-[11px] text-red-400/70 mt-0.5">Motivo: {b.cancel_reason}</p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -324,20 +331,23 @@ export default function AdminFinancial() {
               </div>
               {selectedExtrato.length === 0 && <p className="text-xs text-white/30">Nenhuma movimentação ainda.</p>}
               <div className="space-y-1.5">
-                {(showAllExtrato ? selectedExtrato : selectedExtrato.slice(0, 6)).map((t) => (
-                  <div key={t.id} className="flex items-center gap-2 text-xs py-1.5 border-t border-ink-800">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${t.direction === 'in' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
-                      {t.direction === 'in' ? <ArrowDownLeft size={11} /> : <ArrowUpRight size={11} />}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate">{t.description || EXTRATO_TYPE_LABELS[t.type] || t.type}</p>
-                      <p className="text-white/30">{formatDateTime(t.created_at)}</p>
+                {(showAllExtrato ? selectedExtrato : selectedExtrato.slice(0, 6)).map((t) => {
+                  const daysLeft = pendingDaysLeft(t)
+                  return (
+                    <div key={t.id} className="flex items-center gap-2 text-xs py-1.5 border-t border-ink-800">
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${t.direction === 'in' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
+                        {t.direction === 'in' ? <ArrowDownLeft size={11} /> : <ArrowUpRight size={11} />}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate">{t.description || EXTRATO_TYPE_LABELS[t.type] || t.type}</p>
+                        <p className="text-white/30">{formatDateTime(t.created_at)}{daysLeft !== null && <span className="text-gold-400"> · libera em {daysLeft} dia{daysLeft === 1 ? '' : 's'}</span>}</p>
+                      </div>
+                      <span className={`font-semibold shrink-0 ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {t.direction === 'in' ? '+' : '-'} {formatBRL(t.amount)}
+                      </span>
                     </div>
-                    <span className={`font-semibold shrink-0 ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {t.direction === 'in' ? '+' : '-'} {formatBRL(t.amount)}
-                    </span>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>

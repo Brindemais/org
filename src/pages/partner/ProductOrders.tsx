@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useWallet } from '../../hooks/useWallet'
 import { supabase } from '../../lib/supabase'
 import { formatBRL, formatDateTime } from '../../lib/format'
+import { pendingDaysLeft } from '../../lib/wallet'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { QrScannerModal } from '../../components/ui/QrScannerModal'
@@ -163,13 +164,13 @@ export default function PartnerProductOrders() {
         <p className="text-sm text-white/60">
           Depende de como o assinante pagou: venda paga via <strong>Pix ou cartão</strong>
           {partner?.asaas_wallet_id ? ' cai direto na sua conta Asaas (split automático), sem passar pela Brinde Mais.' : ' só cai direto na sua Asaas depois que você vincular e aprovar a subconta em "Produtos e descontos" — até lá, entra aqui na carteira Brinde Mais igual a venda com saldo.'}
-          {' '}Venda paga com o <strong>saldo do assinante</strong> sempre entra aqui na carteira Brinde Mais (abaixo), confirmada só depois que você bater o código de retirada do pedido — e saca pelo mesmo "Solicitar saque" do bônus de indicação, com 30 dias de espera antes de ficar disponível.
+          {' '}Venda paga com o <strong>saldo do assinante</strong> sempre entra aqui na carteira Brinde Mais (abaixo), confirmada só depois que você bater o código de retirada do pedido — e saca pelo mesmo "Solicitar saque" do bônus de indicação, com 7 dias de espera antes de ficar disponível.
         </p>
       </section>
 
       <section className="card space-y-4">
         <p className="font-semibold flex items-center gap-1.5"><Gift size={16} className="text-gold-400" /> Saldo e saque</p>
-        <p className="text-xs text-white/40 -mt-2">Soma bônus de indicação e vendas pagas com saldo do assinante (essas últimas, 30 dias após a retirada confirmada).</p>
+        <p className="text-xs text-white/40 -mt-2">Soma bônus de indicação e vendas pagas com saldo do assinante (essas últimas, 7 dias após a retirada confirmada).</p>
         <div className="grid grid-cols-3 gap-3">
           <div>
             <p className="text-xs text-white/40">Saldo total</p>
@@ -212,20 +213,26 @@ export default function PartnerProductOrders() {
         </div>
         {walletLoading && <LoadingState dark label="Carregando extrato..." />}
         <div className="space-y-2">
-          {(showAllExtrato ? transactions : transactions.slice(0, EXTRATO_PREVIEW_COUNT)).map((t) => (
-            <div key={t.id} className="card !py-3 flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${t.direction === 'in' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
-                {t.direction === 'in' ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
+          {(showAllExtrato ? transactions : transactions.slice(0, EXTRATO_PREVIEW_COUNT)).map((t) => {
+            const daysLeft = pendingDaysLeft(t)
+            return (
+              <div key={t.id} className="card !py-3 flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${t.direction === 'in' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
+                  {t.direction === 'in' ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{t.description || TYPE_LABELS[t.type] || t.type}</p>
+                  <p className="text-xs text-white/40">{formatDateTime(t.created_at)}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className={`text-sm font-semibold ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {t.direction === 'in' ? '+' : '-'} {formatBRL(t.amount)}
+                  </p>
+                  {daysLeft !== null && <p className="text-[10px] text-gold-400">Libera em {daysLeft} dia{daysLeft === 1 ? '' : 's'}</p>}
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{t.description || TYPE_LABELS[t.type] || t.type}</p>
-                <p className="text-xs text-white/40">{formatDateTime(t.created_at)}</p>
-              </div>
-              <p className={`text-sm font-semibold shrink-0 ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
-                {t.direction === 'in' ? '+' : '-'} {formatBRL(t.amount)}
-              </p>
-            </div>
-          ))}
+            )
+          })}
           {!walletLoading && !transactions.length && (
             <EmptyState dark icon={History} title="Nenhuma movimentação ainda" description="Vendas de produtos e bonificações aparecem aqui." className="py-8" />
           )}
