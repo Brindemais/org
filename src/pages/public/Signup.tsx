@@ -1,15 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Check, Copy, KeyRound, ShieldCheck, User, Wallet } from 'lucide-react'
+import { Check, Copy, CreditCard, KeyRound, QrCode, ShieldCheck, User, Wallet } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { LogoBadge } from '../../components/layout/Logo'
 import { ReferralFields } from '../../components/ui/ReferralFields'
-import { isValidCpfCnpj, isValidEmail, isValidPhone, maskCpfCnpj, maskPhone, formatBRL } from '../../lib/format'
+import { isValidCpfCnpj, isValidEmail, isValidPhone, maskCpfCnpj, maskPhone, maskCardNumber, maskCardExpiry, formatBRL } from '../../lib/format'
 import { PLAN_PRICES, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../../lib/plans'
 import type { SubscriptionPlan } from '../../lib/types'
 
-// Pagamento via cartão foi escondido da plataforma (pedido do dono) —
-// fica só Pix nesse assistente de cadastro.
+type PaymentMethod = 'pix' | 'credit_card'
+
 type Step = 1 | 2 | 3 | 4
 
 // A escolha do ponto de retirada acontece depois, dentro do app, quando a
@@ -77,6 +77,15 @@ export default function Signup() {
   const [pixQrCode, setPixQrCode] = useState('')
   const [pixPaymentId, setPixPaymentId] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+
+  // Cartão só existe pro plano anual — o mensal é Pix obrigatório, sem
+  // opção de escolha (nem aparece o seletor abaixo).
+  const [method, setMethod] = useState<PaymentMethod>('pix')
+  const [cardName, setCardName] = useState('')
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardExpiry, setCardExpiry] = useState('')
+  const [cardCvv, setCardCvv] = useState('')
+  const [cardAddressNumber, setCardAddressNumber] = useState('')
 
   // complete_signup só pode ser chamada com uma sessão de verdade (ela é
   // SECURITY DEFINER mas authenticated-only — anon não tem EXECUTE nela de
@@ -245,6 +254,47 @@ export default function Signup() {
     return () => clearInterval(t)
   }, [step, pixPaymentId, navigate])
 
+  async function handleCardPayment(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+    const { data: userRes } = await supabase.auth.getUser()
+    const uid = userRes.user?.id
+    if (!uid) { setLoading(false); return }
+
+    const { data: payment, error: payErr } = await supabase.from('payments').insert({
+      subscriber_id: uid,
+      amount: PLAN_PRICES.annual,
+      plan: 'annual',
+      type: 'subscription',
+      payment_method: 'credit_card',
+    }).select('id').single()
+    if (payErr || !payment) {
+      setLoading(false)
+      setError('Não foi possível iniciar o pagamento. Tente novamente.')
+      return
+    }
+
+    const [expMonth, expYearShort] = cardExpiry.split('/')
+    const { data: charge, error: chargeError } = await supabase.functions.invoke('asaas-charge-card', {
+      body: {
+        payment_id: payment.id,
+        holder_name: cardName,
+        card_number: cardNumber,
+        expiry_month: expMonth,
+        expiry_year: expYearShort ? `20${expYearShort}` : '',
+        ccv: cardCvv,
+        holder_address_number: cardAddressNumber,
+      },
+    })
+    setLoading(false)
+    if (chargeError || charge?.error) {
+      setError('Cartão recusado. Confira os dados, tente outro cartão ou pague via Pix.')
+      return
+    }
+    navigate('/app')
+  }
+
   function copyPix() {
     navigator.clipboard.writeText(pixCode)
     setCopied(true)
@@ -383,10 +433,63 @@ export default function Signup() {
               ))}
             </ul>
 
-            {error && <p className="text-sm text-red-500">{error}</p>}
-            <button onClick={handleActivateSubscription} disabled={loading} className="btn-gold w-full">
-              {loading ? 'Gerando Pix...' : 'Ativar assinatura via Pix'}
-            </button>
+            {plan === 'annual' && (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMethod('pix')}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'pix' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}
+                >
+                  <QrCode size={15} /> Pix
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMethod('credit_card')}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'credit_card' ? 'border-gold-400 bg-gold-400/10 text-gold-700' : 'border-black/10 text-black/50'}`}
+                >
+                  <CreditCard size={15} /> Cartão
+                </button>
+              </div>
+            )}
+
+            {plan === 'monthly' || method === 'pix' ? (
+              <>
+                {error && <p className="text-sm text-red-500">{error}</p>}
+                <button onClick={handleActivateSubscription} disabled={loading} className="btn-gold w-full">
+                  {loading ? 'Gerando Pix...' : 'Ativar assinatura via Pix'}
+                </button>
+              </>
+            ) : (
+              <form onSubmit={handleCardPayment} className="space-y-3">
+                <div>
+                  <label className="label-light">Nome no cartão</label>
+                  <input className="input-light" required value={cardName} onChange={(e) => setCardName(e.target.value.toUpperCase())} />
+                </div>
+                <div>
+                  <label className="label-light">Número do cartão</label>
+                  <input className="input-light" required inputMode="numeric" value={maskCardNumber(cardNumber)} onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} placeholder="0000 0000 0000 0000" />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="label-light">Validade</label>
+                    <input className="input-light" required inputMode="numeric" value={cardExpiry} onChange={(e) => setCardExpiry(maskCardExpiry(e.target.value))} placeholder="MM/AA" />
+                  </div>
+                  <div>
+                    <label className="label-light">CVV</label>
+                    <input className="input-light" required inputMode="numeric" maxLength={4} value={cardCvv} onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="000" />
+                  </div>
+                  <div>
+                    <label className="label-light">Nº endereço</label>
+                    <input className="input-light" required inputMode="numeric" value={cardAddressNumber} onChange={(e) => setCardAddressNumber(e.target.value.replace(/\D/g, ''))} placeholder="123" />
+                  </div>
+                </div>
+                <p className="text-[11px] text-black/40">Cobrança única de {formatBRL(PLAN_PRICES.annual)}. Número e CVV vão direto e criptografados até a operadora do cartão, não ficam salvos aqui.</p>
+                {error && <p className="text-sm text-red-500">{error}</p>}
+                <button type="submit" disabled={loading} className="btn-gold w-full">
+                  {loading ? 'Processando pagamento...' : `Pagar ${formatBRL(PLAN_PRICES.annual)} no cartão`}
+                </button>
+              </form>
+            )}
 
             <button type="button" onClick={() => navigate('/app')} className="text-xs text-black/40 w-full text-center">
               Pagar depois — entrar no painel por enquanto

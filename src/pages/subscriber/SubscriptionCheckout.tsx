@@ -1,21 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, Copy, QrCode, Wallet } from 'lucide-react'
+import { Check, Copy, CreditCard, QrCode, Wallet } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { useSubscription } from '../../hooks/useSubscription'
 import { useWallet } from '../../hooks/useWallet'
-import { formatBRL, formatDate } from '../../lib/format'
+import { formatBRL, formatDate, maskCardNumber, maskCardExpiry } from '../../lib/format'
 import { PLAN_PRICES, PLAN_LABELS, ANNUAL_DISCOUNT_PCT, ANNUAL_MONTHLY_EQUIVALENT } from '../../lib/plans'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import type { SubscriptionPlan } from '../../lib/types'
 
-type Method = 'pix' | 'wallet'
+type Method = 'pix' | 'credit_card' | 'wallet'
 
-// Pagamento via cartão foi escondido da plataforma (pedido do dono) —
-// fica só Pix e saldo interno.
 export default function SubscriberSubscription() {
-  const { user } = useAuth()
+  const { user, refreshProfile } = useAuth()
   const { available: walletAvailable, reload: reloadWallet } = useWallet()
   const { subscription, benefitsBlocked, renewalDue, daysUntilExpiry, reload } = useSubscription()
   const [plan, setPlan] = useState<SubscriptionPlan>('monthly')
@@ -25,6 +23,11 @@ export default function SubscriberSubscription() {
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [cardName, setCardName] = useState('')
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardExpiry, setCardExpiry] = useState('')
+  const [cardCvv, setCardCvv] = useState('')
+  const [cardAddressNumber, setCardAddressNumber] = useState('')
   const navigate = useNavigate()
 
   // Pre-select whatever plan they're already on, so renewing/switching
@@ -59,6 +62,41 @@ export default function SubscriberSubscription() {
     setPixQrCode(charge.pix_qr_code ?? '')
   }
 
+  async function submitCard(e: FormEvent) {
+    e.preventDefault()
+    if (!user) return
+    setLoading(true)
+    setError(null)
+    const { data: payment, error: insertError } = await supabase.from('payments').insert({
+      subscriber_id: user.id, subscription_id: subscription?.id ?? null, amount: PLAN_PRICES.annual, plan: 'annual', type: 'subscription', payment_method: 'credit_card',
+    }).select('id').single()
+    if (insertError || !payment) {
+      setLoading(false)
+      setError('Não foi possível iniciar o pagamento. Tente novamente.')
+      return
+    }
+    const [expMonth, expYearShort] = cardExpiry.split('/')
+    const { data: charge, error: chargeError } = await supabase.functions.invoke('asaas-charge-card', {
+      body: {
+        payment_id: payment.id,
+        holder_name: cardName,
+        card_number: cardNumber,
+        expiry_month: expMonth,
+        expiry_year: expYearShort ? `20${expYearShort}` : '',
+        ccv: cardCvv,
+        holder_address_number: cardAddressNumber,
+      },
+    })
+    setLoading(false)
+    if (chargeError || charge?.error) {
+      setError(charge?.error === 'MISSING_CPF' ? 'Complete seu CPF em Perfil antes de continuar o pagamento.' : 'Cartão recusado. Confira os dados, tente outro cartão ou pague via Pix.')
+      return
+    }
+    await refreshProfile()
+    reload()
+    navigate('/app')
+  }
+
   async function submitWallet() {
     setLoading(true)
     setError(null)
@@ -66,7 +104,7 @@ export default function SubscriberSubscription() {
     setLoading(false)
     if (payError) {
       const map: Record<string, string> = {
-        INSUFFICIENT_BALANCE: 'Saldo interno insuficiente para pagar esse plano. Escolha Pix, ou aguarde seu saldo ficar disponível.',
+        INSUFFICIENT_BALANCE: 'Saldo interno insuficiente para pagar esse plano. Escolha Pix ou cartão, ou aguarde seu saldo ficar disponível.',
         ACCOUNT_SUSPENDED: 'Sua conta está suspensa. Fale com o suporte.',
       }
       const code = Object.keys(map).find((k) => payError.message.includes(k))
@@ -74,6 +112,7 @@ export default function SubscriberSubscription() {
       return
     }
     reloadWallet()
+    await refreshProfile()
     reload()
     navigate('/app')
   }
@@ -128,7 +167,7 @@ export default function SubscriberSubscription() {
           )}
           <div className="grid grid-cols-1 gap-3">
             <button
-              onClick={() => setPlan('monthly')}
+              onClick={() => { setPlan('monthly'); if (method === 'credit_card') setMethod('pix') }}
               className={`text-left rounded-xl2 p-5 border transition ${plan === 'monthly' ? 'border-gold-400 bg-gold-400/10' : 'border-ink-800 bg-ink-900'}`}
             >
               <p className="text-xs font-bold uppercase opacity-70">Plano mensal</p>
@@ -149,10 +188,15 @@ export default function SubscriberSubscription() {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className={`grid gap-2 ${plan === 'annual' ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <button type="button" onClick={() => setMethod('pix')} className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'pix' ? 'border-gold-400 bg-gold-400/10 text-gold-300' : 'border-ink-800 text-white/50'}`}>
               <QrCode size={15} /> Pix
             </button>
+            {plan === 'annual' && (
+              <button type="button" onClick={() => setMethod('credit_card')} className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'credit_card' ? 'border-gold-400 bg-gold-400/10 text-gold-300' : 'border-ink-800 text-white/50'}`}>
+                <CreditCard size={15} /> Cartão
+              </button>
+            )}
             <button type="button" onClick={() => setMethod('wallet')} className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium border transition ${method === 'wallet' ? 'border-gold-400 bg-gold-400/10 text-gold-300' : 'border-ink-800 text-white/50'}`}>
               <Wallet size={15} /> Saldo
             </button>
@@ -167,6 +211,20 @@ export default function SubscriberSubscription() {
             </>
           )}
 
+          {method === 'credit_card' && plan === 'annual' && (
+            <form onSubmit={submitCard} className="space-y-3">
+              <input className="input" placeholder="Nome no cartão" required value={cardName} onChange={(e) => setCardName(e.target.value.toUpperCase())} />
+              <input className="input" placeholder="Número do cartão" required inputMode="numeric" value={maskCardNumber(cardNumber)} onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} />
+              <div className="grid grid-cols-3 gap-2">
+                <input className="input" placeholder="MM/AA" required inputMode="numeric" value={cardExpiry} onChange={(e) => setCardExpiry(maskCardExpiry(e.target.value))} />
+                <input className="input" placeholder="CVV" required inputMode="numeric" maxLength={4} value={cardCvv} onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} />
+                <input className="input" placeholder="Nº endereço" required inputMode="numeric" value={cardAddressNumber} onChange={(e) => setCardAddressNumber(e.target.value.replace(/\D/g, ''))} />
+              </div>
+              {error && <p className="text-sm text-red-400">{error}</p>}
+              <button type="submit" disabled={loading} className="btn-gold w-full">{loading ? 'Processando...' : `Pagar ${formatBRL(PLAN_PRICES.annual)} no cartão`}</button>
+            </form>
+          )}
+
           {method === 'wallet' && (
             <div className="space-y-3">
               <div className="card !py-3 flex items-center justify-between text-sm">
@@ -174,7 +232,7 @@ export default function SubscriberSubscription() {
                 <span className="font-semibold">{formatBRL(walletAvailable)}</span>
               </div>
               {walletAvailable < amount && (
-                <p className="text-sm text-red-400">Saldo insuficiente para esse plano. Escolha Pix, ou aguarde seu saldo ficar disponível.</p>
+                <p className="text-sm text-red-400">Saldo insuficiente para esse plano. Escolha Pix{plan === 'annual' ? ' ou cartão' : ''}, ou aguarde seu saldo ficar disponível.</p>
               )}
               {error && <p className="text-sm text-red-400">{error}</p>}
               <button onClick={submitWallet} disabled={loading || walletAvailable < amount} className="btn-gold w-full disabled:opacity-40">
