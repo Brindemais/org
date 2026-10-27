@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import {
   ArrowDownLeft, ArrowUpRight, ChevronRight, Copy, CreditCard,
-  Eye, EyeOff, Gift, History, Lock, MapPin, Percent, Share2, Users2, Wallet,
+  Eye, EyeOff, Gift, History, Lock, MapPin, Percent, ShoppingBag, Share2, Users2, Wallet,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSubscription } from '../../hooks/useSubscription'
@@ -18,6 +18,7 @@ import { LoadingState } from '../../components/ui/LoadingState'
 import { Logo } from '../../components/layout/Logo'
 
 interface OfferRow { id: string; title: string; discount_pct: number | null; subscriber_price: number | null; normal_price: number | null; image_url: string | null; partner: { trade_name: string } | null }
+interface ProductPickupRow { order_id: string; status: string; code: string; promotion_title: string; promotion_image_url: string | null; partner_trade_name: string; deadline: string | null }
 
 const TX_LABELS: Record<string, string> = {
   bonus_subscription: 'Bonificação de assinatura',
@@ -54,6 +55,8 @@ export default function SubscriberHome() {
   const [hideBalance, setHideBalance] = useState(false)
   const [offers, setOffers] = useState<OfferRow[]>([])
   const [loadingOffers, setLoadingOffers] = useState(true)
+  const [productPickups, setProductPickups] = useState<ProductPickupRow[]>([])
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null)
 
   useEffect(() => {
     supabase.rpc('list_public_partners').select('id, trade_name, category, logo_url').limit(6)
@@ -71,6 +74,23 @@ export default function SubscriberHome() {
           })
       })
   }, [])
+
+  useEffect(() => {
+    // Mesma ideia do card "Brinde do mês" abaixo, mas pra compra de
+    // produto: pedido com status='accepted' já tem código de retirada
+    // pronto pra apresentar ao parceiro — sem isso, esse código só
+    // aparecia em "Minhas compras", enterrado fora da Home.
+    supabase.rpc('get_my_product_orders').then(({ data }) => {
+      const rows = (data as ProductPickupRow[]) ?? []
+      setProductPickups(rows.filter((o) => o.status === 'accepted'))
+    })
+  }, [])
+
+  function copyProductCode(o: ProductPickupRow) {
+    navigator.clipboard.writeText(o.code)
+    setCopiedOrderId(o.order_id)
+    setTimeout(() => setCopiedOrderId(null), 1500)
+  }
 
   useEffect(() => {
     if (!profile) return
@@ -207,6 +227,37 @@ export default function SubscriberHome() {
           <Link to={pickup ? '/app/retirada' : '/app/beneficios'} className="btn-gold w-full !rounded-none text-sm">
             {pickup ? 'Ver minha retirada' : 'Escolher ponto de retirada'}
           </Link>
+        </div>
+      )}
+
+      {productPickups.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-semibold flex items-center gap-1.5"><ShoppingBag size={15} className="text-gold-400" /> Retirada de produtos</p>
+            <Link to="/app/produtos/compras" className="text-xs text-gold-400 font-medium">Ver todas</Link>
+          </div>
+          <div className="space-y-2">
+            {productPickups.map((o) => (
+              <div key={o.order_id} className="card !p-0 overflow-hidden border-gold-400/30">
+                <div className="flex items-center gap-3 p-4">
+                  <div className="w-14 h-14 rounded-lg bg-ink-950 border border-ink-800 overflow-hidden shrink-0 flex items-center justify-center">
+                    {o.promotion_image_url ? <img src={o.promotion_image_url} alt="" className="w-full h-full object-cover" /> : <ShoppingBag size={20} className="text-white/15" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{o.promotion_title}</p>
+                    <p className="text-xs text-white/40 truncate">{o.partner_trade_name}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <p className="text-xs text-white/50">Código {o.code}</p>
+                      <StatusBadge status={o.status} />
+                    </div>
+                  </div>
+                  <button onClick={() => copyProductCode(o)} className="btn-dark !px-3 !py-2 text-xs gap-1.5 shrink-0" aria-label="Copiar código">
+                    <Copy size={13} /> {copiedOrderId === o.order_id ? 'Copiado!' : 'Copiar'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
