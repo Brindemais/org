@@ -88,7 +88,7 @@ export interface Payment {
   subscription_id: string | null
   order_id: string | null
   amount: number
-  type: 'subscription' | 'store'
+  type: 'subscription' | 'store' | 'product_purchase' | 'partner_fee'
   plan: SubscriptionPlan | null
   status: PaymentStatus
   pix_code: string | null
