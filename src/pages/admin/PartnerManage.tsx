@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Check, Gift, History, Package, Pause, Play, Plus, Trash2, Wallet } from 'lucide-react'
+import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Check, Gift, History, Package, Pause, Play, Plus, Trash2, Undo2, Users2, Wallet } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { ProductRow, Partner } from '../../lib/types'
 import { formatBRL, formatDateTime } from '../../lib/format'
@@ -8,6 +8,7 @@ import { pendingDaysLeft } from '../../lib/wallet'
 import { EmptyState } from '../../components/ui/EmptyState'
 
 interface ExtratoRow { id: string; type: string; direction: string; amount: number; description: string | null; created_at: string }
+interface BonusRow { id: string; type: string; level: number; amount: number; status: string; created_at: string; cancel_reason: string | null; source: { full_name: string } | null }
 
 // Mesmos rótulos do extrato do parceiro (src/pages/partner/ProductOrders.tsx)
 // — a descrição já traz a origem real (saldo interno/Pix/cartão/ativação
@@ -51,6 +52,8 @@ export default function AdminPartnerManage() {
   const [walletAvailable, setWalletAvailable] = useState<number | null>(null)
   const [extrato, setExtrato] = useState<ExtratoRow[]>([])
   const [showAllExtrato, setShowAllExtrato] = useState(false)
+  const [bonuses, setBonuses] = useState<BonusRow[]>([])
+  const [reversingId, setReversingId] = useState<string | null>(null)
 
   async function load() {
     if (!id) return
@@ -68,19 +71,31 @@ export default function AdminPartnerManage() {
 
     const staffProfileId = (staffRow as { profile_id: string } | null)?.profile_id
     if (staffProfileId) {
-      const [{ data: balance }, { data: available }, { data: extratoRows }] = await Promise.all([
+      const [{ data: balance }, { data: available }, { data: extratoRows }, { data: bonusRows }] = await Promise.all([
         supabase.rpc('current_wallet_balance', { p_user_id: staffProfileId }),
         supabase.rpc('available_bonus_balance', { p_user_id: staffProfileId }),
         supabase.from('wallet_transactions').select('id, type, direction, amount, description, created_at').eq('user_id', staffProfileId).order('created_at', { ascending: false }).limit(100),
+        supabase.from('bonuses').select('id, type, level, amount, status, created_at, cancel_reason, source:source_subscriber_id(full_name)').eq('beneficiary_id', staffProfileId).order('created_at', { ascending: false }).limit(20),
       ])
       setWalletBalance(typeof balance === 'number' ? balance : Number(balance ?? 0))
       setWalletAvailable(typeof available === 'number' ? available : Number(available ?? 0))
       setExtrato((extratoRows as ExtratoRow[]) ?? [])
+      setBonuses((bonusRows as any as BonusRow[]) ?? [])
     } else {
       setWalletBalance(null)
       setWalletAvailable(null)
       setExtrato([])
+      setBonuses([])
     }
+  }
+
+  async function reverseBonus(bonusId: string) {
+    const reason = window.prompt('Motivo do cancelamento (aparece pro parceiro no extrato dele):')
+    if (reason === null) return
+    setReversingId(bonusId)
+    await supabase.rpc('admin_reverse_bonus', { p_bonus_id: bonusId, p_reason: reason || null })
+    setReversingId(null)
+    load()
   }
 
   useEffect(() => { load() }, [id])
@@ -177,6 +192,33 @@ export default function AdminPartnerManage() {
                 </div>
               )
             })}
+          </div>
+
+          <div className="flex items-center justify-between mb-2 pt-3 mt-3 border-t border-ink-800">
+            <p className="text-xs font-bold uppercase tracking-wide text-white/40 flex items-center gap-1.5"><Users2 size={12} /> Indicações</p>
+          </div>
+          {bonuses.length === 0 && <p className="text-xs text-white/30">Nenhum bônus registrado.</p>}
+          <div className="space-y-1.5">
+            {bonuses.map((b) => (
+              <div key={b.id} className="py-1.5 border-t border-ink-800 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-white/60">{formatDateTime(b.created_at)} · nível {b.level} · {b.type} · <span className="text-white/80">{b.source?.full_name ?? 'alguém da rede'}</span></span>
+                  <div className="flex items-center gap-2">
+                    <span className={b.status === 'reversed' ? 'text-white/30 line-through' : 'font-semibold'}>{formatBRL(b.amount)}</span>
+                    {b.status !== 'reversed' ? (
+                      <button onClick={() => reverseBonus(b.id)} disabled={reversingId === b.id} className="text-red-400 flex items-center gap-1">
+                        <Undo2 size={11} /> Estornar
+                      </button>
+                    ) : (
+                      <span className="text-white/30">Cancelado</span>
+                    )}
+                  </div>
+                </div>
+                {b.status === 'reversed' && b.cancel_reason && (
+                  <p className="text-[11px] text-red-400/70 mt-0.5">Motivo: {b.cancel_reason}</p>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       ) : (
