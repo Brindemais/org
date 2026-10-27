@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
-import { TrendingDown, TrendingUp, Users2, Wallet, KeyRound, Store, QrCode, Search, Undo2, SlidersHorizontal } from 'lucide-react'
+import { TrendingDown, TrendingUp, Users2, Wallet, KeyRound, Store, QrCode, Search, Undo2, SlidersHorizontal, ArrowDownLeft, ArrowUpRight, History } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { StatCard } from '../../components/ui/StatCard'
 import { formatBRL, formatDateTime } from '../../lib/format'
@@ -12,6 +12,21 @@ interface MonthRow { key: string; label: string; gross: number; referralCost: nu
 interface ConfirmedPayment { amount: number; confirmed_at: string; type: string; payment_method: string }
 interface UserResult { id: string; full_name: string; email: string | null }
 interface BonusRow { id: string; type: string; level: number; amount: number; status: string; created_at: string }
+interface ExtratoRow { id: string; type: string; direction: string; amount: number; description: string | null; created_at: string }
+
+// Mesmos rótulos do extrato do assinante (src/pages/subscriber/Wallet.tsx) —
+// a descrição já traz a origem real (saldo interno/Pix/cartão/ativação
+// manual) desde que o lançamento foi gerado.
+const EXTRATO_TYPE_LABELS: Record<string, string> = {
+  bonus_subscription: 'Bonificação de assinatura',
+  bonus_partner_fee: 'Bonificação de indicação de parceiro',
+  bonus_consumption: 'Bonificação de consumo',
+  cashback: 'Cashback',
+  withdrawal: 'Saque',
+  adjustment: 'Ajuste administrativo',
+  reversal: 'Estorno',
+  purchase: 'Compra/venda',
+}
 
 export default function AdminFinancial() {
   const { theme } = useDashboardTheme()
@@ -30,6 +45,8 @@ export default function AdminFinancial() {
   const [selectedUser, setSelectedUser] = useState<UserResult | null>(null)
   const [selectedBalance, setSelectedBalance] = useState<number | null>(null)
   const [selectedBonuses, setSelectedBonuses] = useState<BonusRow[]>([])
+  const [selectedExtrato, setSelectedExtrato] = useState<ExtratoRow[]>([])
+  const [showAllExtrato, setShowAllExtrato] = useState(false)
   const [adjustAmount, setAdjustAmount] = useState('')
   const [adjustReason, setAdjustReason] = useState('')
   const [adjusting, setAdjusting] = useState(false)
@@ -138,12 +155,15 @@ export default function AdminFinancial() {
     setWalletMsg('')
     setAdjustAmount('')
     setAdjustReason('')
-    const [{ data: balance }, { data: bonusRows }] = await Promise.all([
+    setShowAllExtrato(false)
+    const [{ data: balance }, { data: bonusRows }, { data: extratoRows }] = await Promise.all([
       supabase.rpc('current_wallet_balance', { p_user_id: u.id }),
       supabase.from('bonuses').select('id, type, level, amount, status, created_at').eq('beneficiary_id', u.id).order('created_at', { ascending: false }).limit(20),
+      supabase.from('wallet_transactions').select('id, type, direction, amount, description, created_at').eq('user_id', u.id).order('created_at', { ascending: false }).limit(100),
     ])
     setSelectedBalance(typeof balance === 'number' ? balance : Number(balance ?? 0))
     setSelectedBonuses((bonusRows as BonusRow[]) ?? [])
+    setSelectedExtrato((extratoRows as ExtratoRow[]) ?? [])
   }
 
   async function applyAdjustment() {
@@ -288,6 +308,34 @@ export default function AdminFinancial() {
                         <span className="text-white/30">Estornado</span>
                       )}
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-bold uppercase tracking-wide text-white/40 flex items-center gap-1.5"><History size={12} /> Extrato completo</p>
+                {selectedExtrato.length > 6 && (
+                  <button onClick={() => setShowAllExtrato(!showAllExtrato)} className="text-xs text-gold-400 font-medium">
+                    {showAllExtrato ? 'Ver menos' : `Ver todos (${selectedExtrato.length})`}
+                  </button>
+                )}
+              </div>
+              {selectedExtrato.length === 0 && <p className="text-xs text-white/30">Nenhuma movimentação ainda.</p>}
+              <div className="space-y-1.5">
+                {(showAllExtrato ? selectedExtrato : selectedExtrato.slice(0, 6)).map((t) => (
+                  <div key={t.id} className="flex items-center gap-2 text-xs py-1.5 border-t border-ink-800">
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${t.direction === 'in' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
+                      {t.direction === 'in' ? <ArrowDownLeft size={11} /> : <ArrowUpRight size={11} />}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate">{t.description || EXTRATO_TYPE_LABELS[t.type] || t.type}</p>
+                      <p className="text-white/30">{formatDateTime(t.created_at)}</p>
+                    </div>
+                    <span className={`font-semibold shrink-0 ${t.direction === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {t.direction === 'in' ? '+' : '-'} {formatBRL(t.amount)}
+                    </span>
                   </div>
                 ))}
               </div>
