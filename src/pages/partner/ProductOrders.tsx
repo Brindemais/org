@@ -194,15 +194,15 @@ export default function PartnerProductOrders() {
       <section className="card space-y-3">
         <p className="font-semibold flex items-center gap-1.5"><Wallet size={16} className="text-gold-400" /> Repasse de vendas</p>
         <p className="text-sm text-white/60">
-          Depende de como o assinante pagou: venda paga via <strong>Pix</strong>
-          {partner?.asaas_wallet_id ? ' cai direto na sua conta Asaas (split automático), sem passar pela Brinde Mais.' : ' só cai direto na sua Asaas depois que você vincular e aprovar a subconta em "Produtos e descontos" — até lá, entra aqui na carteira Brinde Mais, mas libera na hora, já que o Pix já está confirmado.'}
+          Depende de como o assinante pagou: venda paga via <strong>Pix ou cartão</strong>
+          {partner?.asaas_wallet_id ? ' cai direto na sua conta Asaas (split automático), sem passar pela Brinde Mais.' : ' só cai direto na sua Asaas depois que você vincular e aprovar a subconta em "Produtos e descontos" — até lá, entra aqui na carteira Brinde Mais, mas libera na hora, já que o pagamento já está confirmado.'}
           {' '}Venda paga com o <strong>saldo do assinante</strong> sempre entra aqui na carteira Brinde Mais (abaixo), confirmada só depois que você bater o código de retirada do pedido — e saca pelo mesmo "Solicitar saque" do bônus de indicação, com 7 dias de espera antes de ficar disponível.
         </p>
       </section>
 
       <section className="card space-y-4">
         <p className="font-semibold flex items-center gap-1.5"><Gift size={16} className="text-gold-400" /> Saldo e saque</p>
-        <p className="text-xs text-white/40 -mt-2">Soma bônus de indicação e vendas pagas com saldo do assinante (essas últimas, 7 dias após a retirada confirmada; venda paga via Pix libera na hora).</p>
+        <p className="text-xs text-white/40 -mt-2">Soma bônus de indicação e vendas pagas com saldo do assinante (essas últimas, 7 dias após a retirada confirmada; venda paga via Pix ou cartão libera na hora).</p>
         <div className="grid grid-cols-3 gap-3">
           <div>
             <p className="text-xs text-white/40">Saldo total</p>
