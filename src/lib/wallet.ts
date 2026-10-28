@@ -1,29 +1,22 @@
 // Mesma regra de available_balance/available_bonus_balance no banco:
-// - adjustment: sempre disponível na hora (ajuste manual do admin).
-// - bonus_subscription e bonus_consumption: disponível na hora só quando o
-//   pagamento que gerou a bonificação foi via Pix (ou ativação manual do
-//   admin) — pagamento no cartão OU com saldo interno ficam retidos 7
-//   dias (dá tempo de a plataforma detectar estorno/chargeback via webhook
-//   da Asaas, ou reversão do saldo de origem, antes de liberar pro saque).
-// - bonus_partner_fee: retido 7 dias sempre, repasse toda segunda.
-// - purchase (venda de produto recebida pelo parceiro): só retido quando
-//   o assinante pagou com saldo interno — Pix, cartão e ativação manual já
-//   são dinheiro confirmado, libera na hora. Regra separada, não mudou.
-// O método de pagamento original não vem na linha da carteira, mas já é
-// gravado no texto da descrição (award_referral_bonuses /
-// confirm_product_order_delivery lá no banco), daí os textos abaixo.
+// bonus_subscription, adjustment e bonus_consumption ficam disponíveis na
+// hora, independente da forma de pagamento que originou o bônus (pedido
+// explícito do dono depois de reclamação real de retenção indevida —
+// chegou a existir uma versão que retinha isso por 7 dias quando o
+// pagamento de origem era cartão ou saldo interno, foi revertida).
+// bonus_partner_fee fica retido 7 dias sempre. A venda de produto
+// recebida pelo parceiro (purchase) só fica retida quando o assinante
+// pagou com saldo interno — Pix, cartão e ativação manual já são dinheiro
+// confirmado, então libera na hora. O método de pagamento original não
+// vem na linha da carteira, mas já é gravado no texto da descrição pelo
+// confirm_product_order_delivery() lá no banco, daí o "saldo interno" aqui.
 const HOLD_DAYS = 7
-const HELD_ORIGIN_SUFFIXES = ['(cartão)', '(saldo interno)']
+const IMMEDIATE_TYPES = new Set(['bonus_subscription', 'adjustment', 'bonus_consumption'])
 
 export function pendingDaysLeft(tx: { type: string; direction: string; created_at: string; description?: string | null }): number | null {
   if (tx.direction !== 'in') return null
-  const description = tx.description ?? ''
-  if (tx.type === 'adjustment') return null
-  if (
-    (tx.type === 'bonus_subscription' || tx.type === 'bonus_consumption') &&
-    !HELD_ORIGIN_SUFFIXES.some((suffix) => description.includes(suffix))
-  ) return null
-  if (tx.type === 'purchase' && !description.includes('saldo interno')) return null
+  if (IMMEDIATE_TYPES.has(tx.type)) return null
+  if (tx.type === 'purchase' && !(tx.description ?? '').includes('saldo interno')) return null
   const daysElapsed = (Date.now() - new Date(tx.created_at).getTime()) / 86_400_000
   const left = Math.ceil(HOLD_DAYS - daysElapsed)
   return left > 0 ? left : null

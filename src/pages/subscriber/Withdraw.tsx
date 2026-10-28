@@ -74,8 +74,8 @@ export default function SubscriberWithdraw() {
         {error && <p className="text-sm text-red-400">{error}</p>}
         <button type="submit" disabled={loading} className="btn-gold w-full">{loading ? 'Enviando...' : 'Solicitar saque'}</button>
         <p className="text-xs text-white/40 text-center">
-          Saques passam por análise manual de segurança antes do pagamento. Bônus de assinatura e bônus de consumo pagos via Pix ficam disponíveis na hora;
-          se a compra foi no cartão ou com saldo interno, ficam retidos por 7 dias (prazo de segurança). Bônus de indicação de parceiro ficam disponíveis 7 dias após serem creditados. Limite de R$ 1.000,00 a cada 30 dias.
+          Saques passam por análise manual de segurança antes do pagamento. Bônus de assinatura e bônus de consumo ficam disponíveis na hora, qualquer
+          que seja a forma de pagamento; bônus de indicação de parceiro ficam disponíveis 7 dias após serem creditados. Limite de R$ 1.000,00 a cada 30 dias.
         </p>
       </form>
     </div>
