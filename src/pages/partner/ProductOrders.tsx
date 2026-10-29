@@ -196,7 +196,7 @@ export default function PartnerProductOrders() {
         <p className="text-sm text-white/60">
           Depende de como o assinante pagou: venda paga via <strong>Pix ou cartão</strong>
           {partner?.asaas_wallet_id ? ' cai direto na sua conta Asaas (split automático), sem passar pela Brinde Mais.' : ' só cai direto na sua Asaas depois que você vincular e aprovar a subconta em "Produtos e descontos" — até lá, entra aqui na carteira Brinde Mais, mas libera na hora, já que o pagamento já está confirmado.'}
-          {' '}Venda paga com o <strong>saldo do assinante</strong> sempre entra aqui na carteira Brinde Mais (abaixo), confirmada só depois que você bater o código de retirada do pedido — e saca pelo mesmo "Solicitar saque" do bônus de indicação, com 7 dias de espera antes de ficar disponível.
+          {' '}Venda paga com o <strong>saldo do assinante</strong> sempre entra aqui na carteira Brinde Mais (abaixo), confirmada só depois que você bater o código de retirada do pedido, com 7 dias de espera antes de ficar disponível — e saca pelo mesmo "Solicitar saque" do bônus de indicação, que libera na hora.
         </p>
       </section>
 
