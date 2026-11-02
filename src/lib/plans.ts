@@ -5,7 +5,7 @@ import type { SubscriptionPlan } from './types'
 // that trigger is the real source of truth; this is only for display and
 // for building the Pix payment the client submits.
 export const PLAN_PRICES: Record<SubscriptionPlan, number> = {
-  monthly: 149.9,
+  monthly: 79.0,
   annual: 1439.04,
 }
 
