@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
-import { TrendingDown, TrendingUp, Users2, Wallet, KeyRound, Store, QrCode, Search, Undo2, SlidersHorizontal, ArrowDownLeft, ArrowUpRight, History } from 'lucide-react'
+import { TrendingDown, TrendingUp, Users2, Wallet, KeyRound, Store, QrCode, Search, Undo2, SlidersHorizontal, ArrowDownLeft, ArrowUpRight, History, Receipt, Gift, Landmark, Settings2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { StatCard } from '../../components/ui/StatCard'
 import { formatBRL, formatDateTime } from '../../lib/format'
@@ -14,6 +14,15 @@ interface ConfirmedPayment { amount: number; confirmed_at: string; type: string;
 interface UserResult { id: string; full_name: string; email: string | null }
 interface BonusRow { id: string; type: string; level: number; amount: number; status: string; created_at: string; cancel_reason: string | null; source: { full_name: string } | null }
 interface ExtratoRow { id: string; type: string; direction: string; amount: number; description: string | null; created_at: string }
+
+interface FinancialReport {
+  ano: number; mes: number
+  assinantes_valor_bruto: number; assinantes_comissoes: number; assinantes_premiacoes: number
+  assinantes_brindes: number; assinantes_impostos: number; assinantes_lucro_liquido: number
+  produtos_valor_bruto: number; produtos_repasse: number; produtos_comissoes: number
+  produtos_premiacoes: number; produtos_impostos: number; produtos_lucro_liquido: number
+}
+interface ReportSettings { brindes_pct: number; impostos_pct_assinaturas: number; impostos_pct_produtos: number }
 
 // Mesmos rótulos do extrato do assinante (src/pages/subscriber/Wallet.tsx) —
 // a descrição já traz a origem real (saldo interno/Pix/cartão/ativação
@@ -53,6 +62,59 @@ export default function AdminFinancial() {
   const [adjusting, setAdjusting] = useState(false)
   const [walletMsg, setWalletMsg] = useState('')
   const [reversingId, setReversingId] = useState<string | null>(null)
+
+  const now = new Date()
+  const [reportYear, setReportYear] = useState(now.getFullYear())
+  const [reportMonth, setReportMonth] = useState(now.getMonth() + 1)
+  const [report, setReport] = useState<FinancialReport | null>(null)
+  const [reportLoading, setReportLoading] = useState(true)
+  const [settings, setSettings] = useState<ReportSettings | null>(null)
+  const [showSettings, setShowSettings] = useState(false)
+  const [settingsForm, setSettingsForm] = useState({ brindes_pct: '', impostos_pct_assinaturas: '', impostos_pct_produtos: '' })
+  const [savingSettings, setSavingSettings] = useState(false)
+  const [settingsMsg, setSettingsMsg] = useState('')
+
+  useEffect(() => {
+    setReportLoading(true)
+    supabase.rpc('admin_financial_monthly_report', { p_year: reportYear, p_month: reportMonth }).maybeSingle().then(({ data }) => {
+      setReport((data as FinancialReport) ?? null)
+      setReportLoading(false)
+    })
+  }, [reportYear, reportMonth])
+
+  useEffect(() => {
+    supabase.from('financial_report_settings').select('brindes_pct, impostos_pct_assinaturas, impostos_pct_produtos').maybeSingle().then(({ data }) => {
+      if (!data) return
+      const s = data as ReportSettings
+      setSettings(s)
+      setSettingsForm({
+        brindes_pct: String(s.brindes_pct),
+        impostos_pct_assinaturas: String(s.impostos_pct_assinaturas),
+        impostos_pct_produtos: String(s.impostos_pct_produtos),
+      })
+    })
+  }, [])
+
+  async function saveSettings() {
+    setSavingSettings(true)
+    setSettingsMsg('')
+    const { data, error } = await supabase.rpc('admin_set_financial_report_settings', {
+      p_brindes_pct: Number(settingsForm.brindes_pct) || 0,
+      p_impostos_pct_assinaturas: Number(settingsForm.impostos_pct_assinaturas) || 0,
+      p_impostos_pct_produtos: Number(settingsForm.impostos_pct_produtos) || 0,
+    })
+    setSavingSettings(false)
+    if (error) { setSettingsMsg('Não foi possível salvar as configurações.'); return }
+    setSettings(data as ReportSettings)
+    setSettingsMsg('Configurações salvas.')
+    setReportLoading(true)
+    supabase.rpc('admin_financial_monthly_report', { p_year: reportYear, p_month: reportMonth }).maybeSingle().then(({ data: r }) => {
+      setReport((r as FinancialReport) ?? null)
+      setReportLoading(false)
+    })
+  }
+
+  const reportMonthLabel = new Date(reportYear, reportMonth - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
   useEffect(() => {
     Promise.all([
@@ -198,6 +260,85 @@ export default function AdminFinancial() {
       <div>
         <h1 className="font-display text-2xl font-semibold">Financeiro</h1>
         <p className="text-white/50 text-sm">Entradas de assinantes, custos e valor líquido (assinaturas confirmadas).</p>
+      </div>
+
+      <div className="card">
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+          <div>
+            <p className="font-semibold flex items-center gap-1.5"><Landmark size={16} className="text-gold-400" /> Relatório total: balanço financeiro</p>
+            <p className="text-xs text-white/40 capitalize">{reportMonthLabel}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="month"
+              className="input !text-xs !py-1.5 !w-auto"
+              value={`${reportYear}-${String(reportMonth).padStart(2, '0')}`}
+              onChange={(e) => {
+                const [y, m] = e.target.value.split('-').map(Number)
+                if (y && m) { setReportYear(y); setReportMonth(m) }
+              }}
+            />
+            <button onClick={() => setShowSettings(!showSettings)} className="btn-dark !px-3 !py-1.5 text-xs flex items-center gap-1.5">
+              <Settings2 size={13} /> Brindes/Impostos
+            </button>
+          </div>
+        </div>
+
+        {showSettings && (
+          <div className="rounded-lg bg-ink-950 border border-ink-800 p-4 mb-4 space-y-3">
+            <p className="text-xs text-white/40">Percentuais fixos usados pra calcular brindes e impostos nos relatórios abaixo (não são valores reais apurados, são estimativas configuráveis).</p>
+            <div className="grid sm:grid-cols-3 gap-2">
+              <div>
+                <label className="text-[11px] text-white/40">Brindes (% sobre assinaturas)</label>
+                <input className="input !text-xs" type="number" step="0.1" value={settingsForm.brindes_pct} onChange={(e) => setSettingsForm({ ...settingsForm, brindes_pct: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-[11px] text-white/40">Impostos sobre assinaturas (%)</label>
+                <input className="input !text-xs" type="number" step="0.1" value={settingsForm.impostos_pct_assinaturas} onChange={(e) => setSettingsForm({ ...settingsForm, impostos_pct_assinaturas: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-[11px] text-white/40">Impostos sobre produtos (%)</label>
+                <input className="input !text-xs" type="number" step="0.1" value={settingsForm.impostos_pct_produtos} onChange={(e) => setSettingsForm({ ...settingsForm, impostos_pct_produtos: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button onClick={saveSettings} disabled={savingSettings} className="btn-gold !py-1.5 !px-4 text-xs">{savingSettings ? 'Salvando...' : 'Salvar'}</button>
+              {settingsMsg && <p className="text-xs text-white/50">{settingsMsg}</p>}
+            </div>
+          </div>
+        )}
+
+        {reportLoading && <p className="text-xs text-white/40">Carregando relatório...</p>}
+
+        {!reportLoading && report && (
+          <div className="grid lg:grid-cols-2 gap-4">
+            <div className="rounded-lg bg-ink-950 border border-ink-800 p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-white/40 mb-3 flex items-center gap-1.5"><Users2 size={12} /> Entrada de assinantes · mensal</p>
+              <div className="space-y-1.5 text-sm">
+                <div className="flex items-center justify-between"><span className="text-white/50">Valor bruto</span><span className="font-semibold">{formatBRL(report.assinantes_valor_bruto)}</span></div>
+                <div className="flex items-center justify-between"><span className="text-white/50">Comissões (rede)</span><span className="text-red-400">-{formatBRL(report.assinantes_comissoes)}</span></div>
+                <div className="flex items-center justify-between"><span className="text-white/50">Premiações (VIP/VIP+/Elite)</span><span className="text-red-400">-{formatBRL(report.assinantes_premiacoes)}</span></div>
+                <div className="flex items-center justify-between"><span className="text-white/50">Brindes</span><span className="text-red-400">-{formatBRL(report.assinantes_brindes)}</span></div>
+                <div className="flex items-center justify-between"><span className="text-white/50">Impostos</span><span className="text-red-400">-{formatBRL(report.assinantes_impostos)}</span></div>
+                <div className="flex items-center justify-between pt-2 border-t border-ink-800"><span className="font-semibold">Lucro líquido</span><span className="font-bold text-gold-400">{formatBRL(report.assinantes_lucro_liquido)}</span></div>
+              </div>
+            </div>
+
+            <div className="rounded-lg bg-ink-950 border border-ink-800 p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-white/40 mb-3 flex items-center gap-1.5"><Gift size={12} /> Entrada de venda de produtos · mensal</p>
+              <div className="space-y-1.5 text-sm">
+                <div className="flex items-center justify-between"><span className="text-white/50">Valor bruto (vendas)</span><span className="font-semibold">{formatBRL(report.produtos_valor_bruto)}</span></div>
+                <div className="flex items-center justify-between"><span className="text-white/50">Repasse Brinde Mais</span><span className="font-semibold">{formatBRL(report.produtos_repasse)}</span></div>
+                <div className="flex items-center justify-between pl-3"><span className="text-white/40">Comissões (rede)</span><span className="text-red-400">-{formatBRL(report.produtos_comissoes)}</span></div>
+                <div className="flex items-center justify-between pl-3"><span className="text-white/40">Premiações (VIP/VIP+/Elite)</span><span className="text-red-400">-{formatBRL(report.produtos_premiacoes)}</span></div>
+                <div className="flex items-center justify-between pl-3"><span className="text-white/40">Impostos</span><span className="text-red-400">-{formatBRL(report.produtos_impostos)}</span></div>
+                <div className="flex items-center justify-between pt-2 border-t border-ink-800"><span className="font-semibold">Lucro líquido</span><span className="font-bold text-gold-400">{formatBRL(report.produtos_lucro_liquido)}</span></div>
+              </div>
+              <p className="text-[11px] text-white/30 mt-3">O restante do valor bruto ({formatBRL(report.produtos_valor_bruto - report.produtos_repasse)}) é repassado direto ao parceiro, fora do balanço da Brinde Mais.</p>
+            </div>
+          </div>
+        )}
+        {!reportLoading && !report && <p className="text-xs text-white/40">Nenhum dado para este mês.</p>}
       </div>
 
       <div>
