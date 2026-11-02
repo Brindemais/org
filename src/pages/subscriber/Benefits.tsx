@@ -87,6 +87,7 @@ export default function SubscriberBenefits() {
         PARTNER_OUT_OF_STOCK: 'Este parceiro está sem brindes disponíveis no momento. Escolha outro.',
         PICKUP_ALREADY_CHOSEN: 'Você já escolheu um ponto de retirada neste ciclo.',
         SUBSCRIPTION_NOT_ACTIVE: 'Sua assinatura precisa estar ativa para escolher a retirada.',
+        NOT_QUALIFIED_VIP: 'A partir da segunda retirada, é preciso estar qualificado no mínimo VIP (10 indicados diretos ativos no mês). Veja seu progresso em Indique aqui.',
       }
       setError(map[rpcError.message] ?? 'Não foi possível reservar este parceiro.')
       return
