@@ -37,7 +37,7 @@ type HomePartner = Pick<Partner, 'id' | 'trade_name' | 'category' | 'logo_url'>
 
 const QUICK_LINKS = [
   { to: '/app/beneficios', label: 'Benefícios', icon: Gift },
-  { to: '/app/assinatura', label: 'Planos', icon: CreditCard },
+  { to: '/app/pagamentos', label: 'Pagamentos', icon: CreditCard },
   { to: '/app/parceiros', label: 'Parceiros', icon: MapPin },
   { to: '/app/indique', label: 'Indique', icon: Share2 },
 ]
