@@ -12,16 +12,15 @@ interface TreeNode {
   referred_by: string | null
 }
 interface LevelEarning { level: number; total: number }
+interface QualificationStatus { direct_active: number; l1_l2_active: number; tier: 'none' | 'vip' | 'vip_mais' | 'elite' }
 
-// Selo de reconhecimento: 100 indicados diretos (nível 1) com assinatura
-// ativa e em dia viram "VIP". Não muda comissão (já é 10% no nível 1),
-// é só status/selo no painel.
-const VIP_THRESHOLD = 100
+const TIER_LABELS: Record<QualificationStatus['tier'], string> = { none: 'Sem qualificação', vip: 'VIP', vip_mais: 'VIP MAIS', elite: 'ELITE' }
 
 export default function SubscriberReferrals() {
   const { profile } = useAuth()
   const [tree, setTree] = useState<TreeNode[]>([])
   const [levels, setLevels] = useState<LevelEarning[]>([])
+  const [qualification, setQualification] = useState<QualificationStatus | null>(null)
   const [copied, setCopied] = useState(false)
   const [copiedPartner, setCopiedPartner] = useState(false)
   const [expanded, setExpanded] = useState<Set<number>>(new Set([1]))
@@ -45,6 +44,10 @@ export default function SubscriberReferrals() {
         for (const b of data ?? []) totals[b.level] = (totals[b.level] ?? 0) + Number(b.amount)
         setLevels(Object.entries(totals).map(([level, total]) => ({ level: Number(level), total })).sort((a, b) => a.level - b.level))
       })
+
+    supabase
+      .rpc('subscriber_qualification_status')
+      .then(({ data }) => setQualification(((data as QualificationStatus[] | null) ?? [])[0] ?? null))
   }, [profile])
 
   const byLevel = useMemo(() => {
@@ -52,12 +55,6 @@ export default function SubscriberReferrals() {
     for (const n of tree) (map[n.level] ??= []).push(n)
     return map
   }, [tree])
-
-  const activeDirectCount = useMemo(
-    () => (byLevel[1] ?? []).filter((p) => p.has_active_subscription).length,
-    [byLevel],
-  )
-  const isVip = activeDirectCount >= VIP_THRESHOLD
 
   function toggleLevel(lvl: number) {
     setExpanded((prev) => {
@@ -96,7 +93,7 @@ export default function SubscriberReferrals() {
 
       <div className="card space-y-3">
         <p className="text-sm font-semibold flex items-center gap-1.5"><Users size={15} className="text-gold-400" /> Indique assinantes</p>
-        <p className="text-sm text-white/60">Compartilhe seu link exclusivo e ganhe 10% sobre a assinatura de quem você indicar e mais 10% sobre a assinatura dos indicados deles — com bonificação em até 4 níveis da sua rede, mais 1% por nível sobre o consumo deles.</p>
+        <p className="text-sm text-white/60">Compartilhe seu link exclusivo e ganhe 19% sobre a assinatura de quem você indicar e mais 19% sobre a assinatura dos indicados deles — com bonificação em até 4 níveis da sua rede, mais 1% por nível sobre o consumo deles.</p>
         <div className="rounded-lg bg-ink-950 border border-ink-800 px-3 py-2.5 text-xs text-gold-300 break-all">{link}</div>
         <div className="flex gap-2">
           <button onClick={copyLink} className="btn-dark flex-1 !py-2.5 text-sm gap-2"><Copy size={14} /> {copied ? 'Copiado!' : 'Copiar link'}</button>
@@ -115,24 +112,38 @@ export default function SubscriberReferrals() {
         </div>
       </div>
 
-      {isVip ? (
-        <div className="card !bg-gold-gradient !border-transparent flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-ink-950/20 flex items-center justify-center shrink-0"><Crown size={20} className="text-ink-950" /></div>
-          <div>
-            <p className="font-display font-semibold text-ink-950">Você é VIP Brinde Mais!</p>
-            <p className="text-xs text-ink-950/70">{activeDirectCount} indicados diretos com assinatura ativa. Selo de reconhecimento por trazer o maior volume de rede.</p>
-          </div>
-        </div>
-      ) : (
-        <div className="card space-y-2">
+      {qualification && (
+        <div className="card space-y-4">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold flex items-center gap-1.5"><Crown size={15} className="text-gold-400" /> Caminho para o selo VIP</p>
-            <span className="text-xs text-white/40">{activeDirectCount}/{VIP_THRESHOLD} indicados diretos ativos</span>
+            <p className="text-sm font-semibold flex items-center gap-1.5"><Crown size={15} className="text-gold-400" /> Sua qualificação este mês</p>
+            {qualification.tier !== 'none' && (
+              <span className="pill bg-gold-gradient text-ink-950 font-bold">{TIER_LABELS[qualification.tier]}</span>
+            )}
           </div>
-          <div className="h-2 rounded-full bg-ink-800 overflow-hidden">
-            <div className="h-full bg-gold-gradient" style={{ width: `${Math.min(100, (activeDirectCount / VIP_THRESHOLD) * 100)}%` }} />
+          <p className="text-xs text-white/40">
+            {qualification.direct_active} indicado{qualification.direct_active === 1 ? '' : 's'} direto{qualification.direct_active === 1 ? '' : 's'} ativo{qualification.direct_active === 1 ? '' : 's'} ·{' '}
+            {qualification.l1_l2_active} ativo{qualification.l1_l2_active === 1 ? '' : 's'} somando níveis 1 e 2
+          </p>
+
+          <div className="space-y-3">
+            {([
+              { tier: 'vip' as const, label: 'VIP', reward: '1 Brinde por mês', achieved: qualification.direct_active >= 10, value: qualification.direct_active, target: 10, unit: 'diretos ativos' },
+              { tier: 'vip_mais' as const, label: 'VIP MAIS', reward: 'R$ 200,00/mês', achieved: qualification.direct_active >= 10 && qualification.l1_l2_active >= 110, value: qualification.l1_l2_active, target: 110, unit: 'ativos (níveis 1+2), além de 10 diretos' },
+              { tier: 'elite' as const, label: 'ELITE', reward: 'R$ 1.500,00/mês', achieved: qualification.direct_active >= 100 && qualification.l1_l2_active >= 1100, value: qualification.l1_l2_active, target: 1100, unit: 'ativos (níveis 1+2), além de 100 diretos' },
+            ]).map((row) => (
+              <div key={row.tier} className="space-y-1">
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className={`font-semibold ${row.achieved ? 'text-gold-400' : 'text-white/60'}`}>{row.label} · {row.reward}</span>
+                  <span className="text-white/40">{Math.min(row.value, row.target)}/{row.target} {row.unit}</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-ink-800 overflow-hidden">
+                  <div className={`h-full ${row.achieved ? 'bg-gold-gradient' : 'bg-white/20'}`} style={{ width: `${Math.min(100, (row.value / row.target) * 100)}%` }} />
+                </div>
+              </div>
+            ))}
           </div>
-          <p className="text-xs text-white/40">Chegue a {VIP_THRESHOLD} indicados diretos com assinatura ativa e ganhe o selo VIP no seu painel.</p>
+
+          <p className="text-xs text-white/30">Sua primeira retirada de brinde é sempre livre. A partir da segunda, é preciso estar qualificado no mínimo VIP no mês.</p>
         </div>
       )}
 
