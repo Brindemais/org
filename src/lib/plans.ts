@@ -6,7 +6,7 @@ import type { SubscriptionPlan } from './types'
 // for building the Pix payment the client submits.
 export const PLAN_PRICES: Record<SubscriptionPlan, number> = {
   monthly: 79.0,
-  annual: 1439.04,
+  annual: 853.2,
 }
 
 export const PLAN_LABELS: Record<SubscriptionPlan, string> = {
@@ -14,7 +14,7 @@ export const PLAN_LABELS: Record<SubscriptionPlan, string> = {
   annual: 'Anual',
 }
 
-export const ANNUAL_DISCOUNT_PCT = 20
+export const ANNUAL_DISCOUNT_PCT = 10
 
 // What the annual package works out to per month, for the "compare to
 // paying monthly" line under the annual plan card.
