@@ -1,14 +1,14 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-// Cartão de crédito, só pra assinatura anual (mensal continua Pix-only,
-// forçado abaixo). Fluxo: tokeniza o cartão na Asaas (POST
-// /creditCard/tokenize — número/CVV passam por aqui em memória, nunca são
-// gravados; só o token que volta é salvo) e, se aprovado, cobra na hora
-// com esse token. Cartão é síncrono — diferente do Pix, aqui já sabemos o
-// resultado na resposta, então confirma a assinatura direto, sem esperar
-// o webhook (que continua existindo como plano B se essa chamada cair no
-// meio do caminho depois de já ter cobrado).
+// Cartão de crédito vale pra assinatura mensal e anual, e pra compra de
+// produto. Fluxo: tokeniza o cartão na Asaas (POST /creditCard/tokenize —
+// número/CVV passam por aqui em memória, nunca são gravados; só o token
+// que volta é salvo) e, se aprovado, cobra na hora com esse token. Cartão
+// é síncrono — diferente do Pix, aqui já sabemos o resultado na resposta,
+// então confirma a assinatura direto, sem esperar o webhook (que continua
+// existindo como plano B se essa chamada cair no meio do caminho depois
+// de já ter cobrado).
 const ASAAS_API_KEY = Deno.env.get("ASAAS_API_KEY")!;
 const ASAAS_ENV = Deno.env.get("ASAAS_ENV") ?? "sandbox";
 const ASAAS_BASE = ASAAS_ENV === "production" ? "https://api.asaas.com/v3" : "https://api-sandbox.asaas.com/v3";
@@ -73,10 +73,10 @@ Deno.serve(async (req) => {
     if (payErr || !payment) return json({ error: "PAYMENT_NOT_FOUND" }, 404);
     if (payment.status !== "pending") return json({ error: "PAYMENT_NOT_PENDING" }, 400);
 
-    // Regra de negócio: assinatura mensal é Pix obrigatório, só a anual
-    // pode ser paga com cartão. Compra de produto ("Produtos e
-    // descontos") aceita cartão sempre, não tem plano.
-    const cardAllowed = payment.type === "product_purchase" || (payment.type === "subscription" && payment.plan === "annual");
+    // Regra de negócio: cartão vale pra assinatura (mensal ou anual) e
+    // pra compra de produto ("Produtos e descontos"). Taxa de anunciante
+    // do parceiro continua Pix-only, não passa por aqui.
+    const cardAllowed = payment.type === "product_purchase" || payment.type === "subscription";
     if (!cardAllowed) {
       return json({ error: "CARD_NOT_ALLOWED_FOR_THIS_PAYMENT" }, 400);
     }
@@ -89,8 +89,21 @@ Deno.serve(async (req) => {
       .eq("id", payment.subscriber_id)
       .maybeSingle();
     if (!profile) return json({ error: "PROFILE_NOT_FOUND" }, 404);
-    // Mesma checagem do Pix — Asaas recusa cobrança sem CPF/CNPJ do cliente.
-    if (!profile.cpf) return json({ error: "MISSING_CPF" });
+
+    // Mesma checagem do Pix — Asaas recusa cobrança sem CPF/CNPJ do
+    // cliente. profiles.cpf só é preenchido no cadastro de assinante; um
+    // parceiro comprando produto de outro parceiro (painel do Parceiro,
+    // "Parceiros") não tem esse campo — usa o CNPJ/CPF do próprio
+    // estabelecimento dele (partners.cnpj_cpf via partner_staff).
+    let cpfCnpj = profile.cpf as string | null;
+    if (!cpfCnpj && payment.type === "product_purchase") {
+      const { data: staffRow } = await admin.from("partner_staff").select("partner_id").eq("profile_id", payment.subscriber_id).limit(1).maybeSingle();
+      if (staffRow?.partner_id) {
+        const { data: buyerPartner } = await admin.from("partners").select("cnpj_cpf").eq("id", staffRow.partner_id).maybeSingle();
+        cpfCnpj = buyerPartner?.cnpj_cpf ?? null;
+      }
+    }
+    if (!cpfCnpj) return json({ error: "MISSING_CPF" });
 
     let customerId = (profile as Record<string, string | null>)[CUSTOMER_ID_COLUMN];
     if (!customerId) {
@@ -98,7 +111,7 @@ Deno.serve(async (req) => {
         method: "POST",
         body: JSON.stringify({
           name: profile.full_name,
-          cpfCnpj: profile.cpf,
+          cpfCnpj,
           email: profile.email,
           mobilePhone: profile.phone,
           externalReference: profile.id,
@@ -124,7 +137,7 @@ Deno.serve(async (req) => {
           creditCardHolderInfo: {
             name: input.holder_name,
             email: profile.email,
-            cpfCnpj: profile.cpf,
+            cpfCnpj,
             postalCode: (profile.cep ?? "").replace(/\D/g, ""),
             addressNumber: input.holder_address_number,
             phone: profile.phone,
@@ -167,7 +180,7 @@ Deno.serve(async (req) => {
           billingType: "CREDIT_CARD",
           value: payment.amount,
           dueDate,
-          description: payment.type === "product_purchase" ? "Brinde Mais - compra de produto" : "Brinde Mais - assinatura anual",
+          description: payment.type === "product_purchase" ? "Brinde Mais - compra de produto" : "Brinde Mais - assinatura",
           externalReference: payment.id,
           creditCardToken: tokenized.creditCardToken,
           ...(splits ? { splits } : {}),
