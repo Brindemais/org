@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
     if (!partner.address_number) missing.push("address_number");
     if (!partner.neighborhood) missing.push("neighborhood");
     if (!partner.cep) missing.push("cep");
-    if (partner.income_value == null) missing.push("income_value");
+    if (partner.income_value == null || Number(partner.income_value) <= 0) missing.push("income_value");
     if (isCpf && !partner.birth_date) missing.push("birth_date");
     if (!isCpf && !partner.company_type) missing.push("company_type");
     if (missing.length) return json({ error: "MISSING_KYC_FIELDS", missing });

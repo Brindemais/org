@@ -165,6 +165,7 @@ export default function PartnerSignup() {
     if (!isValidEmail(email)) return setError('Digite um e-mail válido.')
     if (!isValidPhone(phone)) return setError('Digite um telefone válido, com DDD.')
     if (!referralValid) return setError('Preencha quem indicou você e escolha seu link de indicação antes de continuar.')
+    if (!incomeValue || Number(incomeValue.replace(',', '.')) <= 0) return setError('Informe um faturamento mensal estimado maior que zero — é exigido pela Asaas para liberar o repasse automático das suas vendas.')
     if (!accepted) return setError('É necessário aceitar os Termos de Uso e a Política de Privacidade.')
 
     setLoading(true)
