@@ -10,7 +10,7 @@
 // texto da descrição pelo confirm_product_order_delivery() lá no banco,
 // daí o "saldo interno" aqui.
 const HOLD_DAYS = 7
-const IMMEDIATE_TYPES = new Set(['bonus_subscription', 'adjustment', 'bonus_consumption', 'bonus_partner_fee'])
+const IMMEDIATE_TYPES = new Set(['bonus_subscription', 'adjustment', 'bonus_consumption', 'bonus_partner_fee', 'bonus_qualification'])
 
 export function pendingDaysLeft(tx: { type: string; direction: string; created_at: string; description?: string | null }): number | null {
   if (tx.direction !== 'in') return null
