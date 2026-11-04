@@ -4,6 +4,12 @@ import { supabase } from '../../lib/supabase'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { ImageUpload } from '../../components/ui/ImageUpload'
 
+const ASAAS_MISSING_FIELD_LABELS: Record<string, string> = {
+  trade_name: 'nome fantasia', email: 'e-mail', cnpj_cpf: 'CNPJ/CPF', address: 'endereço',
+  address_number: 'número do endereço', neighborhood: 'bairro', cep: 'CEP',
+  income_value: 'faturamento mensal estimado (maior que zero)', birth_date: 'data de nascimento', company_type: 'tipo de empresa',
+}
+
 export default function PartnerProfile() {
   const { profile, partner, refreshProfile } = useAuth()
   const [form, setForm] = useState({
@@ -12,6 +18,8 @@ export default function PartnerProfile() {
   })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [formError, setFormError] = useState('')
+  const [asaasMsg, setAsaasMsg] = useState('')
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [logoSaved, setLogoSaved] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -52,14 +60,43 @@ export default function PartnerProfile() {
   async function saveDetails(e: FormEvent) {
     e.preventDefault()
     if (!partner) return
+    setFormError('')
+    setAsaasMsg('')
+
+    const incomeValue = form.income_value ? Number(form.income_value.replace(',', '.')) : null
+    if (form.income_value && (!incomeValue || incomeValue <= 0)) {
+      setFormError('O faturamento mensal estimado precisa ser maior que zero.')
+      return
+    }
+
     setSaving(true)
     await supabase.from('partners').update({
       address: form.address, opening_hours: form.opening_hours,
       address_number: form.address_number || null, neighborhood: form.neighborhood || null, cep: form.cep || null,
-      income_value: form.income_value ? Number(form.income_value.replace(',', '.')) : null,
+      income_value: incomeValue,
       company_type: isCpf ? null : form.company_type,
       birth_date: isCpf ? (form.birth_date || null) : null,
     }).eq('id', partner.id)
+
+    // Já tenta vincular a conta Asaas na hora, sem precisar que o
+    // parceiro clique no banner separadamente — mesma função usada lá,
+    // é idempotente (devolve already_linked se já tiver wallet_id).
+    if (partner.asaas_subaccount_status !== 'approved') {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const { data } = await supabase.functions.invoke('asaas-create-subaccount', {
+        body: { partner_id: partner.id },
+        headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+      }).catch(() => ({ data: null }))
+      if (data?.ok || data?.already_linked) {
+        setAsaasMsg('Conta Asaas vinculada! O repasse automático das suas vendas já está liberado.')
+      } else if (data?.error === 'MISSING_KYC_FIELDS') {
+        const labels = (data.missing ?? []).map((f: string) => ASAAS_MISSING_FIELD_LABELS[f] ?? f)
+        setAsaasMsg(`Ainda falta completar: ${labels.join(', ')}.`)
+      } else if (data?.error) {
+        setAsaasMsg('Dados salvos, mas a Asaas ainda não aprovou o vínculo. Tente de novo em instantes.')
+      }
+    }
+
     await refreshProfile()
     setSaving(false)
     setSaved(true)
@@ -145,6 +182,8 @@ export default function PartnerProfile() {
           )}
         </div>
 
+        {formError && <p className="text-xs text-red-400">{formError}</p>}
+        {asaasMsg && <p className="text-xs text-gold-400">{asaasMsg}</p>}
         <button type="submit" disabled={saving} className="btn-gold w-full">{saving ? 'Salvando...' : saved ? 'Salvo!' : 'Salvar alterações'}</button>
       </form>
     </div>
