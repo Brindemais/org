@@ -92,6 +92,17 @@ Deno.serve(async (req) => {
       const { data: partnerRow } = await admin.from("partners").select("cnpj_cpf").eq("id", payment.partner_id).maybeSingle();
       cpfCnpj = partnerRow?.cnpj_cpf ?? null;
     }
+    // Mesma lógica, mas pro painel do Parceiro: um comerciante comprando
+    // produto de outro parceiro ("Parceiros" > comprar) também não tem
+    // profiles.cpf preenchido — usa o CNPJ/CPF do próprio estabelecimento
+    // dele (partners.cnpj_cpf via partner_staff), não o do parceiro vendedor.
+    if (!cpfCnpj && payment.type === "product_purchase") {
+      const { data: staffRow } = await admin.from("partner_staff").select("partner_id").eq("profile_id", payment.subscriber_id).limit(1).maybeSingle();
+      if (staffRow?.partner_id) {
+        const { data: buyerPartner } = await admin.from("partners").select("cnpj_cpf").eq("id", staffRow.partner_id).maybeSingle();
+        cpfCnpj = buyerPartner?.cnpj_cpf ?? null;
+      }
+    }
     // Asaas recusa a cobrança sem CPF/CNPJ do cliente (400 invalid_object) —
     // checa antes de chamar pra devolver um erro específico em vez da
     // mensagem genérica de "não foi possível gerar o Pix".

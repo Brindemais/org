@@ -42,6 +42,9 @@ const SubscriberSubscription = lazy(() => import('./pages/subscriber/Subscriptio
 const SubscriberPayments = lazy(() => import('./pages/subscriber/Payments'))
 
 const PartnerDashboard = lazy(() => import('./pages/partner/Dashboard'))
+const PartnerNetwork = lazy(() => import('./pages/partner/Network'))
+const PartnerNetworkCatalog = lazy(() => import('./pages/partner/NetworkCatalog'))
+const PartnerPurchases = lazy(() => import('./pages/partner/Purchases'))
 const PartnerReferrals = lazy(() => import('./pages/partner/Referrals'))
 const PartnerPickups = lazy(() => import('./pages/partner/Pickups'))
 const PartnerStock = lazy(() => import('./pages/partner/Stock'))
@@ -136,6 +139,9 @@ export default function App() {
           <Route path="brindes" element={<PartnerProducts />} />
           <Route path="promocoes" element={<PartnerPromotions />} />
           <Route path="vendas" element={<PartnerProductOrders />} />
+          <Route path="parceiros" element={<PartnerNetwork />} />
+          <Route path="parceiros/:id" element={<PartnerNetworkCatalog />} />
+          <Route path="compras" element={<PartnerPurchases />} />
           <Route path="anunciante" element={<PartnerAdvertiser />} />
           <Route path="indicacoes" element={<PartnerReferrals />} />
           <Route path="reservas" element={<PartnerReservations />} />
