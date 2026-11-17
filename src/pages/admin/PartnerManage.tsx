@@ -54,6 +54,11 @@ export default function AdminPartnerManage() {
   const [showAllExtrato, setShowAllExtrato] = useState(false)
   const [bonuses, setBonuses] = useState<BonusRow[]>([])
   const [reversingId, setReversingId] = useState<string | null>(null)
+  const [staffProfileId, setStaffProfileId] = useState<string | null>(null)
+  const [referredByName, setReferredByName] = useState<string | null>(null)
+  const [newReferrerCode, setNewReferrerCode] = useState('')
+  const [changingReferrer, setChangingReferrer] = useState(false)
+  const [referrerMsg, setReferrerMsg] = useState<{ text: string; ok: boolean } | null>(null)
 
   async function load() {
     if (!id) return
@@ -69,24 +74,52 @@ export default function AdminPartnerManage() {
     setMine((own as ProductRow[]) ?? [])
     setStock((stockRows as any[]) ?? [])
 
-    const staffProfileId = (staffRow as { profile_id: string } | null)?.profile_id
-    if (staffProfileId) {
-      const [{ data: balance }, { data: available }, { data: extratoRows }, { data: bonusRows }] = await Promise.all([
-        supabase.rpc('current_wallet_balance', { p_user_id: staffProfileId }),
-        supabase.rpc('available_bonus_balance', { p_user_id: staffProfileId }),
-        supabase.from('wallet_transactions').select('id, type, direction, amount, description, created_at').eq('user_id', staffProfileId).order('created_at', { ascending: false }).limit(100),
-        supabase.from('bonuses').select('id, type, level, amount, status, created_at, cancel_reason, source:source_subscriber_id(full_name)').eq('beneficiary_id', staffProfileId).order('created_at', { ascending: false }).limit(20),
+    const staffId = (staffRow as { profile_id: string } | null)?.profile_id ?? null
+    setStaffProfileId(staffId)
+    if (staffId) {
+      const [{ data: balance }, { data: available }, { data: extratoRows }, { data: bonusRows }, { data: staffProfile }] = await Promise.all([
+        supabase.rpc('current_wallet_balance', { p_user_id: staffId }),
+        supabase.rpc('available_bonus_balance', { p_user_id: staffId }),
+        supabase.from('wallet_transactions').select('id, type, direction, amount, description, created_at').eq('user_id', staffId).order('created_at', { ascending: false }).limit(100),
+        supabase.from('bonuses').select('id, type, level, amount, status, created_at, cancel_reason, source:source_subscriber_id(full_name)').eq('beneficiary_id', staffId).order('created_at', { ascending: false }).limit(20),
+        supabase.from('profiles').select('referred_by, referrer:referred_by(full_name, referral_code)').eq('id', staffId).maybeSingle(),
       ])
       setWalletBalance(typeof balance === 'number' ? balance : Number(balance ?? 0))
       setWalletAvailable(typeof available === 'number' ? available : Number(available ?? 0))
       setExtrato((extratoRows as ExtratoRow[]) ?? [])
       setBonuses((bonusRows as any as BonusRow[]) ?? [])
+      const referrer = (staffProfile as any)?.referrer as { full_name: string; referral_code: string | null } | null
+      setReferredByName(referrer ? (referrer.referral_code ? `${referrer.full_name} (${referrer.referral_code})` : referrer.full_name) : null)
     } else {
       setWalletBalance(null)
       setWalletAvailable(null)
       setExtrato([])
       setBonuses([])
+      setReferredByName(null)
     }
+  }
+
+  async function changeReferrer() {
+    if (!staffProfileId || !newReferrerCode.trim()) return
+    setChangingReferrer(true)
+    setReferrerMsg(null)
+    const { error } = await supabase.rpc('admin_change_referrer', { p_user_id: staffProfileId, p_new_referrer_code: newReferrerCode.trim() })
+    setChangingReferrer(false)
+    if (error) {
+      const labels: Record<string, string> = {
+        USER_INACTIVE: 'Só é possível trocar o patrocinador enquanto o parceiro estiver ativo como anunciante.',
+        REFERRER_NOT_FOUND: 'Não existe ninguém cadastrado com esse código de indicação.',
+        CANNOT_REFER_SELF: 'Não é possível indicar a própria pessoa.',
+        CIRCULAR_REFERRAL: 'Esse código já está abaixo desse parceiro na própria rede — criaria um ciclo.',
+        REFERRAL_REQUIRED: 'Informe o código de indicação do novo patrocinador.',
+      }
+      const code = Object.keys(labels).find((k) => error.message.includes(k))
+      setReferrerMsg({ text: code ? labels[code] : 'Não foi possível trocar o patrocinador.', ok: false })
+      return
+    }
+    setReferrerMsg({ text: 'Patrocinador atualizado.', ok: true })
+    setNewReferrerCode('')
+    load()
   }
 
   async function reverseBonus(bonusId: string) {
@@ -150,6 +183,27 @@ export default function AdminPartnerManage() {
         <h1 className="font-display text-2xl font-semibold">{partner.trade_name}</h1>
         <p className="text-white/50 text-sm">Escolha, do catálogo, quais brindes este parceiro oferece. A quantidade em estoque é definida pelo próprio parceiro.</p>
       </div>
+
+      {staffProfileId && (
+        <div className="card max-w-xl">
+          <p className="font-semibold mb-1 flex items-center gap-2"><Users2 size={16} className="text-gold-400" /> Patrocinador (quem indicou)</p>
+          <p className="text-xs text-white/40 mb-3">
+            Atual: {referredByName ?? 'sem patrocinador'}. Só é possível trocar enquanto este parceiro estiver ativo como anunciante.
+          </p>
+          <div className="flex gap-2">
+            <input
+              className="input !py-2 text-xs flex-1"
+              placeholder="Código de indicação do novo patrocinador"
+              value={newReferrerCode}
+              onChange={(e) => setNewReferrerCode(e.target.value)}
+            />
+            <button onClick={changeReferrer} disabled={changingReferrer || !newReferrerCode.trim()} className="btn-ghost !py-1.5 !px-3 text-xs shrink-0">
+              {changingReferrer ? '...' : 'Trocar'}
+            </button>
+          </div>
+          {referrerMsg && <p className={`text-xs mt-1.5 ${referrerMsg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{referrerMsg.text}</p>}
+        </div>
+      )}
 
       {walletBalance !== null ? (
         <div className="card">

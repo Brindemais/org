@@ -12,7 +12,15 @@ const EDIT_ERROR_LABELS: Record<string, string> = {
   REFERRAL_TAKEN: 'Esse apelido já está em uso por outra pessoa.',
 }
 
-interface Row { id: string; full_name: string; cpf: string | null; email: string | null; username: string | null; created_at: string; sub_status: string | null; sub_expires_at: string | null; balance: number; active: boolean }
+const REFERRER_ERROR_LABELS: Record<string, string> = {
+  USER_INACTIVE: 'Só é possível trocar o patrocinador enquanto a assinatura dessa pessoa estiver ativa.',
+  REFERRER_NOT_FOUND: 'Não existe ninguém cadastrado com esse código de indicação.',
+  CANNOT_REFER_SELF: 'Não é possível indicar a própria pessoa.',
+  CIRCULAR_REFERRAL: 'Esse código já está abaixo dessa pessoa na própria rede — criaria um ciclo.',
+  REFERRAL_REQUIRED: 'Informe o código de indicação do novo patrocinador.',
+}
+
+interface Row { id: string; full_name: string; cpf: string | null; email: string | null; username: string | null; created_at: string; sub_status: string | null; sub_expires_at: string | null; balance: number; active: boolean; referred_by: string | null }
 interface PendingRow { id: string; email: string; full_name: string | null; document: string | null; phone: string | null; created_at: string }
 
 export default function AdminSubscribers() {
@@ -26,20 +34,48 @@ export default function AdminSubscribers() {
   const [editForm, setEditForm] = useState({ full_name: '', username: '' })
   const [savingEdit, setSavingEdit] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
+  const [referrerNames, setReferrerNames] = useState<Record<string, string>>({})
+  const [newReferrerCode, setNewReferrerCode] = useState('')
+  const [changingReferrer, setChangingReferrer] = useState(false)
+  const [referrerMsg, setReferrerMsg] = useState<{ id: string; text: string; ok: boolean } | null>(null)
 
   async function load() {
     setLoading(true)
-    const { data: profiles } = await supabase.from('profiles').select('*').eq('role', 'subscriber').order('created_at', { ascending: false }).limit(200)
+    const [{ data: profiles }, { data: allProfiles }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('role', 'subscriber').order('created_at', { ascending: false }).limit(200),
+      supabase.from('profiles').select('id, full_name, referral_code'),
+    ])
+    const names: Record<string, string> = {}
+    for (const p of (allProfiles as { id: string; full_name: string; referral_code: string | null }[]) ?? []) {
+      names[p.id] = p.referral_code ? `${p.full_name} (${p.referral_code})` : p.full_name
+    }
+    setReferrerNames(names)
     const result: Row[] = []
     for (const p of profiles ?? []) {
       const [{ data: sub }, { data: bal }] = await Promise.all([
         supabase.from('subscriptions').select('status, expires_at').eq('subscriber_id', p.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
         supabase.rpc('current_wallet_balance', { p_user_id: p.id }),
       ])
-      result.push({ id: p.id, full_name: p.full_name, cpf: p.cpf, email: p.email, username: p.referral_code, created_at: p.created_at, sub_status: sub?.status ?? null, sub_expires_at: sub?.expires_at ?? null, balance: Number(bal ?? 0), active: p.active })
+      result.push({ id: p.id, full_name: p.full_name, cpf: p.cpf, email: p.email, username: p.referral_code, created_at: p.created_at, sub_status: sub?.status ?? null, sub_expires_at: sub?.expires_at ?? null, balance: Number(bal ?? 0), active: p.active, referred_by: p.referred_by })
     }
     setRows(result)
     setLoading(false)
+  }
+
+  async function changeReferrer(r: Row) {
+    if (!newReferrerCode.trim()) return
+    setChangingReferrer(true)
+    setReferrerMsg(null)
+    const { error } = await supabase.rpc('admin_change_referrer', { p_user_id: r.id, p_new_referrer_code: newReferrerCode.trim() })
+    setChangingReferrer(false)
+    if (error) {
+      const code = Object.keys(REFERRER_ERROR_LABELS).find((k) => error.message.includes(k))
+      setReferrerMsg({ id: r.id, text: code ? REFERRER_ERROR_LABELS[code] : 'Não foi possível trocar o patrocinador.', ok: false })
+      return
+    }
+    setReferrerMsg({ id: r.id, text: 'Patrocinador atualizado.', ok: true })
+    setNewReferrerCode('')
+    load()
   }
 
   async function loadPending() {
@@ -77,6 +113,8 @@ export default function AdminSubscribers() {
     setEditingId(r.id)
     setEditError(null)
     setEditForm({ full_name: r.full_name, username: r.username ?? '' })
+    setNewReferrerCode('')
+    setReferrerMsg(null)
   }
 
   async function saveEdit(r: Row) {
@@ -226,6 +264,28 @@ export default function AdminSubscribers() {
                   <div className="flex gap-2 mt-2">
                     <button onClick={() => saveEdit(r)} disabled={savingEdit} className="btn-gold !py-1.5 !px-3 text-xs">{savingEdit ? 'Salvando...' : 'Salvar'}</button>
                     <button onClick={() => setEditingId(null)} className="btn-ghost !py-1.5 !px-3 text-xs">Cancelar</button>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-ink-800 max-w-xl">
+                    <p className="label !text-[11px]">Trocar patrocinador (quem indicou)</p>
+                    <p className="text-[11px] text-white/40 mb-2">
+                      Atual: {r.referred_by ? (referrerNames[r.referred_by] ?? r.referred_by) : 'sem patrocinador'}.
+                      Só funciona enquanto a assinatura estiver ativa.
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        className="input !py-2 text-xs flex-1"
+                        placeholder="Código de indicação do novo patrocinador"
+                        value={newReferrerCode}
+                        onChange={(e) => setNewReferrerCode(e.target.value)}
+                      />
+                      <button onClick={() => changeReferrer(r)} disabled={changingReferrer || !newReferrerCode.trim()} className="btn-ghost !py-1.5 !px-3 text-xs shrink-0">
+                        {changingReferrer ? '...' : 'Trocar'}
+                      </button>
+                    </div>
+                    {referrerMsg && referrerMsg.id === r.id && (
+                      <p className={`text-xs mt-1.5 ${referrerMsg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{referrerMsg.text}</p>
+                    )}
                   </div>
                 </td>
               </tr>
