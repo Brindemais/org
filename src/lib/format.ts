@@ -139,3 +139,10 @@ export function initials(name: string | null | undefined): string {
   if (!name) return '?'
   return name.trim().split(/\s+/).slice(0, 2).map((n) => n[0]).join('').toUpperCase()
 }
+
+// partners.whatsapp é salvo só com DDD+número (sem "55") — wa.me exige o
+// código do país na frente pra abrir direto na conversa certa.
+export function whatsappLink(whatsapp: string): string {
+  const digits = whatsapp.replace(/\D/g, '')
+  return `https://wa.me/55${digits}`
+}

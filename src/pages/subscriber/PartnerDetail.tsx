@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, Clock, Gift, MapPin, Percent, Phone } from 'lucide-react'
+import { ChevronLeft, Clock, Gift, MapPin, MessageCircle, Percent } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner, Promotion, ProductRow } from '../../lib/types'
 import { useSubscription } from '../../hooks/useSubscription'
-import { formatBRL, formatDate } from '../../lib/format'
+import { formatBRL, formatDate, whatsappLink } from '../../lib/format'
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
@@ -92,7 +92,16 @@ export default function SubscriberPartnerDetail() {
             <MapPin size={11} /> {partner.address}, {partner.neighborhood}, {partner.city}/{partner.state}
           </p>
           {partner.opening_hours && <p className="text-xs text-white/40 flex items-center gap-1 mt-0.5"><Clock size={11} /> {partner.opening_hours}</p>}
-          {partner.whatsapp && <p className="text-xs text-white/40 flex items-center gap-1 mt-0.5"><Phone size={11} /> {partner.whatsapp}</p>}
+          {partner.whatsapp && (
+            <a
+              href={whatsappLink(partner.whatsapp)}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-emerald-400 flex items-center gap-1 mt-0.5 w-fit"
+            >
+              <MessageCircle size={11} /> Falar no WhatsApp
+            </a>
+          )}
         </div>
       </div>
 

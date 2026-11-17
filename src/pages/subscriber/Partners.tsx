@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MapPin, Percent, Phone, Search, LocateFixed } from 'lucide-react'
+import { MapPin, MessageCircle, Percent, Search, LocateFixed } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Partner } from '../../lib/types'
 import { PARTNER_CATEGORIES } from '../../lib/types'
 import { useGeolocation } from '../../hooks/useGeolocation'
 import { haversineKm, formatDistance } from '../../lib/geo'
+import { whatsappLink } from '../../lib/format'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/LoadingState'
 
@@ -108,7 +109,15 @@ export default function SubscriberPartners() {
             </div>
             <p className="text-xs text-white/50 flex items-center gap-1.5 mb-1"><MapPin size={12} /> {p.address}, {p.neighborhood}, {p.city}/{p.state}</p>
             {p.opening_hours && <p className="text-xs text-white/40 mb-1">{p.opening_hours}</p>}
-            {p.whatsapp && <p className="text-xs text-white/40 flex items-center gap-1.5 mb-1"><Phone size={12} /> {p.whatsapp}</p>}
+            {p.whatsapp && (
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(whatsappLink(p.whatsapp!), '_blank') }}
+                className="text-xs text-emerald-400 flex items-center gap-1.5 mb-1"
+              >
+                <MessageCircle size={12} /> Falar no WhatsApp
+              </button>
+            )}
             {!!promoCounts[p.id] && (
               <p className="text-[11px] font-semibold text-gold-400 flex items-center gap-1 mt-1">
                 <Percent size={11} /> {promoCounts[p.id]} {promoCounts[p.id] === 1 ? 'oferta ativa' : 'ofertas ativas'}
